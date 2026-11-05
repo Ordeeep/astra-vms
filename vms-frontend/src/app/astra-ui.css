@@ -1,0 +1,62 @@
+/* Astra identity v1.0: shared presentation for the existing shadcn components.
+   Keep this scoped to the application, including Radix portals under body. */
+.astra-interface { font-weight: 400; }
+.astra-interface :is(strong, b) { font-weight: 600; }
+.astra-interface ::selection { background: var(--brand); color: var(--brand-foreground); }
+.astra-interface [data-slot="card"],
+.astra-interface [data-slot="tabs-content"],
+.astra-interface [data-slot="empty"] { font-size: 14px; line-height: 23px; }
+.astra-interface :is(.field-label, .check) { font-size: 12px; font-weight: 500; line-height: 18px; }
+.astra-interface :is(.field-label, .check) small { font-size: 12px; font-weight: 400; line-height: 18px; }
+.astra-interface [data-slot="input"],
+.astra-interface [data-slot="native-select"] { min-height: 36px; font-size: 14px; line-height: 20px; }
+.astra-interface .content [data-slot="button"]:not([data-size^="icon"]) { min-height: 32px; }
+.astra-interface .login-panel [data-slot="button"] { min-height: 40px; }
+.astra-interface [data-slot="badge"] { min-height: 22px; font-size: 12px; line-height: 18px; }
+.astra-interface [data-slot="table"] { font-size: 12px; line-height: 18px; font-variant-numeric: tabular-nums; }
+.astra-interface [data-slot="table-head"] { height: 44px; padding-inline: 12px; color: var(--muted-foreground); }
+.astra-interface [data-slot="table-cell"] { padding: 12px; }
+.astra-interface [data-slot="table-cell"] .row-actions { flex-wrap: nowrap; }
+.astra-interface [data-slot="table-cell"] code { font-family: inherit; font-variant-numeric: tabular-nums; }
+.astra-interface .metric strong,
+.astra-interface :is(input[type="number"], input[type="datetime-local"], input[type="time"]) { font-variant-numeric: tabular-nums; }
+.astra-interface .metric strong { line-height: 1.2; }
+.astra-interface [data-slot="tabs-trigger"][data-state="active"] {
+  background: var(--brand-selection); color: var(--brand); border-color: color-mix(in srgb, var(--brand) 30%, transparent);
+}
+.astra-interface [data-sidebar="menu-sub-button"][aria-current="page"] {
+  background: var(--brand-selection); color: var(--brand); font-weight: 600; box-shadow: inset 2px 0 var(--brand);
+}
+.astra-interface [data-slot="sidebar-menu-button"][data-active="true"] > svg:first-child { color: var(--brand); }
+.astra-interface [data-slot="button"][data-variant="link"],
+.astra-interface [data-slot="badge"][data-variant="link"] { color: var(--ring); }
+.astra-interface [data-slot="checkbox"][data-state="checked"] {
+  background: var(--brand); border-color: var(--brand); color: var(--brand-foreground);
+}
+.astra-interface [data-slot="progress-indicator"] { background: var(--brand); }
+.astra-interface .archive-timeline [data-slot="button"] { background: var(--brand); }
+.astra-interface .archive-timeline [data-slot="button"]:hover { background: color-mix(in srgb, var(--brand) 80%, white); }
+.astra-interface [data-slot="alert"] { padding: 12px 16px; font-size: 12px; line-height: 18px; }
+.astra-interface [data-slot="alert"]:is(.notice, .success) {
+  border-left: 2px solid var(--brand); background: var(--brand-selection);
+}
+.astra-interface [data-slot="alert"] :is(p, ul) { font-size: 12px; line-height: 18px; }
+.astra-interface [data-slot="alert"].success [data-slot="alert-description"] { color: var(--foreground); }
+.astra-interface :is(button, a, [tabindex]):not(input, select, textarea):focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
+.astra-interface [aria-invalid="true"]:focus-visible { outline-color: var(--destructive); }
+.astra-state { min-height: 100dvh; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 40px; width: min(100%, 720px); padding: 48px 28px; margin-inline: auto; }
+.astra-state-content { max-width: 560px; }
+.astra-state-content .eyebrow { display: block; margin-bottom: 12px; }
+.astra-state-content p { margin-top: 16px; }
+.astra-state-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+.loading > [data-slot="spinner"] { color: var(--brand); }
+.login-story > .brand { align-self: flex-start; }
+@media (max-width: 640px) {
+  .astra-interface [data-slot="input"], .astra-interface [data-slot="native-select"] { font-size: 16px; }
+  .astra-interface .content [data-slot="card"]:not(.table-panel, .live-cell) { padding: 20px; }
+  .astra-state { gap: 32px; }
+  .astra-state h1 { font-size: 25px; line-height: 32px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .astra-interface [data-slot] { transition-duration: 0s; }
+}

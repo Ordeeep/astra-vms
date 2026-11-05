@@ -1,0 +1,67 @@
+async page => {
+ const assert=(value,message)=>{if(!value)throw new Error(message);};
+ const region=name=>page.getByRole('region',{name,exact:true});
+ const goto=async name=>{await page.getByRole('link',{name,exact:true}).click();};
+ const close=async()=>{await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('[data-slot="popover-content"], [data-slot="dropdown-menu-content"]'));};
+ const waitRows=async(name,count)=>{await page.waitForFunction(({name,count})=>document.querySelector(`section[aria-label="${name}"] tbody`)?.rows.length===count,{name,count});};
+ await page.goto('http://127.0.0.1:13111/?integration&dark#cameras');
+ await page.reload();
+ await waitRows('Câmeras',10);
+ await region('Câmeras').getByRole('textbox').fill('sub');await waitRows('Câmeras',10);
+ assert((await region('Câmeras').getByRole('status').innerText()).includes('de 37'),'Profile arrays excluded from search');
+ await region('Câmeras').getByRole('button',{name:'Limpar filtros',exact:true}).click();
+ await region('Câmeras').getByRole('button',{name:'Filtrar Integração',exact:true}).click();
+ await page.getByRole('checkbox',{name:'Dahua',exact:true}).check();await close();
+ assert((await region('Câmeras').getByRole('status').innerText()).includes('de 19'),'Integration facet');
+ await page.screenshot({path:'output/playwright/data-table/cameras-dark.png'});
+ await goto('groups');await waitRows('Grupos de permissões',10);
+ await goto('management');await waitRows('Acessos',10);
+ await region('Acessos').getByRole('textbox').fill('Grupo 14');await waitRows('Acessos',1);
+ assert((await region('Acessos').locator('tbody').innerText()).includes('operador.14'),'Group array search');
+ await goto('operators');await waitRows('Operadores',10);
+ await goto('tenants');await waitRows('Ambientes',1);
+ await goto('exports');await waitRows('Exportações',10);
+ assert(await region('Exportações').getByRole('link',{name:'Baixar MP4',exact:true}).count()>0,'Download actions disappeared');
+ await goto('recording');await waitRows('Gravação por câmera',10);
+ assert(await region('Gravação por câmera').getByRole('button',{name:'Configurar agenda',exact:true}).count()===10,'Schedule actions disappeared');
+ await region('Gravação por câmera').getByRole('button',{name:'Próxima página',exact:true}).click();
+ await page.waitForFunction(()=>window.syntheticTableRequests.filter(r=>r.includes('/recording-status')).length>=2);
+ assert((await region('Gravação por câmera').locator('tbody').innerText()).includes('Câmera 11'),'Recording polling reset page');
+ await goto('playback');
+ await page.getByRole('combobox',{name:'Câmera',exact:true}).selectOption('camera-0');
+ await page.getByRole('button',{name:'Buscar gravações',exact:true}).click();await waitRows('Trechos de gravação',10);
+ assert((await region('Trechos de gravação').getByRole('status').innerText()).includes('de 237'),'Timeline was capped at 200');
+ await region('Trechos de gravação').getByRole('button',{name:'Última página',exact:true}).click();await waitRows('Trechos de gravação',7);
+ assert(await region('Trechos de gravação').getByRole('button',{name:'Reproduzir trecho',exact:true}).count()===7,'Playback actions missing after 200');
+ await goto('operations');await waitRows('Diagnóstico das câmeras',10);
+ await region('Diagnóstico das câmeras').getByRole('button',{name:'Última página',exact:true}).click();await waitRows('Diagnóstico das câmeras',7);
+ await region('Histórico da captura').getByRole('button',{name:'Carregar registros anteriores',exact:true}).click();
+ await region('Histórico da captura').getByText(/os 24 registros carregados/).waitFor();
+ // Hold synthetic audit responses to verify navigation invalidates in-flight work.
+ await page.evaluate(()=>{
+  window.heldAudit=[];const original=window.fetch;
+  window.fetch=async(...args)=>{const response=await original(...args);if(String(args[0]).includes('/audit'))return new Promise(resolve=>window.heldAudit.push(()=>resolve(response)));return response;};
+ });
+ await page.getByRole('tab',{name:'Auditoria',exact:true}).click();
+ await page.waitForFunction(()=>window.heldAudit.length===1);
+ await page.getByRole('tab',{name:'Diagnóstico',exact:true}).click();await waitRows('Histórico da captura',10);
+ assert(await region('Histórico da captura').getByRole('button',{name:'Carregar registros anteriores',exact:true}).isEnabled(),'Leaving pending audit stuck busy');
+ await page.evaluate(()=>window.heldAudit.shift()());
+ await page.getByRole('tab',{name:'Auditoria',exact:true}).click();
+ await page.waitForFunction(()=>window.heldAudit.length===1);
+ await page.getByRole('checkbox',{name:'Exibir ações da instalação (contas e serviços)',exact:true}).check();
+ await page.waitForFunction(()=>window.heldAudit.length===2);
+ await page.evaluate(()=>window.heldAudit.shift()());
+ await region('Auditoria').getByText('Carregando registros…',{exact:true}).waitFor();
+ await page.evaluate(()=>{window.heldAudit.shift()();});await waitRows('Auditoria',10);
+ // Disable holding, then query a complete-history action and append its cursor.
+ await page.evaluate(()=>{const held=window.fetch;window.fetch=async(...args)=>{const promise=held(...args);queueMicrotask(()=>{while(window.heldAudit.length)window.heldAudit.shift()();});const timer=setInterval(()=>{while(window.heldAudit.length)window.heldAudit.shift()();},1);try{return await promise;}finally{clearInterval(timer);}};});
+ await page.getByRole('combobox',{name:'Ação no histórico completo',exact:true}).selectOption('live.started');
+ await page.getByRole('button',{name:'Atualizar',exact:true}).click();await waitRows('Auditoria',10);
+ assert(!(await region('Auditoria').locator('tbody').innerText()).includes('Entrada na instalação'),'Server action filter');
+ await region('Auditoria').getByRole('button',{name:'Carregar registros anteriores',exact:true}).click();
+ await region('Auditoria').getByText(/os 15 registros carregados/).waitFor();
+ await page.screenshot({path:'output/playwright/data-table/audit-dark.png'});
+ assert(await page.getByRole('alert').count()===0,'Unexpected integration error');
+ console.log('Integration passed: 11 tables; array search, actions, polling, 237 segments, cursor, pending requests and scope changes.');
+}

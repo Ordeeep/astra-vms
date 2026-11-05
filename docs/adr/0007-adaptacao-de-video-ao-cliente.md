@@ -1,0 +1,5 @@
+# Adaptação de vídeo ao cliente sem impor codec à câmera
+
+O Astra aceitará origens H.264 e H.265 sem exigir que o cliente reconfigure o equipamento para um formato específico. A gravação preservará o codec original, enquanto a entrega ao vivo e a reprodução se adaptarão à capacidade do navegador: reprodução direta quando viável e conversão automática para formato compatível quando necessária, incluindo recuperação controlada de falhas de negociação ou decodificação.
+
+Essa decisão substitui a restrição inicial de apenas sinalizar H.265 como incompatível e de não transcodificar (Q5). A escrita de configurações na câmera continua fora do escopo. A adaptação pertence ao módulo compartilhado de mídia, beneficiando integrações atuais e futuras; não será reimplementada por fabricante. O custo é processamento adicional para conversão, que exige compartilhamento entre consumidores equivalentes e controle de duração, concorrência e memória. A seleção da câmera/perfil permanece do operador; adaptação de codec não autoriza reduzir silenciosamente sua seleção.

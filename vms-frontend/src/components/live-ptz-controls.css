@@ -1,0 +1,125 @@
+.live-ptz-controls {
+  /* Keep the absolute live region inside the collapsible's clipping context. */
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+  height: auto;
+  padding: 12px 8px;
+}
+.live-ptz-control-row {
+  display: grid;
+  grid-template-columns: 28px minmax(0,148px) 28px;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.live-ptz-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--muted-foreground);
+  font-size: 10px;
+  line-height: 16px;
+}
+.live-ptz-speed input {
+  writing-mode: vertical-lr;
+  direction: rtl;
+  width: 16px;
+  height: 90px;
+  margin: 0;
+  accent-color: var(--brand);
+}
+.live-ptz-value { color: var(--foreground); font-size: 10px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.live-ptz-wheel {
+  --ptz-wheel-background: color-mix(in srgb,var(--background) 65%,var(--card));
+  --ptz-cross-background: color-mix(in srgb,var(--muted-foreground) 14%,var(--card));
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  min-width: 0;
+  border-radius: 50%;
+  background: var(--ptz-wheel-background);
+  overflow: hidden;
+  isolation: isolate;
+}
+.live-ptz-wheel::before {
+  content: "";
+  position: absolute;
+  inset: 5.4%;
+  border: 1px solid color-mix(in srgb,var(--border) 75%,transparent);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.live-ptz-cross {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%,-50%);
+  border-radius: 999px;
+  background: var(--ptz-cross-background);
+  pointer-events: none;
+}
+.live-ptz-cross-vertical { width: 20.27%; height: 79.73%; }
+.live-ptz-cross-horizontal { width: 79.73%; height: 20.27%; }
+.live-ptz-direction {
+  position: absolute;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 21.62%;
+  height: 21.62%;
+  transform: translate(-50%,-50%);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--foreground);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: color 130ms,background-color 130ms;
+}
+.live-ptz-direction > svg { width: 16px; height: 16px; }
+.live-ptz-direction[data-diagonal="true"] { color: var(--muted-foreground); }
+.live-ptz-direction[data-diagonal="true"] > svg { width: 13px; height: 13px; }
+.live-ptz-direction[data-home="true"] {
+  width: 25.68%;
+  height: 25.68%;
+  border: 4px solid var(--ptz-cross-background);
+  background: var(--ptz-wheel-background);
+}
+.live-ptz-direction[data-home="true"] > svg { width: 12px; height: 12px; }
+.live-ptz-zoom button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: color-mix(in srgb,var(--background) 40%,var(--card));
+  color: var(--foreground);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.live-ptz-zoom button > svg { width: 14px; height: 14px; }
+.live-ptz-direction:hover, .live-ptz-direction:active, .live-ptz-zoom button:hover {
+  background: var(--brand-selection);
+  color: var(--brand);
+}
+.live-ptz-direction:focus-visible, .live-ptz-zoom button:focus-visible, .live-ptz-speed input:focus-visible { outline: 1px solid var(--ring); outline-offset: 1px; }
+@media (max-width: 640px) {
+  .live-camera-panel:has(.live-ptz-panel[data-state="open"]) { flex-basis: clamp(210px,58vw,230px); width: clamp(210px,58vw,230px); }
+}
+@media (prefers-reduced-motion: reduce) { .live-ptz-direction { transition: none; } }
+
+.live-ptz-retry { font-size:11px; color:var(--brand); cursor:pointer; }
+.live-ptz-direction:disabled,.live-ptz-zoom button:disabled { opacity:.35; cursor:not-allowed; background:transparent; color:var(--muted-foreground); }
+.live-ptz-direction:not(:disabled),.live-ptz-zoom button:not(:disabled) { touch-action:none; user-select:none; -webkit-user-select:none; }

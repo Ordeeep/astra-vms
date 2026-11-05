@@ -1,0 +1,124 @@
+.orbital-dawn {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--background);
+  container-type: size;
+}
+
+/* Swap the scene axes: the planet sits outside the left edge, light faces in. */
+.orbital-dawn-orbit {
+  position: absolute;
+  left: calc(18% + clamp(36px, 6cqw, 110px));
+  top: 50%;
+  width: 100cqh;
+  height: 100cqw;
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+.orbital-dawn-stars,
+.orbital-dawn-starfield,
+.orbital-dawn-light {
+  position: absolute;
+  inset: 0;
+}
+
+.orbital-dawn-stars {
+  bottom: 12%;
+  opacity: .55;
+  mask-image: linear-gradient(#000 15%, #0008 70%, transparent);
+}
+
+.orbital-dawn-starfield {
+  animation: orbital-twinkle 8s ease-in-out infinite alternate;
+}
+
+.orbital-dawn-starfield:nth-child(2) { animation-duration: 11s; animation-delay: -4s; }
+.orbital-dawn-starfield:nth-child(3) { animation-duration: 13s; animation-delay: -7s; }
+.orbital-dawn-starfield i { position: absolute; border-radius: 50%; background: var(--brand-white); }
+
+.orbital-dawn-light { animation: orbital-sunrise 2.4s ease-out both; }
+
+.orbital-dawn-atmosphere {
+  position: absolute;
+  inset: 12% -15% 22%;
+  background: radial-gradient(ellipse at 50% 100%,
+    color-mix(in srgb, var(--brand) 40%, transparent),
+    color-mix(in srgb, var(--brand-action) 18%, transparent) 35%, transparent 68%);
+}
+
+.orbital-dawn-airglow {
+  position: absolute;
+  left: -110%;
+  top: 64%;
+  width: 320%;
+  height: 110%;
+  border-radius: 50%;
+  border-top: 2px solid color-mix(in srgb, var(--brand) 10%, transparent);
+  box-shadow: 0 -12px 54px color-mix(in srgb, var(--brand-action) 20%, transparent);
+}
+
+.orbital-dawn-planet {
+  position: absolute;
+  left: -110%;
+  top: 68%;
+  width: 320%;
+  height: 110%;
+  border-radius: 50%;
+  background: var(--background);
+  border-top: 1px solid color-mix(in srgb, var(--brand) 85%, transparent);
+  box-shadow:
+    0 -1px 6px color-mix(in srgb, var(--brand-white) 40%, transparent),
+    0 -3px 18px color-mix(in srgb, var(--brand) 78%, transparent),
+    0 -12px 56px color-mix(in srgb, var(--brand) 34%, transparent),
+    0 -35px 125px color-mix(in srgb, var(--brand-action) 38%, transparent);
+}
+
+.orbital-dawn-sun {
+  position: absolute;
+  left: 50%;
+  top: 68%;
+  width: clamp(160px, 28vw, 420px);
+  height: 3px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, transparent, var(--brand), var(--brand-white), var(--brand), transparent);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--brand) 75%, transparent);
+  transform: translate(-50%, -50%);
+  animation: orbital-breathe 9s ease-in-out infinite alternate;
+}
+
+.orbital-dawn-sun::before {
+  content: '';
+  position: absolute;
+  inset: -22px -35%;
+  background: radial-gradient(ellipse, color-mix(in srgb, var(--brand) 44%, transparent), transparent 65%);
+  filter: blur(8px);
+}
+
+.orbital-dawn-sun::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 8px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--brand-white);
+  box-shadow: 0 0 10px var(--brand-white), 0 0 25px 5px var(--brand), 0 0 75px 12px var(--brand-action);
+  transform: translate(-50%, -50%);
+}
+
+@keyframes orbital-sunrise {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes orbital-twinkle { from { opacity: .35; } to { opacity: .85; } }
+@keyframes orbital-breathe {
+  from { opacity: .75; transform: translate(-50%, -50%) scaleX(.94); }
+  to { opacity: 1; transform: translate(-50%, -50%) scaleX(1.06); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orbital-dawn-light, .orbital-dawn-starfield, .orbital-dawn-sun { animation: none; }
+}

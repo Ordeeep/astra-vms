@@ -1,0 +1,12 @@
+title = "Astra source publication"
+
+[extend]
+useDefault = true
+
+# Identificador fixo de uma operação de teste; não autentica nenhum serviço.
+# Exceção limitada simultaneamente ao caminho e ao valor exato.
+[allowlist]
+condition = "AND"
+paths = ['''(^|/)(vms-backend/)?internal/app/recording_test\.go$''']
+regexTarget = "secret"
+regexes = ['''^quota-integration-0001$''']

@@ -1,0 +1,55 @@
+.camera-dialog.permission-group-dialog { width: min(880px, calc(100vw - 32px)); padding: 20px; display: flex; flex-direction: column; overflow: hidden; }
+.permission-group-dialog > .section-title { flex-shrink: 0; margin-bottom: 10px; }
+.permission-group-dialog > .section-title h2 { font-size: 20px; line-height: 28px; }
+.permission-group-dialog > form { display: flex; flex-direction: column; min-height: 0; }
+.permission-group-dialog .dialog-form-body { overflow-y: auto; min-height: 0; }
+.permission-group-dialog .dialog-form-fields > .field-label { margin: 0 0 14px; }
+.permission-group-dialog .field-label > [data-slot="input"] { height: 34px; min-height: 34px; }
+.permission-group-dialog .form-actions { flex-shrink: 0; align-items: center; flex-direction: row-reverse; gap: 8px; margin-top: 14px; padding-top: 12px; }
+.permission-group-dialog .form-actions [data-slot="button"] { min-height: 32px; padding-inline: 12px; font-size: 13px; }
+.permission-editor { min-width: 0; }
+.permission-workspace { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 20px; align-items: start; }
+.permission-resources { min-width: 0; border-right: 1px solid var(--border); padding-right: 16px; }
+.permission-search { position: relative; margin-bottom: 8px; }
+.permission-search > svg { width: 15px; height: 15px; position: absolute; top: 9px; left: 10px; color: var(--muted-foreground); pointer-events: none; }
+.permission-search > input { padding-left: 31px; height: 32px; min-height: 32px; font-size: 13px; }
+.permission-resource-list { max-height: min(340px, calc(100dvh - 290px)); overflow: auto; padding: 3px; }
+.permission-resource { display: flex; align-items: center; text-align: left; width: 100%; min-width: 0; min-height: 34px; gap: 8px; padding: 6px 8px; border-radius: var(--radius); color: var(--foreground); font-size: 13px; line-height: 20px; cursor: pointer; }
+.permission-resource > svg { width: 16px; height: 16px; flex-shrink: 0; }
+.permission-resource:hover { background: var(--muted); }
+.permission-resource[aria-pressed="true"] { background: var(--brand-selection); color: var(--ring); box-shadow: inset 2px 0 var(--ring); }
+.permission-resource-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.permission-resource-count { font-size: 11px; font-variant-numeric: tabular-nums; color: var(--muted-foreground); }
+.permission-details { min-width: 0; padding-right: 3px; }
+.permission-target-heading { border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 10px; }
+.permission-target-heading h3 { margin: 0; font-size: 16px; line-height: 24px; font-weight: 600; overflow-wrap: anywhere; }
+.permission-target-heading p { font-size: 12px; line-height: 18px; margin: 2px 0 0; }
+.permission-details h4 { font-size: 12px; color: var(--muted-foreground); font-weight: 600; line-height: 18px; margin: 0 0 4px; }
+.permission-action { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 32px; }
+.permission-action-label { display: flex; align-items: center; gap: 9px; flex: 1; min-width: 0; min-height: 32px; padding: 5px 2px; cursor: pointer; font-size: 14px; line-height: 22px; }
+.permission-action-label > [data-slot="checkbox"] { width: 16px; height: 16px; }
+.permission-action-label > span:not(.sr-only) { min-width: 0; overflow-wrap: anywhere; }
+.permission-origin { display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0; color: var(--ring); text-align: left; cursor: pointer; font-size: 11px; line-height: 18px; }
+.permission-origin:hover { text-decoration: underline; }
+.permission-origin svg { width: 12px; height: 12px; flex-shrink: 0; }
+.permission-administration, .permission-unknown { border-top: 1px solid var(--border); margin-top: 8px; padding-top: 8px; }
+.permission-empty { padding: 8px; font-size: 12px; line-height: 18px; margin: 0; }
+.permission-note, .permission-legacy-note { font-size: 12px; line-height: 18px; margin: 8px 0 0; }
+.permission-summary { font-size: 12px; line-height: 18px; color: var(--muted-foreground); }
+.permission-editor > .permission-summary { display: none; }
+.permission-group-dialog .form-actions > .permission-summary { flex: 1; min-width: 140px; margin-right: auto; }
+.permission-catalog-error { padding: 12px 0; }
+.permission-mobile-target { display: none; }
+@media (max-width: 640px) {
+  .camera-dialog.permission-group-dialog { padding: 16px; }
+  .permission-group-dialog > .section-title h2 { font-size: 18px; line-height: 24px; }
+  .permission-workspace { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .permission-resources { display: none; }
+  .permission-mobile-target { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+  .permission-mobile-target > [data-slot="native-select-wrapper"] { flex: 1; min-width: 0; }
+  .permission-mobile-target select { max-width: 100%; }
+  .permission-action-label { font-size: 13px; }
+  .permission-origin { font-size: 10px; }
+  .permission-group-dialog .form-actions > .permission-summary { display: none; }
+  .permission-editor > .permission-summary { display: block; margin-top: 10px; }
+}
