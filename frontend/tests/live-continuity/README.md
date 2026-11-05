@@ -4,7 +4,7 @@ O zoom digital pode ser verificado com `run-code --filename tests/live-continuit
 
 Ensaio com os componentes reais `LiveWorkspace` e `LiveViewProvider`, reconciliação do React e decodificação nativa de vídeo gerado por canvas no Chromium. A API é simulada; não exige login nem conecta a câmeras. No modo padrão, a sinalização WebRTC também é simulada. Abrir a URL com `#native` usa dois peers WebRTC reais no navegador, incluindo SDP, transporte RTP e estatísticas reais de recepção. Não mede codecs de equipamentos nem capacidade do servidor.
 
-Na pasta `vms-frontend`, usando PowerShell:
+Na pasta `frontend`, usando PowerShell:
 
 ```powershell
 npx --yes esbuild@0.28.2 tests/live-continuity/fixture.tsx --bundle --outfile=tests/live-continuity/.generated/fixture.js --tsconfig=tsconfig.json --define:process.env.NODE_ENV='"production"'

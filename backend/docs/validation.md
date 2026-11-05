@@ -4,7 +4,7 @@ Os testes combinam verificações unitárias e integrações com PostgreSQL, NTF
 
 ## Testes sem infraestrutura
 
-Na pasta `vms-backend`, com Go compatível com `go.mod`:
+Na pasta `backend`, com Go compatível com `go.mod`:
 
 ```powershell
 go test ./... -count=1 -timeout 120s

@@ -1,6 +1,6 @@
-# vms-backend
+# backend
 
-Core e serviços de mídia do VMS local para Windows 11. O frontend Next.js/Node fica no repositório independente `vms-frontend`.
+Core e serviços de mídia do VMS local para Windows 11. O frontend Next.js/Node fica no repositório independente `frontend`.
 
 Há implementação de autenticação, tenants/grupos/permissões, sites, câmeras RTSP, mosaicos, vídeo WebRTC, agenda de gravação, acervo, reprodução, exportação MP4/JSON, retenção/cotas, auditoria e eventos SSE. A homologação completa continua pendente; não considerar a implementação uma comprovação de capacidade P1.
 

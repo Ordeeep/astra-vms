@@ -16,7 +16,7 @@ FORBIDDEN_PARTS = {
 }
 TEXT_SUFFIXES = {".md", ".txt", ".go", ".mod", ".sum", ".sql", ".ts", ".tsx",
                  ".css", ".mjs", ".cjs", ".json", ".ps1", ".py", ".toml", ".svg"}
-ASSETS = {"vms-frontend/src/app/apple-icon.png", "vms-frontend/src/app/favicon.ico"}
+ASSETS = {"frontend/src/app/apple-icon.png", "frontend/src/app/favicon.ico"}
 DOTFILES = {".gitignore", ".gitleaks.toml", "LICENSE"}
 
 

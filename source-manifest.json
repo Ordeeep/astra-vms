@@ -11,8 +11,8 @@
     },
     {
       "path": ".gitleaks.toml",
-      "bytes": 376,
-      "sha256": "5d45c427b24bcc464a148c1fccaa7f85036ad696d55a893f9074c4f0b3c57206"
+      "bytes": 372,
+      "sha256": "45f6d01f6d16d32d6aee6182b250492b2fe2fc556a646584cc8c3cc24b8a32dd"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -31,8 +31,638 @@
     },
     {
       "path": "README.md",
-      "bytes": 6796,
-      "sha256": "a89a33377051aa3302c157475ebc4b61bb3ed4ccbf4c5c6d130bb46c53fee1fd"
+      "bytes": 6744,
+      "sha256": "7d6c637d9a5edcea46b33fdbefa4e140bffb77db3772384666577db5b21137bc"
+    },
+    {
+      "path": "backend/.gitignore",
+      "bytes": 580,
+      "sha256": "78ca639a60688b8cf8308970fd8bc0d477b056b674c2d00f5ab3006a54c80b75"
+    },
+    {
+      "path": "backend/README.md",
+      "bytes": 4641,
+      "sha256": "4784b8d95f036bbb9cacc1ba1d8bb49b011c5974a5ad907266e68005bb410127"
+    },
+    {
+      "path": "backend/cmd/vms-service/main_windows.go",
+      "bytes": 1742,
+      "sha256": "a99e6bef0c792e0cb1644acd2e67b1f8e6eaa4fd6a98a964907ab2ec593fd26b"
+    },
+    {
+      "path": "backend/cmd/vms-worker/main.go",
+      "bytes": 3673,
+      "sha256": "bd704a2f2befd47fc4bba98d265daf0eb747bbd0b7eae5edcf0cedd60ba89476"
+    },
+    {
+      "path": "backend/cmd/vms/main.go",
+      "bytes": 4655,
+      "sha256": "9ac86ba4eea0254fe815f259f12e10778de2e5f23e44937ab2a7685bf989c436"
+    },
+    {
+      "path": "backend/deploy/windows/README.md",
+      "bytes": 5193,
+      "sha256": "920e94d7fa0e27310e48a19df1755ade6de3918cd2b1c1b9fa99cd6833fd4d60"
+    },
+    {
+      "path": "backend/deploy/windows/THIRD-PARTY.md",
+      "bytes": 1341,
+      "sha256": "6d49833bf34b107e6faa80be0e213c43969f8a2a94843612f21bb0c170f1c94c"
+    },
+    {
+      "path": "backend/deploy/windows/backup.ps1",
+      "bytes": 1360,
+      "sha256": "48dc046d8b33223ff81d6054c3e73b772619fbad3dc42861e4eb0f43df244769"
+    },
+    {
+      "path": "backend/deploy/windows/build-package.ps1",
+      "bytes": 3235,
+      "sha256": "b9bbda17ff1f9b4df39f456e07a098196e5e74dfa3d51779a71bbe1267ede6e3"
+    },
+    {
+      "path": "backend/deploy/windows/install.ps1",
+      "bytes": 12750,
+      "sha256": "8219f01300b1f9153abc014cc209d6e1abc7fe913b86c371cdf4232d1eb4264e"
+    },
+    {
+      "path": "backend/deploy/windows/verify-package.ps1",
+      "bytes": 6207,
+      "sha256": "b65feee5000dd5e16ef1406e80b4522a654a96fb0240595511c142b892d271df"
+    },
+    {
+      "path": "backend/docs/camera-availability.md",
+      "bytes": 8242,
+      "sha256": "1f4c0fff2cfa8bef4bb4509dd0a1163ba56e2a30d06ae433994b87412723a6e5"
+    },
+    {
+      "path": "backend/docs/camera-deletion.md",
+      "bytes": 3084,
+      "sha256": "0a1703e9e2c1c5b368cec34518f91e9940a9e25f94dddd507fb21121a46ce717"
+    },
+    {
+      "path": "backend/docs/media-control.md",
+      "bytes": 2354,
+      "sha256": "0ece326305a977405401e89334cdf4911875647bcc5164be40869fdb6cdc0d38"
+    },
+    {
+      "path": "backend/docs/ptz.md",
+      "bytes": 5572,
+      "sha256": "97416a3713b8d293b7f01f659e1fee5246d26193fe6a0475d4fb3bc484ab4e96"
+    },
+    {
+      "path": "backend/docs/storage-index.md",
+      "bytes": 2725,
+      "sha256": "aa11e458ec00c8dee1f2273c63fd2fd58f6fabafb1be26e86f341b1e8fa62e22"
+    },
+    {
+      "path": "backend/docs/validation.md",
+      "bytes": 3661,
+      "sha256": "51dba62664ef8eeca3a76f810a55a3dd03865a6065639be13412570654bcf6de"
+    },
+    {
+      "path": "backend/go.mod",
+      "bytes": 1474,
+      "sha256": "e7771164a3f39135d35845f394330d1326684875fa04560028e40cc45871756f"
+    },
+    {
+      "path": "backend/go.sum",
+      "bytes": 8319,
+      "sha256": "9b41143b51ac00f95ab9642824505699d4c16f35f4830ece5bab60a7f6e02c39"
+    },
+    {
+      "path": "backend/internal/app/access.go",
+      "bytes": 22007,
+      "sha256": "4b702185b93f16b06867e393dc0b572d5fb4390a40b276cb5373d9ea5a72a9c2"
+    },
+    {
+      "path": "backend/internal/app/access_test.go",
+      "bytes": 3985,
+      "sha256": "50d4557581f8a2ef7be332794ac7a0cea8268fd2828d11b4a86018f100216c2a"
+    },
+    {
+      "path": "backend/internal/app/account.go",
+      "bytes": 3055,
+      "sha256": "8c377202a60130b9a12d9bd23ce9abbd0a16d99a2eb90c0fca67f8d1cddb889b"
+    },
+    {
+      "path": "backend/internal/app/account_test.go",
+      "bytes": 5185,
+      "sha256": "6ca4dfcbb8193cc2f17eeba77aa5221afed4cde58ab75bc988af39a3d3287a41"
+    },
+    {
+      "path": "backend/internal/app/adaptive_live_test.go",
+      "bytes": 3691,
+      "sha256": "f1820d7dc00614848d30e0c64e30991fde96d97b0d49f1c7d23aada6a9b99cb3"
+    },
+    {
+      "path": "backend/internal/app/app.go",
+      "bytes": 21740,
+      "sha256": "53840726189497b6a078ba844caa0b9c99f66ad619a010c020f6da31e882c1b0"
+    },
+    {
+      "path": "backend/internal/app/app_test.go",
+      "bytes": 3690,
+      "sha256": "98c77741c849bace4382c7f513e09cf8e7dcbc5bcb82b331b1086801486a4337"
+    },
+    {
+      "path": "backend/internal/app/availability.go",
+      "bytes": 10700,
+      "sha256": "4b029b89206f28c093a346699e057eb4b7acd308c84144379bec67e7dab38d53"
+    },
+    {
+      "path": "backend/internal/app/availability_integration_test.go",
+      "bytes": 4302,
+      "sha256": "934136e26f3423d9e7bc1cecf75caea5e4fef71ee341e0463def530d22301da1"
+    },
+    {
+      "path": "backend/internal/app/availability_test.go",
+      "bytes": 6232,
+      "sha256": "d6b9152bbfe40321fc660762341cd6559a3b912aed8e9c422a2d249b0445a62d"
+    },
+    {
+      "path": "backend/internal/app/camera_configuration.go",
+      "bytes": 4927,
+      "sha256": "d81ff503ddcfbd0da9db6f643402cbdaac39844b09256f051a4c81710cb5f78e"
+    },
+    {
+      "path": "backend/internal/app/camera_configuration_test.go",
+      "bytes": 8275,
+      "sha256": "20147fa141f31ca2f5413c0660573aef547c2fae67932d879e448dadd790812d"
+    },
+    {
+      "path": "backend/internal/app/camera_deletion.go",
+      "bytes": 8587,
+      "sha256": "feab796ffd8ef81cf0ea740571968ab08f75357b84a166ba9b15c30bc222eb79"
+    },
+    {
+      "path": "backend/internal/app/camera_deletion_test.go",
+      "bytes": 9808,
+      "sha256": "4b22da6b89c4732d50f0f9deaa4208be4becaf6ee4b52eee245878c07e533cac"
+    },
+    {
+      "path": "backend/internal/app/compatible_playback.go",
+      "bytes": 3337,
+      "sha256": "c313b0350367d59ca6702bf1bca4da61d93d204cc2dff31d89657b9dbd29414f"
+    },
+    {
+      "path": "backend/internal/app/compatible_playback_test.go",
+      "bytes": 2877,
+      "sha256": "ee92d375b16c86056ba04129bc736e8e6d9477a3d870066f5a6e0ba742cc8165"
+    },
+    {
+      "path": "backend/internal/app/dahua_capacity_test.go",
+      "bytes": 3258,
+      "sha256": "e7b72cb1fb19197f0978583dab0d3a9257c36931f3e6c03a0608eafbbb97f249"
+    },
+    {
+      "path": "backend/internal/app/delivery.go",
+      "bytes": 847,
+      "sha256": "5633b88238342a4fa4cf370882c34ea58800f1e2ebbdc225a4513baebf31c718"
+    },
+    {
+      "path": "backend/internal/app/delivery_test.go",
+      "bytes": 864,
+      "sha256": "66db8e0103a12c371677bb75089c28b21289d02162b74cbddce7f92387a8117b"
+    },
+    {
+      "path": "backend/internal/app/domain_access_test.go",
+      "bytes": 5672,
+      "sha256": "ed6188c45b3bde37cfabe60353eaa22da09b7a2310deea41f3235556bafe0400"
+    },
+    {
+      "path": "backend/internal/app/email_login_test.go",
+      "bytes": 4840,
+      "sha256": "18da7c0f2fca7ec2f78abb7f380c1c3fea77f132506778e045ef816fc5453541"
+    },
+    {
+      "path": "backend/internal/app/events.go",
+      "bytes": 8831,
+      "sha256": "31e834dfffcec217ee1f777532f32edc8d1e86c709928852e47b73bac1f584fa"
+    },
+    {
+      "path": "backend/internal/app/events.sql",
+      "bytes": 2774,
+      "sha256": "5020ad936db133b62ebc0064eb27a8c5a25f76d3497edd2aae3b73a39f0f127f"
+    },
+    {
+      "path": "backend/internal/app/events_test.go",
+      "bytes": 10408,
+      "sha256": "219adda5deb706b667610b3260d73263350f7b468afdec2d5e983144f28cd0c9"
+    },
+    {
+      "path": "backend/internal/app/export_plan_test.go",
+      "bytes": 2141,
+      "sha256": "8477b8f64a55c521d626ae5251d450b31fee1fb72bea7e8cbefe6eb60a47cfcd"
+    },
+    {
+      "path": "backend/internal/app/exports.go",
+      "bytes": 18872,
+      "sha256": "f53d8c4cbaf370df188c564a7226ac885b32086b41c8788ba3a8d4a9465f444f"
+    },
+    {
+      "path": "backend/internal/app/hikvision_test.go",
+      "bytes": 6462,
+      "sha256": "787e061915e77ec71c1f0796cc7dbcc321c0f584e1d9fd578e48ffb2771a0bd8"
+    },
+    {
+      "path": "backend/internal/app/integrations.go",
+      "bytes": 6905,
+      "sha256": "3c37ff1a3bf95f69530e6d172060c4ba364925e4c3c05b8e41efa0e7b33c0812"
+    },
+    {
+      "path": "backend/internal/app/integrations_internal_test.go",
+      "bytes": 1719,
+      "sha256": "00ea3ef39099cdd840c743114562a8b02ec798ffaf6c2a2bd23f421ed4d80476"
+    },
+    {
+      "path": "backend/internal/app/integrations_test.go",
+      "bytes": 11964,
+      "sha256": "f4d15ba8b5ee5627dbbeb14a9b1fcefdaf5841bdbc69de9ae1b9d4c2f0a0a2d9"
+    },
+    {
+      "path": "backend/internal/app/inventory.go",
+      "bytes": 18139,
+      "sha256": "73447d77c36668d108d8571e13cc236b0b9b2885f0c72d22e3c00a095647c154"
+    },
+    {
+      "path": "backend/internal/app/inventory_test.go",
+      "bytes": 5933,
+      "sha256": "00cacd7bb0b9d85ae27d9be120b851b0170ebfd42b5b1d2aa02ca3dd0702ad54"
+    },
+    {
+      "path": "backend/internal/app/live_test.go",
+      "bytes": 7564,
+      "sha256": "99f128b34dca000e6c01eb3374b7facea43df78df78887a51fc35f96ad77c47e"
+    },
+    {
+      "path": "backend/internal/app/media.go",
+      "bytes": 15586,
+      "sha256": "3b70bd2787f0fbb1ac98f1b37e5a5e17cde3b27916c0811d060d05038baa42b3"
+    },
+    {
+      "path": "backend/internal/app/migrations.go",
+      "bytes": 3181,
+      "sha256": "8b32442d26dc086d1d792e62314ddfd66d5b9220f2445a4b37d4d3a53675ee33"
+    },
+    {
+      "path": "backend/internal/app/mosaics.go",
+      "bytes": 9127,
+      "sha256": "c6fe58e8f271cb581ba29fc586ce7435bd697660f955e691b3917bb51683a2e0"
+    },
+    {
+      "path": "backend/internal/app/mosaics_test.go",
+      "bytes": 1519,
+      "sha256": "e83a6a4526eb87bff14ba241e6caac2b40ac634a313a02b79a5a776e7d3ded72"
+    },
+    {
+      "path": "backend/internal/app/multisource_test.go",
+      "bytes": 7963,
+      "sha256": "8b14a6d09a399f7698fa4aa4d1bdb7e8368b7d2e1a4bef69015b87ecc51cbdc3"
+    },
+    {
+      "path": "backend/internal/app/operations.go",
+      "bytes": 8512,
+      "sha256": "384684c69ec643ebd30e7321ff4d97a40aa743cc03e7b03ad4b09785e54a7e97"
+    },
+    {
+      "path": "backend/internal/app/operations_test.go",
+      "bytes": 3211,
+      "sha256": "d933f403a1969f54eebc6aa5dec2b1eabfc8ee1a71ba71c1f347fbc3a8b61c93"
+    },
+    {
+      "path": "backend/internal/app/playback.go",
+      "bytes": 18053,
+      "sha256": "ae074001ea9835d436540df77a0af27bc7b380d2011664bd539ceb23059aff1b"
+    },
+    {
+      "path": "backend/internal/app/playback_delivery_test.go",
+      "bytes": 1547,
+      "sha256": "12169f667871b46120eb580f8ef4d9e3fad93ae6a233d4f6e576c03c1ea7e52c"
+    },
+    {
+      "path": "backend/internal/app/ptz.go",
+      "bytes": 4526,
+      "sha256": "ed986de0d8465b15c779cf26f7d1de53bf730e8d5cefb298fa287808741cc123"
+    },
+    {
+      "path": "backend/internal/app/ptz_test.go",
+      "bytes": 6166,
+      "sha256": "a855e36a68068ffcab01d6d4fffe9cc5da52d35d0eb1b498ac4d5d7c39ab1428"
+    },
+    {
+      "path": "backend/internal/app/quota.go",
+      "bytes": 9933,
+      "sha256": "7d47e51351a75d4631cd29de2349feebd0021c7bcc37dd2572b178e694dde659"
+    },
+    {
+      "path": "backend/internal/app/quota_test.go",
+      "bytes": 4736,
+      "sha256": "a24d6d3316e7f5d1e2743ade438744afc660bc721b36b2442e05254a1de38eb2"
+    },
+    {
+      "path": "backend/internal/app/recording.go",
+      "bytes": 23265,
+      "sha256": "7fd8cd4a4b0153b73d9649e4f55d427a07e7e8e4fd2213fce294ebaae90cbe02"
+    },
+    {
+      "path": "backend/internal/app/recording_test.go",
+      "bytes": 11889,
+      "sha256": "293f153727566f0b2eeffad5e5b1728e20282fa31d28b5942b810777e540cd66"
+    },
+    {
+      "path": "backend/internal/app/restart_test.go",
+      "bytes": 1876,
+      "sha256": "f7f70ea9e0323ac346aa695296f797e9269a04c81023e6deb00523f8e4566862"
+    },
+    {
+      "path": "backend/internal/app/schedule_test.go",
+      "bytes": 1098,
+      "sha256": "796506de2246011df80b9c7303533b2034de12fa659899f8272fae648a6cd4f4"
+    },
+    {
+      "path": "backend/internal/app/schema.sql",
+      "bytes": 9460,
+      "sha256": "1496596b1e529d086ee76eacd924b735f8437c5bdd5ff75436a6259348bb3edc"
+    },
+    {
+      "path": "backend/internal/app/source_test.go",
+      "bytes": 3632,
+      "sha256": "af340bb273c244526f98e59098228fee1b19ffecc41d4065fd9c75786101bd89"
+    },
+    {
+      "path": "backend/internal/app/vault.go",
+      "bytes": 1730,
+      "sha256": "0379097a8563e001b0000dc3e2fc23021a39ab29188b191fc757a7df0941ba61"
+    },
+    {
+      "path": "backend/internal/camera/dahua.go",
+      "bytes": 12376,
+      "sha256": "e9d9cef76f614f6a562767c1c6ed06de8914891abc468c36964c6ea8ba16fbdc"
+    },
+    {
+      "path": "backend/internal/camera/dahua_capacity_test.go",
+      "bytes": 2307,
+      "sha256": "84d37311eff523baab4344b21f180097baaf4541588728941f49f1744a7444ef"
+    },
+    {
+      "path": "backend/internal/camera/dahua_test.go",
+      "bytes": 8131,
+      "sha256": "73a7810f85db993cfa04de69255aafedcd4861fa2f9a00b429d24940995cc39f"
+    },
+    {
+      "path": "backend/internal/camera/hikvision.go",
+      "bytes": 7377,
+      "sha256": "754fdb3c5ee6bf2334585e35745e1a1dd71185c7e4e330479c72709be643849a"
+    },
+    {
+      "path": "backend/internal/camera/hikvision_ptz.go",
+      "bytes": 3905,
+      "sha256": "8ea691767df6c211f16590ab61cbab48a475d611bd66f71ccb573d4ebe4b3d1f"
+    },
+    {
+      "path": "backend/internal/camera/hikvision_test.go",
+      "bytes": 9554,
+      "sha256": "e368ca0457d74c407b5b2add98a2f44458380cd4ffe08f9182e9023e2bfffda2"
+    },
+    {
+      "path": "backend/internal/camera/integration.go",
+      "bytes": 7326,
+      "sha256": "ca7991d0c31a331c2db18a7c2ffb4cef9424ca9647d6b66c887a6c9a55bb5209"
+    },
+    {
+      "path": "backend/internal/camera/ptz.go",
+      "bytes": 1260,
+      "sha256": "f7c59a2709cf151a1c1ff3a554418204a201124c76f964b7eb1ddec85019e66d"
+    },
+    {
+      "path": "backend/internal/camera/ptz_test.go",
+      "bytes": 4555,
+      "sha256": "edde1d54dcf96dc32c7a199e83e38cf512fa45c9ff97bfd41c9e3fe97e988593"
+    },
+    {
+      "path": "backend/internal/media/archive_compatible.go",
+      "bytes": 9199,
+      "sha256": "f07383c620a9ef6f2be7b96a19b208d7adb653bbc3ac7a204d4b030d7d04c4fc"
+    },
+    {
+      "path": "backend/internal/media/archive_service.go",
+      "bytes": 15694,
+      "sha256": "b17abc89684d203b9a4fb5db1bf45fb217ab6bf206cdae21296130b874f493e1"
+    },
+    {
+      "path": "backend/internal/media/availability.go",
+      "bytes": 7800,
+      "sha256": "dbf6e54ba4d0ca5db1a6561efd3f3bfc222db58105b445634da6772145cc1028"
+    },
+    {
+      "path": "backend/internal/media/availability_test.go",
+      "bytes": 8341,
+      "sha256": "ecbea08941f56926f4985ddbf743e14ce137fcedc05bc63c0c1843964bbd365f"
+    },
+    {
+      "path": "backend/internal/media/camera_cleanup.go",
+      "bytes": 1899,
+      "sha256": "9f078c5d251fa6ab30ecdd171320b4294baf8929f94a0286e20736853c69bfe1"
+    },
+    {
+      "path": "backend/internal/media/camera_cleanup_test.go",
+      "bytes": 5264,
+      "sha256": "da679017711a3533c7831afcdeabbaa06d8aefd9321b36bb319cdb979877fa8a"
+    },
+    {
+      "path": "backend/internal/media/compatible_test.go",
+      "bytes": 12026,
+      "sha256": "93d7ce8650d8485a6296060c5296bdf8e4cf54df36cf08eaa77a0472edcf852e"
+    },
+    {
+      "path": "backend/internal/media/deadline_test.go",
+      "bytes": 796,
+      "sha256": "c0b58ac517c641bf02cf86cb3e24ef09ecad28df2aada2c566af3dfa0090f655"
+    },
+    {
+      "path": "backend/internal/media/export.go",
+      "bytes": 9387,
+      "sha256": "289820b9ebfc76a1f9f95c9e1d000a2ceb84af0162af5737071e65a2ad9becc6"
+    },
+    {
+      "path": "backend/internal/media/export_cleanup.go",
+      "bytes": 786,
+      "sha256": "d5b0d480119219c05148aff1859a7add863200886b4c936ab3d2bc0e45b39666"
+    },
+    {
+      "path": "backend/internal/media/export_expiry_test.go",
+      "bytes": 2225,
+      "sha256": "8963c865e4c23d9fb7c0e11aa22921a20c05a069c64936391846501d1b60b724"
+    },
+    {
+      "path": "backend/internal/media/export_service.go",
+      "bytes": 11700,
+      "sha256": "feba0431e53c4ac39cdc0cc01ea9c35a01c3fa63a5026c734dd030c1760a5e50"
+    },
+    {
+      "path": "backend/internal/media/export_test.go",
+      "bytes": 2659,
+      "sha256": "6e24df11c6b0ef6baf8b932808d32655bfb1c26bfeeaab4c74832ddbbe02cac0"
+    },
+    {
+      "path": "backend/internal/media/guard.go",
+      "bytes": 12243,
+      "sha256": "6207077751cb05c9e681c85e4b55c48dd26193a2046e1cfb8f3fe845438d49ca"
+    },
+    {
+      "path": "backend/internal/media/guard_budget_test.go",
+      "bytes": 1172,
+      "sha256": "79d82b2756e93386785dc454868ef509b84b1eac6c379c1e72c79a53d7579766"
+    },
+    {
+      "path": "backend/internal/media/guard_cleanup_test.go",
+      "bytes": 4318,
+      "sha256": "9132f8ebcf79b329a8186bc3610c734724592e5615b9191080875cae855300fd"
+    },
+    {
+      "path": "backend/internal/media/guard_test.go",
+      "bytes": 5645,
+      "sha256": "69673f9891d5c6118028a60d070ae776aa03bd6dd8b4a0ed59b92b5187d1bf27"
+    },
+    {
+      "path": "backend/internal/media/live_compatible.go",
+      "bytes": 8391,
+      "sha256": "601f90eb4e8fa8fcd758915f35a50d6b289e031b475920f41dcc45c6a30c795b"
+    },
+    {
+      "path": "backend/internal/media/log.go",
+      "bytes": 1548,
+      "sha256": "e58854f5a398ac5a625cafc8bd42d0804bf01ad3c9fd0363183f6c0ae9fbb41f"
+    },
+    {
+      "path": "backend/internal/media/log_test.go",
+      "bytes": 1165,
+      "sha256": "0e24100017068818fb89b5de4dc7643119fb40dae52420657cb076960e383b15"
+    },
+    {
+      "path": "backend/internal/media/probe.go",
+      "bytes": 2414,
+      "sha256": "3dbac0a1670501cb11a279cadf74416d56e20983e39baa15c2c0ec7afb0066e3"
+    },
+    {
+      "path": "backend/internal/media/process_test.go",
+      "bytes": 1795,
+      "sha256": "14c0dcf912a3f83e73e0c71cd9148556e6b675692c7f98b9de1dce9ec6f03ab5"
+    },
+    {
+      "path": "backend/internal/media/process_windows.go",
+      "bytes": 1604,
+      "sha256": "4f039f73955e44e9c6a568190b80df7ba2fa8d74b441764209b908d4be4124c4"
+    },
+    {
+      "path": "backend/internal/media/record.go",
+      "bytes": 3574,
+      "sha256": "ae6296f69e7c05cea981b3f6cfcbd5de5c8b0b4d74e939e6399c90da0bfb2a74"
+    },
+    {
+      "path": "backend/internal/media/record_test.go",
+      "bytes": 2707,
+      "sha256": "efa1a62ce2bf0ca303e2b5ec7a82489864bd745affbc746f92aed188548a66e5"
+    },
+    {
+      "path": "backend/internal/media/rtsp_archive.go",
+      "bytes": 12085,
+      "sha256": "75bfbc1975691a68d7e68ff6f24a5440755960651787688498ea6148a359bf9c"
+    },
+    {
+      "path": "backend/internal/media/rtsp_archive_test.go",
+      "bytes": 2101,
+      "sha256": "a5c123bde64a8daeba1787b6fdae38adb975781aa1136a36b1ae99b8ab3042b0"
+    },
+    {
+      "path": "backend/internal/media/rtsp_time_test.go",
+      "bytes": 392,
+      "sha256": "e23744f7b261269089d4b4c4da6bcd2e84509ff1f884a9dbe21d2afbadcbff9e"
+    },
+    {
+      "path": "backend/internal/ptz/control.go",
+      "bytes": 5079,
+      "sha256": "6700bfab5b3493942845e39cd0b34be1926dbf2932ef494f1f8f321f93e08a2e"
+    },
+    {
+      "path": "backend/internal/ptz/control_test.go",
+      "bytes": 6094,
+      "sha256": "916e93eee872aa957c9da4f06f669d4a7fab40a32e89dd1f895a680e69844192"
+    },
+    {
+      "path": "backend/internal/servicehost/supervisor.go",
+      "bytes": 4336,
+      "sha256": "946976f98f68c47c9f1d488f3c88719c7ab64ff43a584d4fb92b792f78ffb57b"
+    },
+    {
+      "path": "backend/internal/servicehost/supervisor_test.go",
+      "bytes": 2472,
+      "sha256": "dcfefb62417ebd5852b9687677cefee47c235cd859da00e2f72e3c0928a95fe0"
+    },
+    {
+      "path": "backend/internal/storage/catalog_test.go",
+      "bytes": 1412,
+      "sha256": "42b6e1f8119c6a4a5c16718d731742f98514b00baabaa4d6cb8b7da0b211a5a4"
+    },
+    {
+      "path": "backend/internal/storage/checkpoint_test.go",
+      "bytes": 2914,
+      "sha256": "7a1bfc9a53b632177d1fdd14bf595b5ff10fcd3998b956821b8388eb01f25498"
+    },
+    {
+      "path": "backend/internal/storage/files_windows.go",
+      "bytes": 2923,
+      "sha256": "92007c3e400559ee094ff6ac8950bee7957bebc040289be39a4fdff485faf70c"
+    },
+    {
+      "path": "backend/internal/storage/grow_test.go",
+      "bytes": 1214,
+      "sha256": "76d6d69f966d0753019ba084f10f3e368b6ca62b3298fa01505783ed953cd00a"
+    },
+    {
+      "path": "backend/internal/storage/index.go",
+      "bytes": 13621,
+      "sha256": "bcba79edc6a637683918c0566701dcac396ba23ca977dd0d032b2bfec734ef1a"
+    },
+    {
+      "path": "backend/internal/storage/ledger.go",
+      "bytes": 2735,
+      "sha256": "cab5da27d2a6cc4fa80143a412f552d9905e44b007d2f04005a4a422e649b55f"
+    },
+    {
+      "path": "backend/internal/storage/migration_test.go",
+      "bytes": 2900,
+      "sha256": "59caf6204b0108198af698d6b2aac72c12cef4c37a435533035f9d07a1884de4"
+    },
+    {
+      "path": "backend/internal/storage/reconcile.go",
+      "bytes": 3648,
+      "sha256": "2c03c6664121c4d088932a5cd49534eb05327c0b0efe2679b6f42c35476d1bce"
+    },
+    {
+      "path": "backend/internal/storage/reduction.go",
+      "bytes": 2370,
+      "sha256": "035913685f4f1127262504b2253f03a6da4cfaf32958910fbe8ae553fe6ca5f5"
+    },
+    {
+      "path": "backend/internal/storage/reduction_test.go",
+      "bytes": 1436,
+      "sha256": "355106fad52e3833af41643af15192ea8caff5a2de9ffb097addf9ded2ee7eed"
+    },
+    {
+      "path": "backend/internal/storage/scale_test.go",
+      "bytes": 1458,
+      "sha256": "1efe7358b44a1313fb939ef38ff8609c0ee7a98db35cfc539410495ca5088b03"
+    },
+    {
+      "path": "backend/internal/storage/store.go",
+      "bytes": 19114,
+      "sha256": "dbbac20fe8cc2720253deae2d94d744c646f4939d0c869ae40e7d5cac9f579ea"
+    },
+    {
+      "path": "backend/internal/storage/store_test.go",
+      "bytes": 9661,
+      "sha256": "a496540c497500b79f0ba60134b2ef7991ef8ac9e852cda094083d8acc49924b"
     },
     {
       "path": "docs/adr/0001-gravacao-centralizada.md",
@@ -81,8 +711,8 @@
     },
     {
       "path": "docs/adr/0010-disponibilidade-de-camera-baseada-em-video.md",
-      "bytes": 2549,
-      "sha256": "6041802c2a84565072955b0d74b866528e24cea2c93b78a147f165ef18fe0c60"
+      "bytes": 2545,
+      "sha256": "f6d601e0d780f9f17b275d8bc457ddb0889c0b58b620573a108070d69ce3baf0"
     },
     {
       "path": "docs/adr/0011-controle-ptz-por-adaptadores.md",
@@ -106,13 +736,758 @@
     },
     {
       "path": "docs/development.md",
-      "bytes": 5431,
-      "sha256": "c22403e3280bf2840669bd5e6109f7d84f04d5250e79351a405eeac2294fa12e"
+      "bytes": 5403,
+      "sha256": "dec2609dbd8a463b47f4e5e9c4346021bc7893450dbcfaaee12790b43da935a2"
     },
     {
       "path": "docs/publication.md",
       "bytes": 2361,
       "sha256": "d500e9a7aa2c17668977a0d6dc622acaee4ac2937dd25509078ce5c0223f4ff1"
+    },
+    {
+      "path": "frontend/.gitignore",
+      "bytes": 600,
+      "sha256": "5fb0e66f04462b87a2525cc01710a233169d2e7224cf22037386a5a15400eeaf"
+    },
+    {
+      "path": "frontend/README.md",
+      "bytes": 2159,
+      "sha256": "17ce200e30a577aa8684b3c01092b9013d21c87d558a598c7e23ebd1dd2339ee"
+    },
+    {
+      "path": "frontend/components.json",
+      "bytes": 521,
+      "sha256": "b874420180399dcdcfc070fbcb4ab1e19e233896d5459b15c0357ad758f9a8cf"
+    },
+    {
+      "path": "frontend/docs/ui.md",
+      "bytes": 521,
+      "sha256": "956092c2046df7323434272ed2c6e392acd976aaa73e06b40f2d2566abbb9020"
+    },
+    {
+      "path": "frontend/next-env.d.ts",
+      "bytes": 295,
+      "sha256": "1b59d4c6b83807db275d43f3cf2cc8e9323f465fab764eea091cc5becd5bad37"
+    },
+    {
+      "path": "frontend/next.config.ts",
+      "bytes": 315,
+      "sha256": "aff7b9aa0c2a45c577c8e831bf8798ca19b36d9f74d9e9d792bf3e249efd2ec8"
+    },
+    {
+      "path": "frontend/package-lock.json",
+      "bytes": 274134,
+      "sha256": "332b2a1343301688a3397c477cd28465c5186336b2c5156f0f6a4b40649e2fa2"
+    },
+    {
+      "path": "frontend/package.json",
+      "bytes": 1137,
+      "sha256": "efcf26465af74cdab56ace0c2cb9cf1dd62bd55e390181f5d55fbba2920ae92b"
+    },
+    {
+      "path": "frontend/postcss.config.mjs",
+      "bytes": 70,
+      "sha256": "5b0bc4c78be977cd81f947fb5563aaa7cc6d451e6f1c53a3260b7656a7144d20"
+    },
+    {
+      "path": "frontend/public/brand/astra-logo-horizontal-claro.svg",
+      "bytes": 1197,
+      "sha256": "0d31680c65bd04a3cec2e0a99676d3450201ce79f968202b81a6c4dd2f5d0c78"
+    },
+    {
+      "path": "frontend/public/brand/astra-logo-horizontal-escuro.svg",
+      "bytes": 1198,
+      "sha256": "5006a91b9b0c00269d1b68ad3a6b715e1239423125eddd29088d0ecf296e8033"
+    },
+    {
+      "path": "frontend/public/brand/astra-monograma-ciano.svg",
+      "bytes": 440,
+      "sha256": "e64613c3ad0f294e34a4783ce733e23a0940868761c870999cc24ef4603b2936"
+    },
+    {
+      "path": "frontend/scripts/package.mjs",
+      "bytes": 216,
+      "sha256": "23f7697dbb6115d681c200b905f2caaf5ddf1ac7582eb2c4c9d2182a19f69b36"
+    },
+    {
+      "path": "frontend/scripts/start.mjs",
+      "bytes": 113,
+      "sha256": "171aa98c39eabef7d437d9262b4d3513f4a479244d0cde0fe64908f4ca4a7775"
+    },
+    {
+      "path": "frontend/src/app/apple-icon.png",
+      "bytes": 3603,
+      "sha256": "3e47c8fbc01227441028d04ecf57096f5cc5b991c455ac20353bc41a76ca22b8"
+    },
+    {
+      "path": "frontend/src/app/astra-ui.css",
+      "bytes": 4536,
+      "sha256": "702b8de8946149bec26cc685ff8138c17a163f7ae8a5d80bce41566b286a572b"
+    },
+    {
+      "path": "frontend/src/app/error.tsx",
+      "bytes": 697,
+      "sha256": "8bd210dc1a4bd0870fb5cd24cb2ab01ab65fce270efaabf6d41d3f59d09617b6"
+    },
+    {
+      "path": "frontend/src/app/favicon.ico",
+      "bytes": 2333,
+      "sha256": "f416505de8e78e588344a878c196da18a49d3b366e2dc605ecd8cbc928cd7532"
+    },
+    {
+      "path": "frontend/src/app/globals.css",
+      "bytes": 4769,
+      "sha256": "e0095c4f576cded4bbd684cf52f5ca5dcfd83c633874245063cff1f523e7f364"
+    },
+    {
+      "path": "frontend/src/app/icon.svg",
+      "bytes": 363,
+      "sha256": "2d26c6d6c81ac5facd61d78c4d444c0279af2649523450ba48c6b50e87aba6cc"
+    },
+    {
+      "path": "frontend/src/app/layout.tsx",
+      "bytes": 880,
+      "sha256": "b2553a5e3c304dc8b725add5e021d7a3246edd6e26e2f6ab69cdacb59bdf5d5a"
+    },
+    {
+      "path": "frontend/src/app/not-found.tsx",
+      "bytes": 566,
+      "sha256": "0e50d32b0cb5f2a7113c9eb82a15624eaf8e6d17973c8670ca600a620b4992ba"
+    },
+    {
+      "path": "frontend/src/app/page.tsx",
+      "bytes": 105,
+      "sha256": "b48196c19e847a834a8b5152f5d51de2e590762d3c35602e3cea279446d1bcf0"
+    },
+    {
+      "path": "frontend/src/app/workspace.css",
+      "bytes": 34850,
+      "sha256": "7bf22995a2a798b0f82e2854014eda2acaabfa62c893cf19747550cb503ed1cf"
+    },
+    {
+      "path": "frontend/src/components/account.css",
+      "bytes": 8226,
+      "sha256": "a745ec3dc46e887d71cc4137762b1fe41f488996e840fff4112238de47469014"
+    },
+    {
+      "path": "frontend/src/components/account.tsx",
+      "bytes": 10930,
+      "sha256": "bf699019d3fd77a10c53a8a4eb7af83555c639d614b2558085973213861dafc1"
+    },
+    {
+      "path": "frontend/src/components/app-sidebar.tsx",
+      "bytes": 1662,
+      "sha256": "2c5cf40fee34fa738a731c3dc77d4f3fa244094b0bffa869566c10b021a7efe7"
+    },
+    {
+      "path": "frontend/src/components/astra-brand.tsx",
+      "bytes": 1738,
+      "sha256": "1b0e0457757356b03b8830d6095cc91b5e4f7d0172d97179c19095f93541779f"
+    },
+    {
+      "path": "frontend/src/components/camera-availability.tsx",
+      "bytes": 3528,
+      "sha256": "88f12ec0c7d0e945b306e03a9910bdc68d85b6358aea7117f58ebeedec5aa5ee"
+    },
+    {
+      "path": "frontend/src/components/camera-connection-editor.tsx",
+      "bytes": 12186,
+      "sha256": "2a52fbea16c27e3269818417b07f3d26cc353187922422499114400ed77d69cb"
+    },
+    {
+      "path": "frontend/src/components/cameras.tsx",
+      "bytes": 14954,
+      "sha256": "08235d96756acc45481df70d6216b3a06bcfd77f4bf2a37dc92477579045288e"
+    },
+    {
+      "path": "frontend/src/components/data-table.css",
+      "bytes": 3780,
+      "sha256": "04dfff35462aef4c0abe52c69f3f5aa16d9d25dc1fdfd3ed5f8316365531d342"
+    },
+    {
+      "path": "frontend/src/components/data-table.tsx",
+      "bytes": 15222,
+      "sha256": "97513c2b845920275148e3659966a882cbb0a9d478f3c25adcc69837f4b21671"
+    },
+    {
+      "path": "frontend/src/components/diagnostic.tsx",
+      "bytes": 2856,
+      "sha256": "5c9f3e4a5006d5b116c670d93ca390d8e763233d9b0f663f84173b6986bf4eca"
+    },
+    {
+      "path": "frontend/src/components/exports.tsx",
+      "bytes": 10757,
+      "sha256": "32b474a882c48d95226f8376f20e3b312e5472e8457e7bd062bcbdd8c84a31eb"
+    },
+    {
+      "path": "frontend/src/components/form-dialog.tsx",
+      "bytes": 3017,
+      "sha256": "c55343f6f87f08a6626e4320fd6b1a88e174cd23fe16dd263441824114489f79"
+    },
+    {
+      "path": "frontend/src/components/global-quality.tsx",
+      "bytes": 3242,
+      "sha256": "ed0ad7fb7d695f73d022ef0c077dc2f184bcec910ca496e2cdaff51f456cdd33"
+    },
+    {
+      "path": "frontend/src/components/live-camera-list.tsx",
+      "bytes": 6749,
+      "sha256": "ad535b85cf07465ad667d1b9b6a9b4b6fa5064cf2679f408c98f2d9e51b9e461"
+    },
+    {
+      "path": "frontend/src/components/live-camera-menu.tsx",
+      "bytes": 2371,
+      "sha256": "bfa0d9e12a19532153b5caaa66817d828c1a9febcc66d2867ad92743e30fb4ad"
+    },
+    {
+      "path": "frontend/src/components/live-camera-viewport.tsx",
+      "bytes": 6118,
+      "sha256": "efec6258a05a15f51afff57fdb00b8fa3f9ea47e82ad4dc7b3bdb005d0e8cc89"
+    },
+    {
+      "path": "frontend/src/components/live-fullscreen.tsx",
+      "bytes": 1505,
+      "sha256": "4c621f76b8a1a48dd88495f5c3ae31580d426f8f3edb100ae9ca69f7045bb937"
+    },
+    {
+      "path": "frontend/src/components/live-header-controls.tsx",
+      "bytes": 1461,
+      "sha256": "8bd306a60fe49e8f9ac926ef68c34c05dda3c8cf0c38eb6d7b0fb95bdc8562d9"
+    },
+    {
+      "path": "frontend/src/components/live-player.tsx",
+      "bytes": 5705,
+      "sha256": "500f97f0d357a6822f4dbfe9fb775159ad4fd8b7c3e6a178356ebfba5e3984a3"
+    },
+    {
+      "path": "frontend/src/components/live-ptz-controls.css",
+      "bytes": 4087,
+      "sha256": "637eb78a924f0bd0275be74a3d86f9a5f32ad390f49de3865b205f55950772a7"
+    },
+    {
+      "path": "frontend/src/components/live-ptz-controls.tsx",
+      "bytes": 8129,
+      "sha256": "4f09b40339a72d7c7b896e755a671acef69ac56cbf203503dabb66080ce2b8d0"
+    },
+    {
+      "path": "frontend/src/components/live-recording-panel.tsx",
+      "bytes": 5594,
+      "sha256": "2b471a1edbb6e786ace4fe3352dfc1892fcd8bfb639136eee7ac316304456256"
+    },
+    {
+      "path": "frontend/src/components/live-saved-views.tsx",
+      "bytes": 6432,
+      "sha256": "c2059019514fd642f8dc22c64baa964f33e61dacd26d3771578a233c3776e3e4"
+    },
+    {
+      "path": "frontend/src/components/live-stream.tsx",
+      "bytes": 9347,
+      "sha256": "301b033ab022694fb04e44458fb30b98a6958ee390874230af58fd9fc3bd2563"
+    },
+    {
+      "path": "frontend/src/components/live-view-context.tsx",
+      "bytes": 8147,
+      "sha256": "2ca382fc37fc3225ff3b23fae91ee9be458b70933bbd3c92a917619f1d80da41"
+    },
+    {
+      "path": "frontend/src/components/live.tsx",
+      "bytes": 8923,
+      "sha256": "2b365f0dbec16524a55c1e028945b3faaa6f9c7cf68770ba6c443f41756afb2b"
+    },
+    {
+      "path": "frontend/src/components/management.tsx",
+      "bytes": 13073,
+      "sha256": "e4fcff92ac6fe3ec8392d89e7e9f2add6c0e96798f10b86a878e3f4bf10a33e4"
+    },
+    {
+      "path": "frontend/src/components/nav-main.tsx",
+      "bytes": 4422,
+      "sha256": "755ad11b5062fa2ac841c236b68fef5088261b233115b6c61535e68089c0b512"
+    },
+    {
+      "path": "frontend/src/components/nav-user.tsx",
+      "bytes": 2395,
+      "sha256": "513865be2cf3a5780e0af112e76abf69e0d01229c793056ea8c6893a755cefd2"
+    },
+    {
+      "path": "frontend/src/components/operations.tsx",
+      "bytes": 10836,
+      "sha256": "4eb44bc390fa7274df5123e1cee98b9b4c7c5fdf5465b6c5bae226d7f8528224"
+    },
+    {
+      "path": "frontend/src/components/orbital-dawn.css",
+      "bytes": 3655,
+      "sha256": "998f58e3ea5b311369c3770a36a34c5863c66c4699ddc986fdc87c55f522d440"
+    },
+    {
+      "path": "frontend/src/components/orbital-dawn.tsx",
+      "bytes": 1203,
+      "sha256": "792bc8534e7e346f16fccc22453fb6cf6694ec62524511f789a5d21c5f601218"
+    },
+    {
+      "path": "frontend/src/components/permission-group-editor.css",
+      "bytes": 5190,
+      "sha256": "a6c5434fe81e6593397893aa61af514e4602a8d0f8d5c1c174570c46df39ec30"
+    },
+    {
+      "path": "frontend/src/components/permission-group-editor.tsx",
+      "bytes": 8362,
+      "sha256": "66a33b1e81f55bd8416e817e13adaf8ed319c3dab13ddb310f707623f386db20"
+    },
+    {
+      "path": "frontend/src/components/playback.tsx",
+      "bytes": 12110,
+      "sha256": "9e54c0c3ffe21261ae3cdf5c4918083c56a56b93697427ca87fb05f49789ac89"
+    },
+    {
+      "path": "frontend/src/components/quota-reduction.tsx",
+      "bytes": 5184,
+      "sha256": "d264f78d5b41944f88ca20ecb7b37c39135e0de6d6f6bfb5efda0f09d63f9343"
+    },
+    {
+      "path": "frontend/src/components/recording.tsx",
+      "bytes": 15675,
+      "sha256": "8464c89de2c14385b23ae279dd0cdcae76f1e6de6d348386047d3057fd667525"
+    },
+    {
+      "path": "frontend/src/components/rtsp-connection-test.tsx",
+      "bytes": 1639,
+      "sha256": "766b293c4133f82b6df492d0918b5132e1e56a67e8e1e0afad49616a4d631a5a"
+    },
+    {
+      "path": "frontend/src/components/sites.tsx",
+      "bytes": 4568,
+      "sha256": "d227b909c1186f6c20fc7b608c25347f8e68319f40c6077ec64db8cf645fef6d"
+    },
+    {
+      "path": "frontend/src/components/team-switcher.tsx",
+      "bytes": 2595,
+      "sha256": "e6284b90b700a8650a5cfea3af9d5aa3a57f5a2f152262d94a2179ab4fd08073"
+    },
+    {
+      "path": "frontend/src/components/ui/alert.tsx",
+      "bytes": 2060,
+      "sha256": "3ea80af4920b570fcd7592e12ceccd1803566e453777fe69ec38299625fc3cb5"
+    },
+    {
+      "path": "frontend/src/components/ui/avatar.tsx",
+      "bytes": 3096,
+      "sha256": "bcf78ced08788ecaf307f11cd1f994e82e2f7d6e33d4d466baeee6dbdca50c62"
+    },
+    {
+      "path": "frontend/src/components/ui/badge.tsx",
+      "bytes": 1895,
+      "sha256": "9cf4675414acf20c53b2a3ecfb631746da435fa3d7a4a72450d1169213255baf"
+    },
+    {
+      "path": "frontend/src/components/ui/breadcrumb.tsx",
+      "bytes": 2476,
+      "sha256": "2a11a565965302ac9ff0f0df45806fccde3a75c7348e9ba4a97590fc28b36221"
+    },
+    {
+      "path": "frontend/src/components/ui/button.tsx",
+      "bytes": 3258,
+      "sha256": "40dcea12cc5c9a357df10b6d56dfde7907cd84d076887fa4b56ac0a39f9e55b7"
+    },
+    {
+      "path": "frontend/src/components/ui/card.tsx",
+      "bytes": 2494,
+      "sha256": "5e7040289fff160d6ef96afcb52a7ef9d4bd01e44a144adf80b0c1957fb5fa47"
+    },
+    {
+      "path": "frontend/src/components/ui/checkbox.tsx",
+      "bytes": 1572,
+      "sha256": "665440d899f13c70ab242bba8d2ce46f1fc883e01d8a0316b6c7aeddc35e225b"
+    },
+    {
+      "path": "frontend/src/components/ui/collapsible.tsx",
+      "bytes": 795,
+      "sha256": "c6598e5584f4258b5d9fefadbc5ad6a66888ad58729f4b634a0bb2d9c513188b"
+    },
+    {
+      "path": "frontend/src/components/ui/dropdown-menu.tsx",
+      "bytes": 8862,
+      "sha256": "57b39af2521a1d0b0ff5d3d162f78e88b13a39b642b5fc358ef8c1c47bb5d202"
+    },
+    {
+      "path": "frontend/src/components/ui/empty.tsx",
+      "bytes": 2393,
+      "sha256": "44b0dab5c420a1b23b9d24a3c1d1a2e05af2cf0cd57950425c2ddd0aea0cbe18"
+    },
+    {
+      "path": "frontend/src/components/ui/field.tsx",
+      "bytes": 6216,
+      "sha256": "d3a6d0efee5efbb758c45e393c9c8103ef013b26d9c1878453e64aee57a70ee2"
+    },
+    {
+      "path": "frontend/src/components/ui/input.tsx",
+      "bytes": 783,
+      "sha256": "4b95bbd4853b2cfd72d7d67e0561fd144f6218c372f85770c3bd511b9f6f7a09"
+    },
+    {
+      "path": "frontend/src/components/ui/label.tsx",
+      "bytes": 604,
+      "sha256": "276b329ef082a4094c884617bd4c4c6e20b99477f0f5f79fe17a225811ad04d9"
+    },
+    {
+      "path": "frontend/src/components/ui/native-select.tsx",
+      "bytes": 2022,
+      "sha256": "a345d828af2209d06f785f9f792f88028ffba6013b8fe0adfaa6a5321ee3fd84"
+    },
+    {
+      "path": "frontend/src/components/ui/popover.tsx",
+      "bytes": 2369,
+      "sha256": "2087357dcaaf60f67e4c0559545ec8380a710f03ba914e76f83c529ed2136b37"
+    },
+    {
+      "path": "frontend/src/components/ui/progress.tsx",
+      "bytes": 734,
+      "sha256": "446d5c9b37a64984253e17c4abdbd31738bbb7ff92ac66d2b99fd7a8c23a06db"
+    },
+    {
+      "path": "frontend/src/components/ui/separator.tsx",
+      "bytes": 634,
+      "sha256": "b5b5460e5337c2d5f361c1512001615b2e5eacb38c7449a4418bb9ddb47c4bba"
+    },
+    {
+      "path": "frontend/src/components/ui/sheet.tsx",
+      "bytes": 4569,
+      "sha256": "bbf304761c4d2393ae40ee87235ea53ecb1e055ce0380499e4466421e241118f"
+    },
+    {
+      "path": "frontend/src/components/ui/sidebar.tsx",
+      "bytes": 21369,
+      "sha256": "efd7d3facbb34d987ca5d0997a5472ca5007c4efd73576029cb49b83f2d6fabf"
+    },
+    {
+      "path": "frontend/src/components/ui/skeleton.tsx",
+      "bytes": 266,
+      "sha256": "4c2af7fa9c645358a0fb188779deab6f0b981733b62befc25e18aaebea1350dc"
+    },
+    {
+      "path": "frontend/src/components/ui/spinner.tsx",
+      "bytes": 313,
+      "sha256": "6916679a40ad1c7624520de5eaa7b337635e81f9a76413201267f8619844646f"
+    },
+    {
+      "path": "frontend/src/components/ui/table.tsx",
+      "bytes": 2392,
+      "sha256": "e87f4888357e1c8d024b9e4ed7ecd800890c0ddc2fe2a08c6096e00c9193b58a"
+    },
+    {
+      "path": "frontend/src/components/ui/tabs.tsx",
+      "bytes": 3535,
+      "sha256": "492a3941a3b488fde78cebf22abf93b90a318caddacf2c6d5431fd97f2fcf899"
+    },
+    {
+      "path": "frontend/src/components/ui/tooltip.tsx",
+      "bytes": 2101,
+      "sha256": "e94530dd6877132d5eda73f6fb0d217f345477232f140f2ca6e024d790177f6a"
+    },
+    {
+      "path": "frontend/src/components/workspace.tsx",
+      "bytes": 11203,
+      "sha256": "fc072f777b4654a5c87129e1ec0317193138ad4d1719783c4a949021659385f1"
+    },
+    {
+      "path": "frontend/src/hooks/use-mobile.ts",
+      "bytes": 565,
+      "sha256": "ad0936f84f1df79d3697bfbff9c18f8ad58431c1cbaf2359c6a853b0fcc9f28b"
+    },
+    {
+      "path": "frontend/src/lib/api.ts",
+      "bytes": 8256,
+      "sha256": "e21a7c81cffc3ace05c2dd598d936390dec8aaa923c34756df9a433c85b6e0db"
+    },
+    {
+      "path": "frontend/src/lib/camera-availability.ts",
+      "bytes": 2619,
+      "sha256": "0eaad0760fdd88bf6c08451da95cc6952fbb5f335d500305721452bb4f31d264"
+    },
+    {
+      "path": "frontend/src/lib/events.ts",
+      "bytes": 709,
+      "sha256": "76527e30c014424e5f2316a4150102408992324fb3c33cd603731b7e9494cd29"
+    },
+    {
+      "path": "frontend/src/lib/live-mosaic.ts",
+      "bytes": 1663,
+      "sha256": "303b5bd281ccf5dfa2459e531350959990a57c0ac771fc5d5727c5980291226a"
+    },
+    {
+      "path": "frontend/src/lib/live-transition-queue.ts",
+      "bytes": 1180,
+      "sha256": "e028a50b2b564b0ab82e0d0ce091e3470b7c623bcf1db8817192fdceb3f767e8"
+    },
+    {
+      "path": "frontend/src/lib/permission-grants.ts",
+      "bytes": 3032,
+      "sha256": "64d17e0da5b68cac7a47f6dd2dc77c34649885e7c903ec3143671d31cf79d1cf"
+    },
+    {
+      "path": "frontend/src/lib/ptz-control.ts",
+      "bytes": 2877,
+      "sha256": "21e1c30ad4c94414f638652bf07ecb3046ca67e04c9e37c99141ef6b47b01473"
+    },
+    {
+      "path": "frontend/src/lib/recording-timeline.ts",
+      "bytes": 1866,
+      "sha256": "de385333be9ae9a63751f8b08c2b55187e04706db54c6923aa0513a32b87b499"
+    },
+    {
+      "path": "frontend/src/lib/use-live-fullscreen.ts",
+      "bytes": 2533,
+      "sha256": "841fbbd2736b1a8fd40f57f802e7436777ccc30b88174b8213602d73cca7d3d4"
+    },
+    {
+      "path": "frontend/src/lib/utils.ts",
+      "bytes": 24,
+      "sha256": "14300d758170c270c75b057f38fedb3793a5920ea872f0477e29fb131185e8a7"
+    },
+    {
+      "path": "frontend/src/lib/video-compatibility.ts",
+      "bytes": 1195,
+      "sha256": "a66dba9bb162ef29b826437b81ba4cb9a4c89e7721fcb6bf0995a61325917bc6"
+    },
+    {
+      "path": "frontend/tests/camera-availability/README.md",
+      "bytes": 1482,
+      "sha256": "4f655a9e042519501767ea0f2ca7778b0429ca8ee5439260df1d1eace42e76d3"
+    },
+    {
+      "path": "frontend/tests/camera-availability/build.mjs",
+      "bytes": 2442,
+      "sha256": "5b40d06c546175bda59208f5ab6e26310a2ae591554bd898c5799272b67c0c9e"
+    },
+    {
+      "path": "frontend/tests/camera-availability/check.cjs",
+      "bytes": 5885,
+      "sha256": "8a76cf3cd2d26ab964f912d8922798fdeff966d7e1536bc18deaa7a892241d3b"
+    },
+    {
+      "path": "frontend/tests/camera-availability/fixture.tsx",
+      "bytes": 3572,
+      "sha256": "0ff251042a78689e2ee31abc241257739eba9448736cbf9844c5afa19fd49051"
+    },
+    {
+      "path": "frontend/tests/camera-availability/serve.mjs",
+      "bytes": 2125,
+      "sha256": "e37c5690ce9d58e281dcebc6f965fd651963c21d3a4b5b02461e189cf3659671"
+    },
+    {
+      "path": "frontend/tests/camera-deletion/README.md",
+      "bytes": 748,
+      "sha256": "5848f6290ca6c63a472083021e3b0d7be6cb1dba83a4252e059d490e4fd92e36"
+    },
+    {
+      "path": "frontend/tests/camera-deletion/build.mjs",
+      "bytes": 2434,
+      "sha256": "6a6fbd339c06b904f49773fc9b63ff4a4caff97a8988129a3fbd930dca0cef15"
+    },
+    {
+      "path": "frontend/tests/camera-deletion/fixture.tsx",
+      "bytes": 2167,
+      "sha256": "dd64b2c0cf80980f1b03108db947ba3407cfc3ceae29ea2a41f50f21daf2e1e6"
+    },
+    {
+      "path": "frontend/tests/camera-deletion/serve.mjs",
+      "bytes": 2113,
+      "sha256": "b9d008a4b13b7296ce75ad49aa4891679549520db56c19aee1fe43c148c799e6"
+    },
+    {
+      "path": "frontend/tests/camera-form/README.md",
+      "bytes": 1485,
+      "sha256": "77c90cf8100bcae6c552df9a5ad0f3ad334684fa25d33065be0abf9c8e71b0e1"
+    },
+    {
+      "path": "frontend/tests/camera-form/build.mjs",
+      "bytes": 2426,
+      "sha256": "615276664b3d27ca46503f19d418f3f75722fc84b43cf948cf159df78defb517"
+    },
+    {
+      "path": "frontend/tests/camera-form/check.cjs",
+      "bytes": 13908,
+      "sha256": "dd4115b11a4b7bc6b7d45973e3900fb31de0ad2eac98ce1c7ada20f2edb5d374"
+    },
+    {
+      "path": "frontend/tests/camera-form/fixture.tsx",
+      "bytes": 4077,
+      "sha256": "d49709a96106fd3138f71b5b32983bf4c48b33a16350efab2a423f4d6a4385dd"
+    },
+    {
+      "path": "frontend/tests/camera-form/serve.mjs",
+      "bytes": 2126,
+      "sha256": "db38da9dda33caeb8335488a6fe9c4c5068252bb45d2ca0e7f88188b897c305c"
+    },
+    {
+      "path": "frontend/tests/data-table/.gitignore",
+      "bytes": 12,
+      "sha256": "2ca99dacdf8870024dce15908b589ab4af26e80f7e1235a6d0f274dc2891efe0"
+    },
+    {
+      "path": "frontend/tests/data-table/README.md",
+      "bytes": 3752,
+      "sha256": "b1b8f29436ff3b427b28eae73b32ba57461b8800c3e7e78a159720eeb05894ba"
+    },
+    {
+      "path": "frontend/tests/data-table/build.mjs",
+      "bytes": 2385,
+      "sha256": "11f2995aa163c0317e9f24ac96404cf4a4ed9ab48117efeb2e9ac33d82356834"
+    },
+    {
+      "path": "frontend/tests/data-table/check.cjs",
+      "bytes": 6063,
+      "sha256": "6cab3f6c10580a6fbea4383a93510ed81aa67031a18295efcdffe942558f127a"
+    },
+    {
+      "path": "frontend/tests/data-table/fixture.tsx",
+      "bytes": 3093,
+      "sha256": "e5a7434c95bbb3131f7a8626a315542efc6aca94e7f8dbdbaff47da41340356f"
+    },
+    {
+      "path": "frontend/tests/data-table/integration-check.cjs",
+      "bytes": 6387,
+      "sha256": "c1046759bd20934ff8bcf9339404cd3b09fffeb3fae3751560a14ae934f6d78f"
+    },
+    {
+      "path": "frontend/tests/data-table/integration.tsx",
+      "bytes": 7173,
+      "sha256": "59d541798b8b9dfb4727b88d2ea1e488778926054609790602016e30c529faf1"
+    },
+    {
+      "path": "frontend/tests/data-table/serve.mjs",
+      "bytes": 2075,
+      "sha256": "aa64dde76f4254016a5c33f6b814767b1a403b553b5291a9a6f17039ec7a567c"
+    },
+    {
+      "path": "frontend/tests/live-continuity/.gitignore",
+      "bytes": 12,
+      "sha256": "2ca99dacdf8870024dce15908b589ab4af26e80f7e1235a6d0f274dc2891efe0"
+    },
+    {
+      "path": "frontend/tests/live-continuity/README.md",
+      "bytes": 4423,
+      "sha256": "477148220c5332155a19eed91ed7bb9dffb92f5aa434749a81190b952df83d0e"
+    },
+    {
+      "path": "frontend/tests/live-continuity/check.cjs",
+      "bytes": 9972,
+      "sha256": "9a11d53aa8342a7a7c499160eee471a3efd69e3310f087d15ef16ec88eebaa9e"
+    },
+    {
+      "path": "frontend/tests/live-continuity/digital-zoom.cjs",
+      "bytes": 5482,
+      "sha256": "4cd3e8b7def9182cf675aeab8fcb0fb7dade3a9cd302bc78d46daa7d0aebf019"
+    },
+    {
+      "path": "frontend/tests/live-continuity/drag.cjs",
+      "bytes": 5500,
+      "sha256": "404751f2e2147c38e1d140cdc3e08755d602240168550511fe4359a751723e41"
+    },
+    {
+      "path": "frontend/tests/live-continuity/fallback.cjs",
+      "bytes": 3356,
+      "sha256": "e9da86204090ecbf86915d07bc0cefe29877a14ca7db00629dc5bea92f23c960"
+    },
+    {
+      "path": "frontend/tests/live-continuity/fixture.tsx",
+      "bytes": 9136,
+      "sha256": "77b9fffc8f95eb2b01ba1b44e98e15b16deaab9e761b0ddf7653bafe30aca464"
+    },
+    {
+      "path": "frontend/tests/live-continuity/panel.cjs",
+      "bytes": 4422,
+      "sha256": "0d5469c2c185abc3478b183938feebfa7199980e30dc17a8b4ab5f3ddd557996"
+    },
+    {
+      "path": "frontend/tests/live-continuity/saved-views.cjs",
+      "bytes": 3455,
+      "sha256": "c0ce1829d154fd6b402ad67bb6a4c05e33a5f4f0a9c1bf406c5f904d0fe6baaf"
+    },
+    {
+      "path": "frontend/tests/live-continuity/serve.mjs",
+      "bytes": 840,
+      "sha256": "5972c6e7b75136b2c2855ddda7a0843e959cf897cacc98802f9dda993e428005"
+    },
+    {
+      "path": "frontend/tests/live-mosaic.node.mjs",
+      "bytes": 2735,
+      "sha256": "4ce051cf3bb15b5122a119b0c8add2b63706c56da6d9ff1a447f71df3e82e8a0"
+    },
+    {
+      "path": "frontend/tests/live-ptz/.gitignore",
+      "bytes": 13,
+      "sha256": "cd9e593418d6a88b2e5cfc359d66a2fc8a2b1b3fb9d39e2c53231845444456c9"
+    },
+    {
+      "path": "frontend/tests/live-ptz/README.md",
+      "bytes": 2252,
+      "sha256": "e3448aa65181526326d6d8c8b1cf28f2fe3ea074f04d18049366f408c2afa9cd"
+    },
+    {
+      "path": "frontend/tests/live-ptz/build.mjs",
+      "bytes": 2427,
+      "sha256": "e3a9f8a46cc770524d8c338b7ce34b3ade7b14aca7187878cdfb2764b7bdf76f"
+    },
+    {
+      "path": "frontend/tests/live-ptz/check.cjs",
+      "bytes": 5856,
+      "sha256": "193827a27edd875aeb5179ecae126a22c4b9fca298f45ee288d5f1218841db01"
+    },
+    {
+      "path": "frontend/tests/live-ptz/collapse.cjs",
+      "bytes": 1418,
+      "sha256": "a488c7f18b1aeb7446dab99493015423dfb608252d09854d1eb2f97fba8017a0"
+    },
+    {
+      "path": "frontend/tests/live-ptz/fixture.tsx",
+      "bytes": 3985,
+      "sha256": "8f7b165198dd57cb5a9731919969c0e84e69bf7d1e7e8a6894e94dc5c8a85d3f"
+    },
+    {
+      "path": "frontend/tests/live-ptz/multi-input.cjs",
+      "bytes": 1852,
+      "sha256": "f4091d3f2574364d68f95a59423b779847de18c00f80d757e20b57bb94c450cc"
+    },
+    {
+      "path": "frontend/tests/live-ptz/serve.mjs",
+      "bytes": 2092,
+      "sha256": "a76fb53eb3bf1e3987ecde074a979279a4716621dcfec0861cfd0849f71734c5"
+    },
+    {
+      "path": "frontend/tests/permission-grants.node.mjs",
+      "bytes": 4469,
+      "sha256": "0c0b0e94497250b2788cda85849ebe6006a7461e72d0ce12c2d59ac6f5c7266b"
+    },
+    {
+      "path": "frontend/tests/permission-groups/README.md",
+      "bytes": 1476,
+      "sha256": "a0a63012facd41fd3badc7bf773938b3b1d694b3dced3bcecf27a998423e6cf2"
+    },
+    {
+      "path": "frontend/tests/permission-groups/build.mjs",
+      "bytes": 2496,
+      "sha256": "c610abeec59bad5a1b88883baac51b384466ff7075c4eb64564ed8972a4d3688"
+    },
+    {
+      "path": "frontend/tests/permission-groups/fixture.tsx",
+      "bytes": 4106,
+      "sha256": "d4a8074a90fd33ae306bd7c866effdb1ceaa11e3793bbcb3cff80819782b7d63"
+    },
+    {
+      "path": "frontend/tests/permission-groups/serve.mjs",
+      "bytes": 2117,
+      "sha256": "eebf2aacfd25a5032ff91da6be776b2f56cfd752e7325a33abd862ed42eea51f"
+    },
+    {
+      "path": "frontend/tests/recording-timeline.node.mjs",
+      "bytes": 1582,
+      "sha256": "e02ed592d3824e1fef8b025bc48a3f813245e69112a9c88b969245495c042238"
+    },
+    {
+      "path": "frontend/tsconfig.json",
+      "bytes": 597,
+      "sha256": "98fe6321906dc33c793b7f1c3eeaf6cdc72bc34f775b1ca7e28be2cba03525b2"
     },
     {
       "path": "tools/github/LICENSE-MIT.txt",
@@ -126,1393 +1501,18 @@
     },
     {
       "path": "tools/prepare-github.py",
-      "bytes": 7441,
-      "sha256": "de7067b452a6973058557bfd8a05497ec4fcaa4863507ac215c7a4625d8accf9"
+      "bytes": 7381,
+      "sha256": "77b30ac5337f061a58b72b1fb6997d4eec098760fd88ba38c1d39aa11ed1c9ec"
     },
     {
       "path": "tools/prepare-source.py",
-      "bytes": 4090,
-      "sha256": "e81f15eab9c15da01aacc81d3eea91d43287c41b968ec1efaf76bc1ad9bb51a7"
+      "bytes": 4082,
+      "sha256": "1b7c8cab40f3d7b0099c0e12157720cc5408f5485e9cb38b36bf7c053c2fc679"
     },
     {
       "path": "tools/public-source-files.txt",
-      "bytes": 12453,
-      "sha256": "1b9304cea38969a5c2347d0c34b78f2fa7d484f1bfb4756366c8d21f24b68aa5"
-    },
-    {
-      "path": "vms-backend/.gitignore",
-      "bytes": 580,
-      "sha256": "78ca639a60688b8cf8308970fd8bc0d477b056b674c2d00f5ab3006a54c80b75"
-    },
-    {
-      "path": "vms-backend/README.md",
-      "bytes": 4649,
-      "sha256": "2a834f552bb73b7bfdc53ca8043fcf25b19f802b13bba47b1755ef176611e73b"
-    },
-    {
-      "path": "vms-backend/cmd/vms-service/main_windows.go",
-      "bytes": 1742,
-      "sha256": "a99e6bef0c792e0cb1644acd2e67b1f8e6eaa4fd6a98a964907ab2ec593fd26b"
-    },
-    {
-      "path": "vms-backend/cmd/vms-worker/main.go",
-      "bytes": 3673,
-      "sha256": "bd704a2f2befd47fc4bba98d265daf0eb747bbd0b7eae5edcf0cedd60ba89476"
-    },
-    {
-      "path": "vms-backend/cmd/vms/main.go",
-      "bytes": 4655,
-      "sha256": "9ac86ba4eea0254fe815f259f12e10778de2e5f23e44937ab2a7685bf989c436"
-    },
-    {
-      "path": "vms-backend/deploy/windows/README.md",
-      "bytes": 5193,
-      "sha256": "920e94d7fa0e27310e48a19df1755ade6de3918cd2b1c1b9fa99cd6833fd4d60"
-    },
-    {
-      "path": "vms-backend/deploy/windows/THIRD-PARTY.md",
-      "bytes": 1341,
-      "sha256": "6d49833bf34b107e6faa80be0e213c43969f8a2a94843612f21bb0c170f1c94c"
-    },
-    {
-      "path": "vms-backend/deploy/windows/backup.ps1",
-      "bytes": 1360,
-      "sha256": "48dc046d8b33223ff81d6054c3e73b772619fbad3dc42861e4eb0f43df244769"
-    },
-    {
-      "path": "vms-backend/deploy/windows/build-package.ps1",
-      "bytes": 3239,
-      "sha256": "3af587cbdec5c3ccc464be5032564c731d509f2f300fcf4325322e19e3d99c01"
-    },
-    {
-      "path": "vms-backend/deploy/windows/install.ps1",
-      "bytes": 12750,
-      "sha256": "8219f01300b1f9153abc014cc209d6e1abc7fe913b86c371cdf4232d1eb4264e"
-    },
-    {
-      "path": "vms-backend/deploy/windows/verify-package.ps1",
-      "bytes": 6207,
-      "sha256": "b65feee5000dd5e16ef1406e80b4522a654a96fb0240595511c142b892d271df"
-    },
-    {
-      "path": "vms-backend/docs/camera-availability.md",
-      "bytes": 8246,
-      "sha256": "45ba5b77d25e6a058d4cfc95509a024a4d99a0abbc8ca14ff81633497a697616"
-    },
-    {
-      "path": "vms-backend/docs/camera-deletion.md",
-      "bytes": 3084,
-      "sha256": "0a1703e9e2c1c5b368cec34518f91e9940a9e25f94dddd507fb21121a46ce717"
-    },
-    {
-      "path": "vms-backend/docs/media-control.md",
-      "bytes": 2354,
-      "sha256": "0ece326305a977405401e89334cdf4911875647bcc5164be40869fdb6cdc0d38"
-    },
-    {
-      "path": "vms-backend/docs/ptz.md",
-      "bytes": 5572,
-      "sha256": "97416a3713b8d293b7f01f659e1fee5246d26193fe6a0475d4fb3bc484ab4e96"
-    },
-    {
-      "path": "vms-backend/docs/storage-index.md",
-      "bytes": 2725,
-      "sha256": "aa11e458ec00c8dee1f2273c63fd2fd58f6fabafb1be26e86f341b1e8fa62e22"
-    },
-    {
-      "path": "vms-backend/docs/validation.md",
-      "bytes": 3665,
-      "sha256": "3d81bfe7f17346fb3ecd8fdc009988d42377721e246562752f781522d4a29fdb"
-    },
-    {
-      "path": "vms-backend/go.mod",
-      "bytes": 1474,
-      "sha256": "e7771164a3f39135d35845f394330d1326684875fa04560028e40cc45871756f"
-    },
-    {
-      "path": "vms-backend/go.sum",
-      "bytes": 8319,
-      "sha256": "9b41143b51ac00f95ab9642824505699d4c16f35f4830ece5bab60a7f6e02c39"
-    },
-    {
-      "path": "vms-backend/internal/app/access.go",
-      "bytes": 22007,
-      "sha256": "4b702185b93f16b06867e393dc0b572d5fb4390a40b276cb5373d9ea5a72a9c2"
-    },
-    {
-      "path": "vms-backend/internal/app/access_test.go",
-      "bytes": 3985,
-      "sha256": "50d4557581f8a2ef7be332794ac7a0cea8268fd2828d11b4a86018f100216c2a"
-    },
-    {
-      "path": "vms-backend/internal/app/account.go",
-      "bytes": 3055,
-      "sha256": "8c377202a60130b9a12d9bd23ce9abbd0a16d99a2eb90c0fca67f8d1cddb889b"
-    },
-    {
-      "path": "vms-backend/internal/app/account_test.go",
-      "bytes": 5185,
-      "sha256": "6ca4dfcbb8193cc2f17eeba77aa5221afed4cde58ab75bc988af39a3d3287a41"
-    },
-    {
-      "path": "vms-backend/internal/app/adaptive_live_test.go",
-      "bytes": 3691,
-      "sha256": "f1820d7dc00614848d30e0c64e30991fde96d97b0d49f1c7d23aada6a9b99cb3"
-    },
-    {
-      "path": "vms-backend/internal/app/app.go",
-      "bytes": 21740,
-      "sha256": "53840726189497b6a078ba844caa0b9c99f66ad619a010c020f6da31e882c1b0"
-    },
-    {
-      "path": "vms-backend/internal/app/app_test.go",
-      "bytes": 3690,
-      "sha256": "98c77741c849bace4382c7f513e09cf8e7dcbc5bcb82b331b1086801486a4337"
-    },
-    {
-      "path": "vms-backend/internal/app/availability.go",
-      "bytes": 10700,
-      "sha256": "4b029b89206f28c093a346699e057eb4b7acd308c84144379bec67e7dab38d53"
-    },
-    {
-      "path": "vms-backend/internal/app/availability_integration_test.go",
-      "bytes": 4302,
-      "sha256": "934136e26f3423d9e7bc1cecf75caea5e4fef71ee341e0463def530d22301da1"
-    },
-    {
-      "path": "vms-backend/internal/app/availability_test.go",
-      "bytes": 6232,
-      "sha256": "d6b9152bbfe40321fc660762341cd6559a3b912aed8e9c422a2d249b0445a62d"
-    },
-    {
-      "path": "vms-backend/internal/app/camera_configuration.go",
-      "bytes": 4927,
-      "sha256": "d81ff503ddcfbd0da9db6f643402cbdaac39844b09256f051a4c81710cb5f78e"
-    },
-    {
-      "path": "vms-backend/internal/app/camera_configuration_test.go",
-      "bytes": 8275,
-      "sha256": "20147fa141f31ca2f5413c0660573aef547c2fae67932d879e448dadd790812d"
-    },
-    {
-      "path": "vms-backend/internal/app/camera_deletion.go",
-      "bytes": 8587,
-      "sha256": "feab796ffd8ef81cf0ea740571968ab08f75357b84a166ba9b15c30bc222eb79"
-    },
-    {
-      "path": "vms-backend/internal/app/camera_deletion_test.go",
-      "bytes": 9808,
-      "sha256": "4b22da6b89c4732d50f0f9deaa4208be4becaf6ee4b52eee245878c07e533cac"
-    },
-    {
-      "path": "vms-backend/internal/app/compatible_playback.go",
-      "bytes": 3337,
-      "sha256": "c313b0350367d59ca6702bf1bca4da61d93d204cc2dff31d89657b9dbd29414f"
-    },
-    {
-      "path": "vms-backend/internal/app/compatible_playback_test.go",
-      "bytes": 2877,
-      "sha256": "ee92d375b16c86056ba04129bc736e8e6d9477a3d870066f5a6e0ba742cc8165"
-    },
-    {
-      "path": "vms-backend/internal/app/dahua_capacity_test.go",
-      "bytes": 3258,
-      "sha256": "e7b72cb1fb19197f0978583dab0d3a9257c36931f3e6c03a0608eafbbb97f249"
-    },
-    {
-      "path": "vms-backend/internal/app/delivery.go",
-      "bytes": 847,
-      "sha256": "5633b88238342a4fa4cf370882c34ea58800f1e2ebbdc225a4513baebf31c718"
-    },
-    {
-      "path": "vms-backend/internal/app/delivery_test.go",
-      "bytes": 864,
-      "sha256": "66db8e0103a12c371677bb75089c28b21289d02162b74cbddce7f92387a8117b"
-    },
-    {
-      "path": "vms-backend/internal/app/domain_access_test.go",
-      "bytes": 5672,
-      "sha256": "ed6188c45b3bde37cfabe60353eaa22da09b7a2310deea41f3235556bafe0400"
-    },
-    {
-      "path": "vms-backend/internal/app/email_login_test.go",
-      "bytes": 4840,
-      "sha256": "18da7c0f2fca7ec2f78abb7f380c1c3fea77f132506778e045ef816fc5453541"
-    },
-    {
-      "path": "vms-backend/internal/app/events.go",
-      "bytes": 8831,
-      "sha256": "31e834dfffcec217ee1f777532f32edc8d1e86c709928852e47b73bac1f584fa"
-    },
-    {
-      "path": "vms-backend/internal/app/events.sql",
-      "bytes": 2774,
-      "sha256": "5020ad936db133b62ebc0064eb27a8c5a25f76d3497edd2aae3b73a39f0f127f"
-    },
-    {
-      "path": "vms-backend/internal/app/events_test.go",
-      "bytes": 10408,
-      "sha256": "219adda5deb706b667610b3260d73263350f7b468afdec2d5e983144f28cd0c9"
-    },
-    {
-      "path": "vms-backend/internal/app/export_plan_test.go",
-      "bytes": 2141,
-      "sha256": "8477b8f64a55c521d626ae5251d450b31fee1fb72bea7e8cbefe6eb60a47cfcd"
-    },
-    {
-      "path": "vms-backend/internal/app/exports.go",
-      "bytes": 18872,
-      "sha256": "f53d8c4cbaf370df188c564a7226ac885b32086b41c8788ba3a8d4a9465f444f"
-    },
-    {
-      "path": "vms-backend/internal/app/hikvision_test.go",
-      "bytes": 6462,
-      "sha256": "787e061915e77ec71c1f0796cc7dbcc321c0f584e1d9fd578e48ffb2771a0bd8"
-    },
-    {
-      "path": "vms-backend/internal/app/integrations.go",
-      "bytes": 6905,
-      "sha256": "3c37ff1a3bf95f69530e6d172060c4ba364925e4c3c05b8e41efa0e7b33c0812"
-    },
-    {
-      "path": "vms-backend/internal/app/integrations_internal_test.go",
-      "bytes": 1719,
-      "sha256": "00ea3ef39099cdd840c743114562a8b02ec798ffaf6c2a2bd23f421ed4d80476"
-    },
-    {
-      "path": "vms-backend/internal/app/integrations_test.go",
-      "bytes": 11964,
-      "sha256": "f4d15ba8b5ee5627dbbeb14a9b1fcefdaf5841bdbc69de9ae1b9d4c2f0a0a2d9"
-    },
-    {
-      "path": "vms-backend/internal/app/inventory.go",
-      "bytes": 18139,
-      "sha256": "73447d77c36668d108d8571e13cc236b0b9b2885f0c72d22e3c00a095647c154"
-    },
-    {
-      "path": "vms-backend/internal/app/inventory_test.go",
-      "bytes": 5933,
-      "sha256": "00cacd7bb0b9d85ae27d9be120b851b0170ebfd42b5b1d2aa02ca3dd0702ad54"
-    },
-    {
-      "path": "vms-backend/internal/app/live_test.go",
-      "bytes": 7564,
-      "sha256": "99f128b34dca000e6c01eb3374b7facea43df78df78887a51fc35f96ad77c47e"
-    },
-    {
-      "path": "vms-backend/internal/app/media.go",
-      "bytes": 15586,
-      "sha256": "3b70bd2787f0fbb1ac98f1b37e5a5e17cde3b27916c0811d060d05038baa42b3"
-    },
-    {
-      "path": "vms-backend/internal/app/migrations.go",
-      "bytes": 3181,
-      "sha256": "8b32442d26dc086d1d792e62314ddfd66d5b9220f2445a4b37d4d3a53675ee33"
-    },
-    {
-      "path": "vms-backend/internal/app/mosaics.go",
-      "bytes": 9127,
-      "sha256": "c6fe58e8f271cb581ba29fc586ce7435bd697660f955e691b3917bb51683a2e0"
-    },
-    {
-      "path": "vms-backend/internal/app/mosaics_test.go",
-      "bytes": 1519,
-      "sha256": "e83a6a4526eb87bff14ba241e6caac2b40ac634a313a02b79a5a776e7d3ded72"
-    },
-    {
-      "path": "vms-backend/internal/app/multisource_test.go",
-      "bytes": 7963,
-      "sha256": "8b14a6d09a399f7698fa4aa4d1bdb7e8368b7d2e1a4bef69015b87ecc51cbdc3"
-    },
-    {
-      "path": "vms-backend/internal/app/operations.go",
-      "bytes": 8512,
-      "sha256": "384684c69ec643ebd30e7321ff4d97a40aa743cc03e7b03ad4b09785e54a7e97"
-    },
-    {
-      "path": "vms-backend/internal/app/operations_test.go",
-      "bytes": 3211,
-      "sha256": "d933f403a1969f54eebc6aa5dec2b1eabfc8ee1a71ba71c1f347fbc3a8b61c93"
-    },
-    {
-      "path": "vms-backend/internal/app/playback.go",
-      "bytes": 18053,
-      "sha256": "ae074001ea9835d436540df77a0af27bc7b380d2011664bd539ceb23059aff1b"
-    },
-    {
-      "path": "vms-backend/internal/app/playback_delivery_test.go",
-      "bytes": 1547,
-      "sha256": "12169f667871b46120eb580f8ef4d9e3fad93ae6a233d4f6e576c03c1ea7e52c"
-    },
-    {
-      "path": "vms-backend/internal/app/ptz.go",
-      "bytes": 4526,
-      "sha256": "ed986de0d8465b15c779cf26f7d1de53bf730e8d5cefb298fa287808741cc123"
-    },
-    {
-      "path": "vms-backend/internal/app/ptz_test.go",
-      "bytes": 6166,
-      "sha256": "a855e36a68068ffcab01d6d4fffe9cc5da52d35d0eb1b498ac4d5d7c39ab1428"
-    },
-    {
-      "path": "vms-backend/internal/app/quota.go",
-      "bytes": 9933,
-      "sha256": "7d47e51351a75d4631cd29de2349feebd0021c7bcc37dd2572b178e694dde659"
-    },
-    {
-      "path": "vms-backend/internal/app/quota_test.go",
-      "bytes": 4736,
-      "sha256": "a24d6d3316e7f5d1e2743ade438744afc660bc721b36b2442e05254a1de38eb2"
-    },
-    {
-      "path": "vms-backend/internal/app/recording.go",
-      "bytes": 23265,
-      "sha256": "7fd8cd4a4b0153b73d9649e4f55d427a07e7e8e4fd2213fce294ebaae90cbe02"
-    },
-    {
-      "path": "vms-backend/internal/app/recording_test.go",
-      "bytes": 11889,
-      "sha256": "293f153727566f0b2eeffad5e5b1728e20282fa31d28b5942b810777e540cd66"
-    },
-    {
-      "path": "vms-backend/internal/app/restart_test.go",
-      "bytes": 1876,
-      "sha256": "f7f70ea9e0323ac346aa695296f797e9269a04c81023e6deb00523f8e4566862"
-    },
-    {
-      "path": "vms-backend/internal/app/schedule_test.go",
-      "bytes": 1098,
-      "sha256": "796506de2246011df80b9c7303533b2034de12fa659899f8272fae648a6cd4f4"
-    },
-    {
-      "path": "vms-backend/internal/app/schema.sql",
-      "bytes": 9460,
-      "sha256": "1496596b1e529d086ee76eacd924b735f8437c5bdd5ff75436a6259348bb3edc"
-    },
-    {
-      "path": "vms-backend/internal/app/source_test.go",
-      "bytes": 3632,
-      "sha256": "af340bb273c244526f98e59098228fee1b19ffecc41d4065fd9c75786101bd89"
-    },
-    {
-      "path": "vms-backend/internal/app/vault.go",
-      "bytes": 1730,
-      "sha256": "0379097a8563e001b0000dc3e2fc23021a39ab29188b191fc757a7df0941ba61"
-    },
-    {
-      "path": "vms-backend/internal/camera/dahua.go",
-      "bytes": 12376,
-      "sha256": "e9d9cef76f614f6a562767c1c6ed06de8914891abc468c36964c6ea8ba16fbdc"
-    },
-    {
-      "path": "vms-backend/internal/camera/dahua_capacity_test.go",
-      "bytes": 2307,
-      "sha256": "84d37311eff523baab4344b21f180097baaf4541588728941f49f1744a7444ef"
-    },
-    {
-      "path": "vms-backend/internal/camera/dahua_test.go",
-      "bytes": 8131,
-      "sha256": "73a7810f85db993cfa04de69255aafedcd4861fa2f9a00b429d24940995cc39f"
-    },
-    {
-      "path": "vms-backend/internal/camera/hikvision.go",
-      "bytes": 7377,
-      "sha256": "754fdb3c5ee6bf2334585e35745e1a1dd71185c7e4e330479c72709be643849a"
-    },
-    {
-      "path": "vms-backend/internal/camera/hikvision_ptz.go",
-      "bytes": 3905,
-      "sha256": "8ea691767df6c211f16590ab61cbab48a475d611bd66f71ccb573d4ebe4b3d1f"
-    },
-    {
-      "path": "vms-backend/internal/camera/hikvision_test.go",
-      "bytes": 9554,
-      "sha256": "e368ca0457d74c407b5b2add98a2f44458380cd4ffe08f9182e9023e2bfffda2"
-    },
-    {
-      "path": "vms-backend/internal/camera/integration.go",
-      "bytes": 7326,
-      "sha256": "ca7991d0c31a331c2db18a7c2ffb4cef9424ca9647d6b66c887a6c9a55bb5209"
-    },
-    {
-      "path": "vms-backend/internal/camera/ptz.go",
-      "bytes": 1260,
-      "sha256": "f7c59a2709cf151a1c1ff3a554418204a201124c76f964b7eb1ddec85019e66d"
-    },
-    {
-      "path": "vms-backend/internal/camera/ptz_test.go",
-      "bytes": 4555,
-      "sha256": "edde1d54dcf96dc32c7a199e83e38cf512fa45c9ff97bfd41c9e3fe97e988593"
-    },
-    {
-      "path": "vms-backend/internal/media/archive_compatible.go",
-      "bytes": 9199,
-      "sha256": "f07383c620a9ef6f2be7b96a19b208d7adb653bbc3ac7a204d4b030d7d04c4fc"
-    },
-    {
-      "path": "vms-backend/internal/media/archive_service.go",
-      "bytes": 15694,
-      "sha256": "b17abc89684d203b9a4fb5db1bf45fb217ab6bf206cdae21296130b874f493e1"
-    },
-    {
-      "path": "vms-backend/internal/media/availability.go",
-      "bytes": 7800,
-      "sha256": "dbf6e54ba4d0ca5db1a6561efd3f3bfc222db58105b445634da6772145cc1028"
-    },
-    {
-      "path": "vms-backend/internal/media/availability_test.go",
-      "bytes": 8341,
-      "sha256": "ecbea08941f56926f4985ddbf743e14ce137fcedc05bc63c0c1843964bbd365f"
-    },
-    {
-      "path": "vms-backend/internal/media/camera_cleanup.go",
-      "bytes": 1899,
-      "sha256": "9f078c5d251fa6ab30ecdd171320b4294baf8929f94a0286e20736853c69bfe1"
-    },
-    {
-      "path": "vms-backend/internal/media/camera_cleanup_test.go",
-      "bytes": 5264,
-      "sha256": "da679017711a3533c7831afcdeabbaa06d8aefd9321b36bb319cdb979877fa8a"
-    },
-    {
-      "path": "vms-backend/internal/media/compatible_test.go",
-      "bytes": 12026,
-      "sha256": "93d7ce8650d8485a6296060c5296bdf8e4cf54df36cf08eaa77a0472edcf852e"
-    },
-    {
-      "path": "vms-backend/internal/media/deadline_test.go",
-      "bytes": 796,
-      "sha256": "c0b58ac517c641bf02cf86cb3e24ef09ecad28df2aada2c566af3dfa0090f655"
-    },
-    {
-      "path": "vms-backend/internal/media/export.go",
-      "bytes": 9387,
-      "sha256": "289820b9ebfc76a1f9f95c9e1d000a2ceb84af0162af5737071e65a2ad9becc6"
-    },
-    {
-      "path": "vms-backend/internal/media/export_cleanup.go",
-      "bytes": 786,
-      "sha256": "d5b0d480119219c05148aff1859a7add863200886b4c936ab3d2bc0e45b39666"
-    },
-    {
-      "path": "vms-backend/internal/media/export_expiry_test.go",
-      "bytes": 2225,
-      "sha256": "8963c865e4c23d9fb7c0e11aa22921a20c05a069c64936391846501d1b60b724"
-    },
-    {
-      "path": "vms-backend/internal/media/export_service.go",
-      "bytes": 11700,
-      "sha256": "feba0431e53c4ac39cdc0cc01ea9c35a01c3fa63a5026c734dd030c1760a5e50"
-    },
-    {
-      "path": "vms-backend/internal/media/export_test.go",
-      "bytes": 2659,
-      "sha256": "6e24df11c6b0ef6baf8b932808d32655bfb1c26bfeeaab4c74832ddbbe02cac0"
-    },
-    {
-      "path": "vms-backend/internal/media/guard.go",
-      "bytes": 12243,
-      "sha256": "6207077751cb05c9e681c85e4b55c48dd26193a2046e1cfb8f3fe845438d49ca"
-    },
-    {
-      "path": "vms-backend/internal/media/guard_budget_test.go",
-      "bytes": 1172,
-      "sha256": "79d82b2756e93386785dc454868ef509b84b1eac6c379c1e72c79a53d7579766"
-    },
-    {
-      "path": "vms-backend/internal/media/guard_cleanup_test.go",
-      "bytes": 4318,
-      "sha256": "9132f8ebcf79b329a8186bc3610c734724592e5615b9191080875cae855300fd"
-    },
-    {
-      "path": "vms-backend/internal/media/guard_test.go",
-      "bytes": 5645,
-      "sha256": "69673f9891d5c6118028a60d070ae776aa03bd6dd8b4a0ed59b92b5187d1bf27"
-    },
-    {
-      "path": "vms-backend/internal/media/live_compatible.go",
-      "bytes": 8391,
-      "sha256": "601f90eb4e8fa8fcd758915f35a50d6b289e031b475920f41dcc45c6a30c795b"
-    },
-    {
-      "path": "vms-backend/internal/media/log.go",
-      "bytes": 1548,
-      "sha256": "e58854f5a398ac5a625cafc8bd42d0804bf01ad3c9fd0363183f6c0ae9fbb41f"
-    },
-    {
-      "path": "vms-backend/internal/media/log_test.go",
-      "bytes": 1165,
-      "sha256": "0e24100017068818fb89b5de4dc7643119fb40dae52420657cb076960e383b15"
-    },
-    {
-      "path": "vms-backend/internal/media/probe.go",
-      "bytes": 2414,
-      "sha256": "3dbac0a1670501cb11a279cadf74416d56e20983e39baa15c2c0ec7afb0066e3"
-    },
-    {
-      "path": "vms-backend/internal/media/process_test.go",
-      "bytes": 1795,
-      "sha256": "14c0dcf912a3f83e73e0c71cd9148556e6b675692c7f98b9de1dce9ec6f03ab5"
-    },
-    {
-      "path": "vms-backend/internal/media/process_windows.go",
-      "bytes": 1604,
-      "sha256": "4f039f73955e44e9c6a568190b80df7ba2fa8d74b441764209b908d4be4124c4"
-    },
-    {
-      "path": "vms-backend/internal/media/record.go",
-      "bytes": 3574,
-      "sha256": "ae6296f69e7c05cea981b3f6cfcbd5de5c8b0b4d74e939e6399c90da0bfb2a74"
-    },
-    {
-      "path": "vms-backend/internal/media/record_test.go",
-      "bytes": 2707,
-      "sha256": "efa1a62ce2bf0ca303e2b5ec7a82489864bd745affbc746f92aed188548a66e5"
-    },
-    {
-      "path": "vms-backend/internal/media/rtsp_archive.go",
-      "bytes": 12085,
-      "sha256": "75bfbc1975691a68d7e68ff6f24a5440755960651787688498ea6148a359bf9c"
-    },
-    {
-      "path": "vms-backend/internal/media/rtsp_archive_test.go",
-      "bytes": 2101,
-      "sha256": "a5c123bde64a8daeba1787b6fdae38adb975781aa1136a36b1ae99b8ab3042b0"
-    },
-    {
-      "path": "vms-backend/internal/media/rtsp_time_test.go",
-      "bytes": 392,
-      "sha256": "e23744f7b261269089d4b4c4da6bcd2e84509ff1f884a9dbe21d2afbadcbff9e"
-    },
-    {
-      "path": "vms-backend/internal/ptz/control.go",
-      "bytes": 5079,
-      "sha256": "6700bfab5b3493942845e39cd0b34be1926dbf2932ef494f1f8f321f93e08a2e"
-    },
-    {
-      "path": "vms-backend/internal/ptz/control_test.go",
-      "bytes": 6094,
-      "sha256": "916e93eee872aa957c9da4f06f669d4a7fab40a32e89dd1f895a680e69844192"
-    },
-    {
-      "path": "vms-backend/internal/servicehost/supervisor.go",
-      "bytes": 4336,
-      "sha256": "946976f98f68c47c9f1d488f3c88719c7ab64ff43a584d4fb92b792f78ffb57b"
-    },
-    {
-      "path": "vms-backend/internal/servicehost/supervisor_test.go",
-      "bytes": 2472,
-      "sha256": "dcfefb62417ebd5852b9687677cefee47c235cd859da00e2f72e3c0928a95fe0"
-    },
-    {
-      "path": "vms-backend/internal/storage/catalog_test.go",
-      "bytes": 1412,
-      "sha256": "42b6e1f8119c6a4a5c16718d731742f98514b00baabaa4d6cb8b7da0b211a5a4"
-    },
-    {
-      "path": "vms-backend/internal/storage/checkpoint_test.go",
-      "bytes": 2914,
-      "sha256": "7a1bfc9a53b632177d1fdd14bf595b5ff10fcd3998b956821b8388eb01f25498"
-    },
-    {
-      "path": "vms-backend/internal/storage/files_windows.go",
-      "bytes": 2923,
-      "sha256": "92007c3e400559ee094ff6ac8950bee7957bebc040289be39a4fdff485faf70c"
-    },
-    {
-      "path": "vms-backend/internal/storage/grow_test.go",
-      "bytes": 1214,
-      "sha256": "76d6d69f966d0753019ba084f10f3e368b6ca62b3298fa01505783ed953cd00a"
-    },
-    {
-      "path": "vms-backend/internal/storage/index.go",
-      "bytes": 13621,
-      "sha256": "bcba79edc6a637683918c0566701dcac396ba23ca977dd0d032b2bfec734ef1a"
-    },
-    {
-      "path": "vms-backend/internal/storage/ledger.go",
-      "bytes": 2735,
-      "sha256": "cab5da27d2a6cc4fa80143a412f552d9905e44b007d2f04005a4a422e649b55f"
-    },
-    {
-      "path": "vms-backend/internal/storage/migration_test.go",
-      "bytes": 2900,
-      "sha256": "59caf6204b0108198af698d6b2aac72c12cef4c37a435533035f9d07a1884de4"
-    },
-    {
-      "path": "vms-backend/internal/storage/reconcile.go",
-      "bytes": 3648,
-      "sha256": "2c03c6664121c4d088932a5cd49534eb05327c0b0efe2679b6f42c35476d1bce"
-    },
-    {
-      "path": "vms-backend/internal/storage/reduction.go",
-      "bytes": 2370,
-      "sha256": "035913685f4f1127262504b2253f03a6da4cfaf32958910fbe8ae553fe6ca5f5"
-    },
-    {
-      "path": "vms-backend/internal/storage/reduction_test.go",
-      "bytes": 1436,
-      "sha256": "355106fad52e3833af41643af15192ea8caff5a2de9ffb097addf9ded2ee7eed"
-    },
-    {
-      "path": "vms-backend/internal/storage/scale_test.go",
-      "bytes": 1458,
-      "sha256": "1efe7358b44a1313fb939ef38ff8609c0ee7a98db35cfc539410495ca5088b03"
-    },
-    {
-      "path": "vms-backend/internal/storage/store.go",
-      "bytes": 19114,
-      "sha256": "dbbac20fe8cc2720253deae2d94d744c646f4939d0c869ae40e7d5cac9f579ea"
-    },
-    {
-      "path": "vms-backend/internal/storage/store_test.go",
-      "bytes": 9661,
-      "sha256": "a496540c497500b79f0ba60134b2ef7991ef8ac9e852cda094083d8acc49924b"
-    },
-    {
-      "path": "vms-frontend/.gitignore",
-      "bytes": 600,
-      "sha256": "5fb0e66f04462b87a2525cc01710a233169d2e7224cf22037386a5a15400eeaf"
-    },
-    {
-      "path": "vms-frontend/README.md",
-      "bytes": 2171,
-      "sha256": "7b612e941c8eafdd5385ae3100a7e14bf271fedc3b935858b48ac720f0b10df6"
-    },
-    {
-      "path": "vms-frontend/components.json",
-      "bytes": 521,
-      "sha256": "b874420180399dcdcfc070fbcb4ab1e19e233896d5459b15c0357ad758f9a8cf"
-    },
-    {
-      "path": "vms-frontend/docs/ui.md",
-      "bytes": 521,
-      "sha256": "956092c2046df7323434272ed2c6e392acd976aaa73e06b40f2d2566abbb9020"
-    },
-    {
-      "path": "vms-frontend/next-env.d.ts",
-      "bytes": 295,
-      "sha256": "1b59d4c6b83807db275d43f3cf2cc8e9323f465fab764eea091cc5becd5bad37"
-    },
-    {
-      "path": "vms-frontend/next.config.ts",
-      "bytes": 315,
-      "sha256": "aff7b9aa0c2a45c577c8e831bf8798ca19b36d9f74d9e9d792bf3e249efd2ec8"
-    },
-    {
-      "path": "vms-frontend/package-lock.json",
-      "bytes": 274134,
-      "sha256": "332b2a1343301688a3397c477cd28465c5186336b2c5156f0f6a4b40649e2fa2"
-    },
-    {
-      "path": "vms-frontend/package.json",
-      "bytes": 1137,
-      "sha256": "efcf26465af74cdab56ace0c2cb9cf1dd62bd55e390181f5d55fbba2920ae92b"
-    },
-    {
-      "path": "vms-frontend/postcss.config.mjs",
-      "bytes": 70,
-      "sha256": "5b0bc4c78be977cd81f947fb5563aaa7cc6d451e6f1c53a3260b7656a7144d20"
-    },
-    {
-      "path": "vms-frontend/public/brand/astra-logo-horizontal-claro.svg",
-      "bytes": 1197,
-      "sha256": "0d31680c65bd04a3cec2e0a99676d3450201ce79f968202b81a6c4dd2f5d0c78"
-    },
-    {
-      "path": "vms-frontend/public/brand/astra-logo-horizontal-escuro.svg",
-      "bytes": 1198,
-      "sha256": "5006a91b9b0c00269d1b68ad3a6b715e1239423125eddd29088d0ecf296e8033"
-    },
-    {
-      "path": "vms-frontend/public/brand/astra-monograma-ciano.svg",
-      "bytes": 440,
-      "sha256": "e64613c3ad0f294e34a4783ce733e23a0940868761c870999cc24ef4603b2936"
-    },
-    {
-      "path": "vms-frontend/scripts/package.mjs",
-      "bytes": 216,
-      "sha256": "23f7697dbb6115d681c200b905f2caaf5ddf1ac7582eb2c4c9d2182a19f69b36"
-    },
-    {
-      "path": "vms-frontend/scripts/start.mjs",
-      "bytes": 113,
-      "sha256": "171aa98c39eabef7d437d9262b4d3513f4a479244d0cde0fe64908f4ca4a7775"
-    },
-    {
-      "path": "vms-frontend/src/app/apple-icon.png",
-      "bytes": 3603,
-      "sha256": "3e47c8fbc01227441028d04ecf57096f5cc5b991c455ac20353bc41a76ca22b8"
-    },
-    {
-      "path": "vms-frontend/src/app/astra-ui.css",
-      "bytes": 4536,
-      "sha256": "702b8de8946149bec26cc685ff8138c17a163f7ae8a5d80bce41566b286a572b"
-    },
-    {
-      "path": "vms-frontend/src/app/error.tsx",
-      "bytes": 697,
-      "sha256": "8bd210dc1a4bd0870fb5cd24cb2ab01ab65fce270efaabf6d41d3f59d09617b6"
-    },
-    {
-      "path": "vms-frontend/src/app/favicon.ico",
-      "bytes": 2333,
-      "sha256": "f416505de8e78e588344a878c196da18a49d3b366e2dc605ecd8cbc928cd7532"
-    },
-    {
-      "path": "vms-frontend/src/app/globals.css",
-      "bytes": 4769,
-      "sha256": "e0095c4f576cded4bbd684cf52f5ca5dcfd83c633874245063cff1f523e7f364"
-    },
-    {
-      "path": "vms-frontend/src/app/icon.svg",
-      "bytes": 363,
-      "sha256": "2d26c6d6c81ac5facd61d78c4d444c0279af2649523450ba48c6b50e87aba6cc"
-    },
-    {
-      "path": "vms-frontend/src/app/layout.tsx",
-      "bytes": 880,
-      "sha256": "b2553a5e3c304dc8b725add5e021d7a3246edd6e26e2f6ab69cdacb59bdf5d5a"
-    },
-    {
-      "path": "vms-frontend/src/app/not-found.tsx",
-      "bytes": 566,
-      "sha256": "0e50d32b0cb5f2a7113c9eb82a15624eaf8e6d17973c8670ca600a620b4992ba"
-    },
-    {
-      "path": "vms-frontend/src/app/page.tsx",
-      "bytes": 105,
-      "sha256": "b48196c19e847a834a8b5152f5d51de2e590762d3c35602e3cea279446d1bcf0"
-    },
-    {
-      "path": "vms-frontend/src/app/workspace.css",
-      "bytes": 34850,
-      "sha256": "7bf22995a2a798b0f82e2854014eda2acaabfa62c893cf19747550cb503ed1cf"
-    },
-    {
-      "path": "vms-frontend/src/components/account.css",
-      "bytes": 8226,
-      "sha256": "a745ec3dc46e887d71cc4137762b1fe41f488996e840fff4112238de47469014"
-    },
-    {
-      "path": "vms-frontend/src/components/account.tsx",
-      "bytes": 10930,
-      "sha256": "bf699019d3fd77a10c53a8a4eb7af83555c639d614b2558085973213861dafc1"
-    },
-    {
-      "path": "vms-frontend/src/components/app-sidebar.tsx",
-      "bytes": 1662,
-      "sha256": "2c5cf40fee34fa738a731c3dc77d4f3fa244094b0bffa869566c10b021a7efe7"
-    },
-    {
-      "path": "vms-frontend/src/components/astra-brand.tsx",
-      "bytes": 1738,
-      "sha256": "1b0e0457757356b03b8830d6095cc91b5e4f7d0172d97179c19095f93541779f"
-    },
-    {
-      "path": "vms-frontend/src/components/camera-availability.tsx",
-      "bytes": 3528,
-      "sha256": "88f12ec0c7d0e945b306e03a9910bdc68d85b6358aea7117f58ebeedec5aa5ee"
-    },
-    {
-      "path": "vms-frontend/src/components/camera-connection-editor.tsx",
-      "bytes": 12186,
-      "sha256": "2a52fbea16c27e3269818417b07f3d26cc353187922422499114400ed77d69cb"
-    },
-    {
-      "path": "vms-frontend/src/components/cameras.tsx",
-      "bytes": 14954,
-      "sha256": "08235d96756acc45481df70d6216b3a06bcfd77f4bf2a37dc92477579045288e"
-    },
-    {
-      "path": "vms-frontend/src/components/data-table.css",
-      "bytes": 3780,
-      "sha256": "04dfff35462aef4c0abe52c69f3f5aa16d9d25dc1fdfd3ed5f8316365531d342"
-    },
-    {
-      "path": "vms-frontend/src/components/data-table.tsx",
-      "bytes": 15222,
-      "sha256": "97513c2b845920275148e3659966a882cbb0a9d478f3c25adcc69837f4b21671"
-    },
-    {
-      "path": "vms-frontend/src/components/diagnostic.tsx",
-      "bytes": 2856,
-      "sha256": "5c9f3e4a5006d5b116c670d93ca390d8e763233d9b0f663f84173b6986bf4eca"
-    },
-    {
-      "path": "vms-frontend/src/components/exports.tsx",
-      "bytes": 10757,
-      "sha256": "32b474a882c48d95226f8376f20e3b312e5472e8457e7bd062bcbdd8c84a31eb"
-    },
-    {
-      "path": "vms-frontend/src/components/form-dialog.tsx",
-      "bytes": 3017,
-      "sha256": "c55343f6f87f08a6626e4320fd6b1a88e174cd23fe16dd263441824114489f79"
-    },
-    {
-      "path": "vms-frontend/src/components/global-quality.tsx",
-      "bytes": 3242,
-      "sha256": "ed0ad7fb7d695f73d022ef0c077dc2f184bcec910ca496e2cdaff51f456cdd33"
-    },
-    {
-      "path": "vms-frontend/src/components/live-camera-list.tsx",
-      "bytes": 6749,
-      "sha256": "ad535b85cf07465ad667d1b9b6a9b4b6fa5064cf2679f408c98f2d9e51b9e461"
-    },
-    {
-      "path": "vms-frontend/src/components/live-camera-menu.tsx",
-      "bytes": 2371,
-      "sha256": "bfa0d9e12a19532153b5caaa66817d828c1a9febcc66d2867ad92743e30fb4ad"
-    },
-    {
-      "path": "vms-frontend/src/components/live-camera-viewport.tsx",
-      "bytes": 6118,
-      "sha256": "efec6258a05a15f51afff57fdb00b8fa3f9ea47e82ad4dc7b3bdb005d0e8cc89"
-    },
-    {
-      "path": "vms-frontend/src/components/live-fullscreen.tsx",
-      "bytes": 1505,
-      "sha256": "4c621f76b8a1a48dd88495f5c3ae31580d426f8f3edb100ae9ca69f7045bb937"
-    },
-    {
-      "path": "vms-frontend/src/components/live-header-controls.tsx",
-      "bytes": 1461,
-      "sha256": "8bd306a60fe49e8f9ac926ef68c34c05dda3c8cf0c38eb6d7b0fb95bdc8562d9"
-    },
-    {
-      "path": "vms-frontend/src/components/live-player.tsx",
-      "bytes": 5705,
-      "sha256": "500f97f0d357a6822f4dbfe9fb775159ad4fd8b7c3e6a178356ebfba5e3984a3"
-    },
-    {
-      "path": "vms-frontend/src/components/live-ptz-controls.css",
-      "bytes": 4087,
-      "sha256": "637eb78a924f0bd0275be74a3d86f9a5f32ad390f49de3865b205f55950772a7"
-    },
-    {
-      "path": "vms-frontend/src/components/live-ptz-controls.tsx",
-      "bytes": 8129,
-      "sha256": "4f09b40339a72d7c7b896e755a671acef69ac56cbf203503dabb66080ce2b8d0"
-    },
-    {
-      "path": "vms-frontend/src/components/live-recording-panel.tsx",
-      "bytes": 5594,
-      "sha256": "2b471a1edbb6e786ace4fe3352dfc1892fcd8bfb639136eee7ac316304456256"
-    },
-    {
-      "path": "vms-frontend/src/components/live-saved-views.tsx",
-      "bytes": 6432,
-      "sha256": "c2059019514fd642f8dc22c64baa964f33e61dacd26d3771578a233c3776e3e4"
-    },
-    {
-      "path": "vms-frontend/src/components/live-stream.tsx",
-      "bytes": 9347,
-      "sha256": "301b033ab022694fb04e44458fb30b98a6958ee390874230af58fd9fc3bd2563"
-    },
-    {
-      "path": "vms-frontend/src/components/live-view-context.tsx",
-      "bytes": 8147,
-      "sha256": "2ca382fc37fc3225ff3b23fae91ee9be458b70933bbd3c92a917619f1d80da41"
-    },
-    {
-      "path": "vms-frontend/src/components/live.tsx",
-      "bytes": 8923,
-      "sha256": "2b365f0dbec16524a55c1e028945b3faaa6f9c7cf68770ba6c443f41756afb2b"
-    },
-    {
-      "path": "vms-frontend/src/components/management.tsx",
-      "bytes": 13073,
-      "sha256": "e4fcff92ac6fe3ec8392d89e7e9f2add6c0e96798f10b86a878e3f4bf10a33e4"
-    },
-    {
-      "path": "vms-frontend/src/components/nav-main.tsx",
-      "bytes": 4422,
-      "sha256": "755ad11b5062fa2ac841c236b68fef5088261b233115b6c61535e68089c0b512"
-    },
-    {
-      "path": "vms-frontend/src/components/nav-user.tsx",
-      "bytes": 2395,
-      "sha256": "513865be2cf3a5780e0af112e76abf69e0d01229c793056ea8c6893a755cefd2"
-    },
-    {
-      "path": "vms-frontend/src/components/operations.tsx",
-      "bytes": 10836,
-      "sha256": "4eb44bc390fa7274df5123e1cee98b9b4c7c5fdf5465b6c5bae226d7f8528224"
-    },
-    {
-      "path": "vms-frontend/src/components/orbital-dawn.css",
-      "bytes": 3655,
-      "sha256": "998f58e3ea5b311369c3770a36a34c5863c66c4699ddc986fdc87c55f522d440"
-    },
-    {
-      "path": "vms-frontend/src/components/orbital-dawn.tsx",
-      "bytes": 1203,
-      "sha256": "792bc8534e7e346f16fccc22453fb6cf6694ec62524511f789a5d21c5f601218"
-    },
-    {
-      "path": "vms-frontend/src/components/permission-group-editor.css",
-      "bytes": 5190,
-      "sha256": "a6c5434fe81e6593397893aa61af514e4602a8d0f8d5c1c174570c46df39ec30"
-    },
-    {
-      "path": "vms-frontend/src/components/permission-group-editor.tsx",
-      "bytes": 8362,
-      "sha256": "66a33b1e81f55bd8416e817e13adaf8ed319c3dab13ddb310f707623f386db20"
-    },
-    {
-      "path": "vms-frontend/src/components/playback.tsx",
-      "bytes": 12110,
-      "sha256": "9e54c0c3ffe21261ae3cdf5c4918083c56a56b93697427ca87fb05f49789ac89"
-    },
-    {
-      "path": "vms-frontend/src/components/quota-reduction.tsx",
-      "bytes": 5184,
-      "sha256": "d264f78d5b41944f88ca20ecb7b37c39135e0de6d6f6bfb5efda0f09d63f9343"
-    },
-    {
-      "path": "vms-frontend/src/components/recording.tsx",
-      "bytes": 15675,
-      "sha256": "8464c89de2c14385b23ae279dd0cdcae76f1e6de6d348386047d3057fd667525"
-    },
-    {
-      "path": "vms-frontend/src/components/rtsp-connection-test.tsx",
-      "bytes": 1639,
-      "sha256": "766b293c4133f82b6df492d0918b5132e1e56a67e8e1e0afad49616a4d631a5a"
-    },
-    {
-      "path": "vms-frontend/src/components/sites.tsx",
-      "bytes": 4568,
-      "sha256": "d227b909c1186f6c20fc7b608c25347f8e68319f40c6077ec64db8cf645fef6d"
-    },
-    {
-      "path": "vms-frontend/src/components/team-switcher.tsx",
-      "bytes": 2595,
-      "sha256": "e6284b90b700a8650a5cfea3af9d5aa3a57f5a2f152262d94a2179ab4fd08073"
-    },
-    {
-      "path": "vms-frontend/src/components/ui/alert.tsx",
-      "bytes": 2060,
-      "sha256": "3ea80af4920b570fcd7592e12ceccd1803566e453777fe69ec38299625fc3cb5"
-    },
-    {
-      "path": "vms-frontend/src/components/ui/avatar.tsx",
-      "bytes": 3096,
-      "sha256": "bcf78ced08788ecaf307f11cd1f994e82e2f7d6e33d4d466baeee6dbdca50c62"
-    },
-    {
-      "path": "vms-frontend/src/components/ui/badge.tsx",
-      "bytes": 1895,
-      "sha256": "9cf4675414acf20c53b2a3ecfb631746da435fa3d7a4a72450d1169213255baf"
-    },
-    {
-      "path": "vms-frontend/src/components/ui/breadcrumb.tsx",
-      "bytes": 2476,
-      "sha256": "2a11a565965302ac9ff0f0df45806fccde3a75c7348e9ba4a97590fc28b36221"
-    },
-    {
-      "path": "vms-frontend/src/components/ui/button.tsx",
-      "bytes": 3258,
-      "sha256": "40dcea12cc5c9a357df10b6d56dfde7907cd84d076887fa4b56ac0a39f9e55b7"
-    },
-    {
-      "path": "vms-frontend/src/components/ui/card.tsx",
-      "bytes": 2494,
-      "sha256": "5e7040289fff160d6ef96afcb52a7ef9d4bd01e44a144adf80b0c1957fb5fa47"
-    },
-    {
-      "path": "vms-frontend/src/components/ui/checkbox.tsx",
-      "bytes": 1572,
-      "sha256": "665440d899f13c70ab242bba8d2ce46f1fc883e01d8a0316b6c7aeddc35e225b"
-    },
-    {
-      "path": "vms-frontend/src/components/ui/collapsible.tsx",
-      "bytes": 795,
-      "sha256": "c6598e5584f4258b5d9fefadbc5ad6a66888ad58729f4b634a0bb2d9c513188b"
-    },
-    {
-      "path": "vms-frontend/src/components/ui/dropdown-menu.tsx",
-      "bytes": 8862,
-      "sha256": "57b39af2521a1d0b0ff5d3d162f78e88b13a39b642b5fc358ef8c1c47bb5d202"
-    },
-    {
-      "path": "vms-frontend/src/components/ui/empty.tsx",
-      "bytes": 2393,
-      "sha256": "44b0dab5c420a1b23b9d24a3c1d1a2e05af2cf0cd57950425c2ddd0aea0cbe18"
-    },
-    {
-      "path": "vms-frontend/src/components/ui/field.tsx",
-      "bytes": 6216,
-      "sha256": "d3a6d0efee5efbb758c45e393c9c8103ef013b26d9c1878453e64aee57a70ee2"
-    },
-    {
-      "path": "vms-frontend/src/components/ui/input.tsx",
-      "bytes": 783,
-      "sha256": "4b95bbd4853b2cfd72d7d67e0561fd144f6218c372f85770c3bd511b9f6f7a09"
-    },
-    {
-      "path": "vms-frontend/src/components/ui/label.tsx",
-      "bytes": 604,
-      "sha256": "276b329ef082a4094c884617bd4c4c6e20b99477f0f5f79fe17a225811ad04d9"
-    },
-    {
-      "path": "vms-frontend/src/components/ui/native-select.tsx",
-      "bytes": 2022,
-      "sha256": "a345d828af2209d06f785f9f792f88028ffba6013b8fe0adfaa6a5321ee3fd84"
-    },
-    {
-      "path": "vms-frontend/src/components/ui/popover.tsx",
-      "bytes": 2369,
-      "sha256": "2087357dcaaf60f67e4c0559545ec8380a710f03ba914e76f83c529ed2136b37"
-    },
-    {
-      "path": "vms-frontend/src/components/ui/progress.tsx",
-      "bytes": 734,
-      "sha256": "446d5c9b37a64984253e17c4abdbd31738bbb7ff92ac66d2b99fd7a8c23a06db"
-    },
-    {
-      "path": "vms-frontend/src/components/ui/separator.tsx",
-      "bytes": 634,
-      "sha256": "b5b5460e5337c2d5f361c1512001615b2e5eacb38c7449a4418bb9ddb47c4bba"
-    },
-    {
-      "path": "vms-frontend/src/components/ui/sheet.tsx",
-      "bytes": 4569,
-      "sha256": "bbf304761c4d2393ae40ee87235ea53ecb1e055ce0380499e4466421e241118f"
-    },
-    {
-      "path": "vms-frontend/src/components/ui/sidebar.tsx",
-      "bytes": 21369,
-      "sha256": "efd7d3facbb34d987ca5d0997a5472ca5007c4efd73576029cb49b83f2d6fabf"
-    },
-    {
-      "path": "vms-frontend/src/components/ui/skeleton.tsx",
-      "bytes": 266,
-      "sha256": "4c2af7fa9c645358a0fb188779deab6f0b981733b62befc25e18aaebea1350dc"
-    },
-    {
-      "path": "vms-frontend/src/components/ui/spinner.tsx",
-      "bytes": 313,
-      "sha256": "6916679a40ad1c7624520de5eaa7b337635e81f9a76413201267f8619844646f"
-    },
-    {
-      "path": "vms-frontend/src/components/ui/table.tsx",
-      "bytes": 2392,
-      "sha256": "e87f4888357e1c8d024b9e4ed7ecd800890c0ddc2fe2a08c6096e00c9193b58a"
-    },
-    {
-      "path": "vms-frontend/src/components/ui/tabs.tsx",
-      "bytes": 3535,
-      "sha256": "492a3941a3b488fde78cebf22abf93b90a318caddacf2c6d5431fd97f2fcf899"
-    },
-    {
-      "path": "vms-frontend/src/components/ui/tooltip.tsx",
-      "bytes": 2101,
-      "sha256": "e94530dd6877132d5eda73f6fb0d217f345477232f140f2ca6e024d790177f6a"
-    },
-    {
-      "path": "vms-frontend/src/components/workspace.tsx",
-      "bytes": 11203,
-      "sha256": "fc072f777b4654a5c87129e1ec0317193138ad4d1719783c4a949021659385f1"
-    },
-    {
-      "path": "vms-frontend/src/hooks/use-mobile.ts",
-      "bytes": 565,
-      "sha256": "ad0936f84f1df79d3697bfbff9c18f8ad58431c1cbaf2359c6a853b0fcc9f28b"
-    },
-    {
-      "path": "vms-frontend/src/lib/api.ts",
-      "bytes": 8256,
-      "sha256": "e21a7c81cffc3ace05c2dd598d936390dec8aaa923c34756df9a433c85b6e0db"
-    },
-    {
-      "path": "vms-frontend/src/lib/camera-availability.ts",
-      "bytes": 2619,
-      "sha256": "0eaad0760fdd88bf6c08451da95cc6952fbb5f335d500305721452bb4f31d264"
-    },
-    {
-      "path": "vms-frontend/src/lib/events.ts",
-      "bytes": 709,
-      "sha256": "76527e30c014424e5f2316a4150102408992324fb3c33cd603731b7e9494cd29"
-    },
-    {
-      "path": "vms-frontend/src/lib/live-mosaic.ts",
-      "bytes": 1663,
-      "sha256": "303b5bd281ccf5dfa2459e531350959990a57c0ac771fc5d5727c5980291226a"
-    },
-    {
-      "path": "vms-frontend/src/lib/live-transition-queue.ts",
-      "bytes": 1180,
-      "sha256": "e028a50b2b564b0ab82e0d0ce091e3470b7c623bcf1db8817192fdceb3f767e8"
-    },
-    {
-      "path": "vms-frontend/src/lib/permission-grants.ts",
-      "bytes": 3032,
-      "sha256": "64d17e0da5b68cac7a47f6dd2dc77c34649885e7c903ec3143671d31cf79d1cf"
-    },
-    {
-      "path": "vms-frontend/src/lib/ptz-control.ts",
-      "bytes": 2877,
-      "sha256": "21e1c30ad4c94414f638652bf07ecb3046ca67e04c9e37c99141ef6b47b01473"
-    },
-    {
-      "path": "vms-frontend/src/lib/recording-timeline.ts",
-      "bytes": 1866,
-      "sha256": "de385333be9ae9a63751f8b08c2b55187e04706db54c6923aa0513a32b87b499"
-    },
-    {
-      "path": "vms-frontend/src/lib/use-live-fullscreen.ts",
-      "bytes": 2533,
-      "sha256": "841fbbd2736b1a8fd40f57f802e7436777ccc30b88174b8213602d73cca7d3d4"
-    },
-    {
-      "path": "vms-frontend/src/lib/utils.ts",
-      "bytes": 24,
-      "sha256": "14300d758170c270c75b057f38fedb3793a5920ea872f0477e29fb131185e8a7"
-    },
-    {
-      "path": "vms-frontend/src/lib/video-compatibility.ts",
-      "bytes": 1195,
-      "sha256": "a66dba9bb162ef29b826437b81ba4cb9a4c89e7721fcb6bf0995a61325917bc6"
-    },
-    {
-      "path": "vms-frontend/tests/camera-availability/README.md",
-      "bytes": 1490,
-      "sha256": "7ffdef388bd95d395e72ad50ea998abbba41cb5ea04cdc931a9d3ec8af6675e1"
-    },
-    {
-      "path": "vms-frontend/tests/camera-availability/build.mjs",
-      "bytes": 2442,
-      "sha256": "5b40d06c546175bda59208f5ab6e26310a2ae591554bd898c5799272b67c0c9e"
-    },
-    {
-      "path": "vms-frontend/tests/camera-availability/check.cjs",
-      "bytes": 5885,
-      "sha256": "8a76cf3cd2d26ab964f912d8922798fdeff966d7e1536bc18deaa7a892241d3b"
-    },
-    {
-      "path": "vms-frontend/tests/camera-availability/fixture.tsx",
-      "bytes": 3572,
-      "sha256": "0ff251042a78689e2ee31abc241257739eba9448736cbf9844c5afa19fd49051"
-    },
-    {
-      "path": "vms-frontend/tests/camera-availability/serve.mjs",
-      "bytes": 2125,
-      "sha256": "e37c5690ce9d58e281dcebc6f965fd651963c21d3a4b5b02461e189cf3659671"
-    },
-    {
-      "path": "vms-frontend/tests/camera-deletion/README.md",
-      "bytes": 748,
-      "sha256": "5848f6290ca6c63a472083021e3b0d7be6cb1dba83a4252e059d490e4fd92e36"
-    },
-    {
-      "path": "vms-frontend/tests/camera-deletion/build.mjs",
-      "bytes": 2434,
-      "sha256": "6a6fbd339c06b904f49773fc9b63ff4a4caff97a8988129a3fbd930dca0cef15"
-    },
-    {
-      "path": "vms-frontend/tests/camera-deletion/fixture.tsx",
-      "bytes": 2167,
-      "sha256": "dd64b2c0cf80980f1b03108db947ba3407cfc3ceae29ea2a41f50f21daf2e1e6"
-    },
-    {
-      "path": "vms-frontend/tests/camera-deletion/serve.mjs",
-      "bytes": 2113,
-      "sha256": "b9d008a4b13b7296ce75ad49aa4891679549520db56c19aee1fe43c148c799e6"
-    },
-    {
-      "path": "vms-frontend/tests/camera-form/README.md",
-      "bytes": 1493,
-      "sha256": "8aa03c812384cd739e9dd8cbdbb3c9dfb187e2092bdbee24ac83847ba1e04c87"
-    },
-    {
-      "path": "vms-frontend/tests/camera-form/build.mjs",
-      "bytes": 2426,
-      "sha256": "615276664b3d27ca46503f19d418f3f75722fc84b43cf948cf159df78defb517"
-    },
-    {
-      "path": "vms-frontend/tests/camera-form/check.cjs",
-      "bytes": 13908,
-      "sha256": "dd4115b11a4b7bc6b7d45973e3900fb31de0ad2eac98ce1c7ada20f2edb5d374"
-    },
-    {
-      "path": "vms-frontend/tests/camera-form/fixture.tsx",
-      "bytes": 4077,
-      "sha256": "d49709a96106fd3138f71b5b32983bf4c48b33a16350efab2a423f4d6a4385dd"
-    },
-    {
-      "path": "vms-frontend/tests/camera-form/serve.mjs",
-      "bytes": 2126,
-      "sha256": "db38da9dda33caeb8335488a6fe9c4c5068252bb45d2ca0e7f88188b897c305c"
-    },
-    {
-      "path": "vms-frontend/tests/data-table/.gitignore",
-      "bytes": 12,
-      "sha256": "2ca99dacdf8870024dce15908b589ab4af26e80f7e1235a6d0f274dc2891efe0"
-    },
-    {
-      "path": "vms-frontend/tests/data-table/README.md",
-      "bytes": 3764,
-      "sha256": "343c6715856c7126b3af6993f029102e69b970e29390227a3eb289bd5f111284"
-    },
-    {
-      "path": "vms-frontend/tests/data-table/build.mjs",
-      "bytes": 2385,
-      "sha256": "11f2995aa163c0317e9f24ac96404cf4a4ed9ab48117efeb2e9ac33d82356834"
-    },
-    {
-      "path": "vms-frontend/tests/data-table/check.cjs",
-      "bytes": 6063,
-      "sha256": "6cab3f6c10580a6fbea4383a93510ed81aa67031a18295efcdffe942558f127a"
-    },
-    {
-      "path": "vms-frontend/tests/data-table/fixture.tsx",
-      "bytes": 3093,
-      "sha256": "e5a7434c95bbb3131f7a8626a315542efc6aca94e7f8dbdbaff47da41340356f"
-    },
-    {
-      "path": "vms-frontend/tests/data-table/integration-check.cjs",
-      "bytes": 6387,
-      "sha256": "c1046759bd20934ff8bcf9339404cd3b09fffeb3fae3751560a14ae934f6d78f"
-    },
-    {
-      "path": "vms-frontend/tests/data-table/integration.tsx",
-      "bytes": 7173,
-      "sha256": "59d541798b8b9dfb4727b88d2ea1e488778926054609790602016e30c529faf1"
-    },
-    {
-      "path": "vms-frontend/tests/data-table/serve.mjs",
-      "bytes": 2075,
-      "sha256": "aa64dde76f4254016a5c33f6b814767b1a403b553b5291a9a6f17039ec7a567c"
-    },
-    {
-      "path": "vms-frontend/tests/live-continuity/.gitignore",
-      "bytes": 12,
-      "sha256": "2ca99dacdf8870024dce15908b589ab4af26e80f7e1235a6d0f274dc2891efe0"
-    },
-    {
-      "path": "vms-frontend/tests/live-continuity/README.md",
-      "bytes": 4427,
-      "sha256": "5cbbcefafdc64e5bb6d286aa2cbb07db22daca10dc01292c7ae88f17d8094ced"
-    },
-    {
-      "path": "vms-frontend/tests/live-continuity/check.cjs",
-      "bytes": 9972,
-      "sha256": "9a11d53aa8342a7a7c499160eee471a3efd69e3310f087d15ef16ec88eebaa9e"
-    },
-    {
-      "path": "vms-frontend/tests/live-continuity/digital-zoom.cjs",
-      "bytes": 5482,
-      "sha256": "4cd3e8b7def9182cf675aeab8fcb0fb7dade3a9cd302bc78d46daa7d0aebf019"
-    },
-    {
-      "path": "vms-frontend/tests/live-continuity/drag.cjs",
-      "bytes": 5500,
-      "sha256": "404751f2e2147c38e1d140cdc3e08755d602240168550511fe4359a751723e41"
-    },
-    {
-      "path": "vms-frontend/tests/live-continuity/fallback.cjs",
-      "bytes": 3356,
-      "sha256": "e9da86204090ecbf86915d07bc0cefe29877a14ca7db00629dc5bea92f23c960"
-    },
-    {
-      "path": "vms-frontend/tests/live-continuity/fixture.tsx",
-      "bytes": 9136,
-      "sha256": "77b9fffc8f95eb2b01ba1b44e98e15b16deaab9e761b0ddf7653bafe30aca464"
-    },
-    {
-      "path": "vms-frontend/tests/live-continuity/panel.cjs",
-      "bytes": 4422,
-      "sha256": "0d5469c2c185abc3478b183938feebfa7199980e30dc17a8b4ab5f3ddd557996"
-    },
-    {
-      "path": "vms-frontend/tests/live-continuity/saved-views.cjs",
-      "bytes": 3455,
-      "sha256": "c0ce1829d154fd6b402ad67bb6a4c05e33a5f4f0a9c1bf406c5f904d0fe6baaf"
-    },
-    {
-      "path": "vms-frontend/tests/live-continuity/serve.mjs",
-      "bytes": 840,
-      "sha256": "5972c6e7b75136b2c2855ddda7a0843e959cf897cacc98802f9dda993e428005"
-    },
-    {
-      "path": "vms-frontend/tests/live-mosaic.node.mjs",
-      "bytes": 2735,
-      "sha256": "4ce051cf3bb15b5122a119b0c8add2b63706c56da6d9ff1a447f71df3e82e8a0"
-    },
-    {
-      "path": "vms-frontend/tests/live-ptz/.gitignore",
-      "bytes": 13,
-      "sha256": "cd9e593418d6a88b2e5cfc359d66a2fc8a2b1b3fb9d39e2c53231845444456c9"
-    },
-    {
-      "path": "vms-frontend/tests/live-ptz/README.md",
-      "bytes": 2256,
-      "sha256": "33491b31861ce08dee0d5cf72bcf881c8f19331381bc15315562587bc81c65b4"
-    },
-    {
-      "path": "vms-frontend/tests/live-ptz/build.mjs",
-      "bytes": 2427,
-      "sha256": "e3a9f8a46cc770524d8c338b7ce34b3ade7b14aca7187878cdfb2764b7bdf76f"
-    },
-    {
-      "path": "vms-frontend/tests/live-ptz/check.cjs",
-      "bytes": 5856,
-      "sha256": "193827a27edd875aeb5179ecae126a22c4b9fca298f45ee288d5f1218841db01"
-    },
-    {
-      "path": "vms-frontend/tests/live-ptz/collapse.cjs",
-      "bytes": 1418,
-      "sha256": "a488c7f18b1aeb7446dab99493015423dfb608252d09854d1eb2f97fba8017a0"
-    },
-    {
-      "path": "vms-frontend/tests/live-ptz/fixture.tsx",
-      "bytes": 3985,
-      "sha256": "8f7b165198dd57cb5a9731919969c0e84e69bf7d1e7e8a6894e94dc5c8a85d3f"
-    },
-    {
-      "path": "vms-frontend/tests/live-ptz/multi-input.cjs",
-      "bytes": 1852,
-      "sha256": "f4091d3f2574364d68f95a59423b779847de18c00f80d757e20b57bb94c450cc"
-    },
-    {
-      "path": "vms-frontend/tests/live-ptz/serve.mjs",
-      "bytes": 2092,
-      "sha256": "a76fb53eb3bf1e3987ecde074a979279a4716621dcfec0861cfd0849f71734c5"
-    },
-    {
-      "path": "vms-frontend/tests/permission-grants.node.mjs",
-      "bytes": 4469,
-      "sha256": "0c0b0e94497250b2788cda85849ebe6006a7461e72d0ce12c2d59ac6f5c7266b"
-    },
-    {
-      "path": "vms-frontend/tests/permission-groups/README.md",
-      "bytes": 1476,
-      "sha256": "a0a63012facd41fd3badc7bf773938b3b1d694b3dced3bcecf27a998423e6cf2"
-    },
-    {
-      "path": "vms-frontend/tests/permission-groups/build.mjs",
-      "bytes": 2496,
-      "sha256": "c610abeec59bad5a1b88883baac51b384466ff7075c4eb64564ed8972a4d3688"
-    },
-    {
-      "path": "vms-frontend/tests/permission-groups/fixture.tsx",
-      "bytes": 4106,
-      "sha256": "d4a8074a90fd33ae306bd7c866effdb1ceaa11e3793bbcb3cff80819782b7d63"
-    },
-    {
-      "path": "vms-frontend/tests/permission-groups/serve.mjs",
-      "bytes": 2117,
-      "sha256": "eebf2aacfd25a5032ff91da6be776b2f56cfd752e7325a33abd862ed42eea51f"
-    },
-    {
-      "path": "vms-frontend/tests/recording-timeline.node.mjs",
-      "bytes": 1582,
-      "sha256": "e02ed592d3824e1fef8b025bc48a3f813245e69112a9c88b969245495c042238"
-    },
-    {
-      "path": "vms-frontend/tsconfig.json",
-      "bytes": 597,
-      "sha256": "98fe6321906dc33c793b7f1c3eeaf6cdc72bc34f775b1ca7e28be2cba03525b2"
+      "bytes": 11353,
+      "sha256": "23b8aa390cb811a65a87ae8fa3bd5abe7250715e91fbd82b695af04ab1b7934e"
     }
   ]
 }

@@ -2,7 +2,7 @@
 
 Fixture com `LiveViewProvider` e `LivePTZControls` reais e API simulada, sem conexão a equipamentos. Gera CSS com o tema e os estilos reais do controle. A primeira câmera oferece todos os recursos; a segunda oferece zoom e Home.
 
-Na pasta `vms-frontend`:
+Na pasta `frontend`:
 
 ```powershell
 node tests/live-ptz/build.mjs

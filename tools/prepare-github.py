@@ -13,12 +13,12 @@ selection = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(selection)
 
 EXCLUDED = {
-    "vms-frontend/src/components/lightfall.tsx",
-    "vms-frontend/src/components/lightfall.css",
-    "vms-frontend/src/components/gradient-ascii.tsx",
-    "vms-frontend/src/components/gradient-ascii.css",
-    "vms-frontend/docs/licenses/react-bits.md",
-    "vms-backend/docs/hikvision.md",
+    "frontend/src/components/lightfall.tsx",
+    "frontend/src/components/lightfall.css",
+    "frontend/src/components/gradient-ascii.tsx",
+    "frontend/src/components/gradient-ascii.css",
+    "frontend/docs/licenses/react-bits.md",
+    "backend/docs/hikvision.md",
 }
 
 
@@ -28,8 +28,8 @@ def text(raw):
 
 def prepare():
     files = {name: raw for name, raw in selection.selected_files()
-             if name not in EXCLUDED and not name.startswith("vms-frontend/tests/login-background/")}
-    workspace = "vms-frontend/src/components/workspace.tsx"
+             if name not in EXCLUDED and not name.startswith("frontend/tests/login-background/")}
+    workspace = "frontend/src/components/workspace.tsx"
     content = text(files[workspace])
     if 'import Lightfall from "@/components/lightfall";' in content:
         content = content.replace('import Lightfall from "@/components/lightfall";',
@@ -50,7 +50,7 @@ def prepare():
     readme = re.sub(r"O código também contém uma integração.*?(?=\n\n## Arquitetura)",
                     "As integrações Dahua e Hikvision são mantidas, incluindo os recursos PTZ já implementados. Manuais de fabricantes e suas extrações não são distribuídos com o código.", readme, flags=re.S)
     readme = re.sub(r"## Licença e terceiros.*\Z",
-                    "## Licença e terceiros\n\nLicença MIT para o código próprio: consulte [LICENSE](LICENSE).\n\nAs dependências conservam suas próprias licenças. Esta variante usa o fundo CSS original OrbitalDawn e não distribui os componentes React Bits. Consulte [THIRD-PARTY.md](vms-backend/deploy/windows/THIRD-PARTY.md) antes de distribuir binários.\n", readme, flags=re.S)
+                    "## Licença e terceiros\n\nLicença MIT para o código próprio: consulte [LICENSE](LICENSE).\n\nAs dependências conservam suas próprias licenças. Esta variante usa o fundo CSS original OrbitalDawn e não distribui os componentes React Bits. Consulte [THIRD-PARTY.md](backend/deploy/windows/THIRD-PARTY.md) antes de distribuir binários.\n", readme, flags=re.S)
     files["README.md"] = readme.encode("utf-8")
     files["LICENSE"] = files["tools/github/LICENSE-MIT.txt"]
     files["docs/publication.md"] = files["tools/github/publication.md"]
@@ -58,15 +58,15 @@ def prepare():
     contribution = re.sub(r"A publicação e a escolha da licença.*?(?=\n\n)",
                           "O código próprio é distribuído sob a licença MIT, apresentada em LICENSE. Dependências de terceiros conservam seus próprios termos.", contribution, count=1, flags=re.S)
     files["CONTRIBUTING.md"] = contribution.encode("utf-8")
-    for name in ("vms-backend/README.md", "vms-frontend/README.md"):
+    for name in ("backend/README.md", "frontend/README.md"):
         content = text(files[name]).replace("A licença do código próprio está pendente;", "A licença do código próprio é MIT;")
         files[name] = content.encode("utf-8")
     # Keep the Astra PTZ contract; omit the manufacturer protocol/manual section.
-    ptz = "vms-backend/docs/ptz.md"
+    ptz = "backend/docs/ptz.md"
     if ptz in files:
         content = re.sub(r"## Adaptador Hikvision.*?(?=## Validação e limites)", "", text(files[ptz]), flags=re.S)
         files[ptz] = content.encode("utf-8")
-    files["vms-frontend/docs/ui.md"] = (
+    files["frontend/docs/ui.md"] = (
         "# Interface do Astra\n\nA interface usa shadcn/ui, tema escuro, cores ciano e fonte Inter. "
         "Os componentes compartilhados ficam em src/components/ui; os estilos gerais em src/app.\n\n"
         "A variante pública usa a cena CSS original OrbitalDawn no login. Os componentes derivados "
@@ -74,7 +74,7 @@ def prepare():
         "A marca e os ícones usam os ativos Astra presentes em public/brand e src/app. "
         "A interface consulta a API na mesma origem HTTPS e respeita as permissões por tenant.\n"
     ).encode("utf-8")
-    for path in ("vms-frontend/package.json", "vms-frontend/package-lock.json"):
+    for path in ("frontend/package.json", "frontend/package-lock.json"):
         package = json.loads(text(files[path]))
         package["license"] = "MIT"
         if path.endswith("package-lock.json"):

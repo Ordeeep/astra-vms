@@ -60,7 +60,7 @@ Os testes de recepção usam um servidor RTSP sintético local e exercitam H.264
 
 `TestCameraAvailabilityAPIReusesCacheAndInvalidatesEdits` exige `VMS_TEST_DB` de laboratório e cria seu próprio schema. Verifica acompanhamento sem espectador, cancelamento durante edição, invalidação imediata, nome, reativação, exclusão e ausência de testes disparados pelas consultas GET. Não imprime a conexão do banco. Consulte também [validação geral](validation.md).
 
-A fixture do frontend está em [tests/camera-availability](../../vms-frontend/tests/camera-availability/README.md). A validação realizada em 01/11/2026 passou com PostgreSQL de laboratório, fontes RTSP sintéticas, detector de corridas do Go, typecheck, build e navegador real com API simulada. Esses resultados não substituem ensaios prolongados e com câmeras físicas.
+A fixture do frontend está em [tests/camera-availability](../../frontend/tests/camera-availability/README.md). A validação realizada em 01/11/2026 passou com PostgreSQL de laboratório, fontes RTSP sintéticas, detector de corridas do Go, typecheck, build e navegador real com API simulada. Esses resultados não substituem ensaios prolongados e com câmeras físicas.
 
 ### Verificação pontual das câmeras cadastradas
 

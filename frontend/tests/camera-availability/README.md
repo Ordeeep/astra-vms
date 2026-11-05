@@ -2,7 +2,7 @@
 
 Fixture do componente real CamerasWorkspace com quatro estados e respostas de inventário simuladas em memória. Não acessa a instalação nem câmeras físicas.
 
-Na pasta vms-frontend:
+Na pasta frontend:
 
 ```powershell
 node tests/camera-availability/build.mjs
@@ -14,7 +14,7 @@ O servidor usa http://127.0.0.1:13118. A partir da raiz projeto-vms, com o servi
 ```powershell
 New-Item -ItemType Directory -Force output/playwright/camera-availability
 npx --yes --package @playwright/cli playwright-cli -s=camera-availability open http://127.0.0.1:13118
-npx --yes --package @playwright/cli playwright-cli -s=camera-availability run-code --filename vms-frontend/tests/camera-availability/check.cjs
+npx --yes --package @playwright/cli playwright-cli -s=camera-availability run-code --filename frontend/tests/camera-availability/check.cjs
 npx --yes --package @playwright/cli playwright-cli -s=camera-availability close
 ```
 

@@ -7,6 +7,6 @@ useDefault = true
 # Exceção limitada simultaneamente ao caminho e ao valor exato.
 [allowlist]
 condition = "AND"
-paths = ['''(^|/)(vms-backend/)?internal/app/recording_test\.go$''']
+paths = ['''(^|/)(backend/)?internal/app/recording_test\.go$''']
 regexTarget = "secret"
 regexes = ['''^quota-integration-0001$''']

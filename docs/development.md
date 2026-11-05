@@ -23,11 +23,11 @@ Mantenha os dados fora da pasta de fontes, por exemplo em `%LOCALAPPDATA%\Astra-
 Na raiz da cópia de fontes:
 
 ```powershell
-Push-Location vms-backend
+Push-Location backend
 go build -trimpath -o bin/vms.exe ./cmd/vms
 go build -trimpath -o bin/vms-worker.exe ./cmd/vms-worker
 Pop-Location
-Push-Location vms-frontend
+Push-Location frontend
 npm ci
 npm run build
 Pop-Location
@@ -57,7 +57,7 @@ Restrinja o acesso ao diretório privado à sua conta e aos processos que precis
 
 Use três terminais. As portas abaixo precisam estar disponíveis; não inicie outra cópia sobre uma instalação já em execução.
 
-**Terminal 1**, na pasta `vms-frontend`:
+**Terminal 1**, na pasta `frontend`:
 
 ```powershell
 npm start
@@ -71,7 +71,7 @@ Para editar a interface com atualização automática ao salvar, use `npm run de
 $astraData = Join-Path $env:LOCALAPPDATA 'Astra-dev'
 $env:VMS_WORKER_SECRET = (Get-Content (Join-Path $astraData 'worker-secret.txt') -Raw).Trim()
 $astraMediaMTX = Read-Host 'Caminho absoluto para mediamtx.exe'
-.\vms-backend\bin\vms-worker.exe --mediamtx $astraMediaMTX --data (Join-Path $astraData 'worker') --udp '127.0.0.1:18189'
+.\backend\bin\vms-worker.exe --mediamtx $astraMediaMTX --data (Join-Path $astraData 'worker') --udp '127.0.0.1:18189'
 ```
 
 O worker inicia o MediaMTX; não execute outra instância nas mesmas portas. FFmpeg e ffprobe devem estar no PATH desse terminal.
@@ -83,7 +83,7 @@ $astraData = Join-Path $env:LOCALAPPDATA 'Astra-dev'
 $env:VMS_WORKER_SECRET = (Get-Content (Join-Path $astraData 'worker-secret.txt') -Raw).Trim()
 $astraConnection = Read-Host 'URI PostgreSQL do banco astra_dev (incluindo sua senha)' -AsSecureString
 $env:VMS_DATABASE_URL = [Net.NetworkCredential]::new('', $astraConnection).Password
-.\vms-backend\bin\vms.exe --data (Join-Path $astraData 'app')
+.\backend\bin\vms.exe --data (Join-Path $astraData 'app')
 ```
 
 A URI tem a forma `postgres://astra_dev:SENHA_CODIFICADA@127.0.0.1:5432/astra_dev?sslmode=disable`. Use a porta do seu PostgreSQL e codifique os caracteres reservados da senha como exigido por uma URI. `sslmode=disable` é apresentado apenas para banco local em loopback. Não cole a URI em issues ou commits.
@@ -101,8 +101,8 @@ Esses comandos iniciam processos no terminal, sem registrar serviços Windows. O
 
 ## Testes e pacote Windows
 
-Execute os comandos do README. Integrações Go dependem de PostgreSQL descartável em `VMS_TEST_DB`; testes de mídia podem exigir `VMS_TEST_RTSP`, `VMS_TEST_MEDIAMTX`, FFmpeg, ffprobe e um worker compilado. Consulte [validação do backend](../vms-backend/docs/validation.md).
+Execute os comandos do README. Integrações Go dependem de PostgreSQL descartável em `VMS_TEST_DB`; testes de mídia podem exigir `VMS_TEST_RTSP`, `VMS_TEST_MEDIAMTX`, FFmpeg, ffprobe e um worker compilado. Consulte [validação do backend](../backend/docs/validation.md).
 
-O empacotador aceita `-Go` com o caminho do seu Go instalado e `-FrontendPath` com o diretório do frontend; informe-os para substituir os padrões particulares do workspace original. Consulte os outros argumentos em [build-package.ps1](../vms-backend/deploy/windows/build-package.ps1).
+O empacotador aceita `-Go` com o caminho do seu Go instalado e `-FrontendPath` com o diretório do frontend; informe-os para substituir os padrões particulares do workspace original. Consulte os outros argumentos em [build-package.ps1](../backend/deploy/windows/build-package.ps1).
 
 Não publique `dist/` como se fosse uma distribuição homologada. Ele contém runtimes de terceiros cujas licenças e materiais precisam ser conferidos separadamente.

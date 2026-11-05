@@ -2,7 +2,7 @@
 
 Fixture do componente real `DataTable` com 37 registros sintéticos e filtros de texto, seleção, data e número. Não acessa backend, autenticação nem câmeras. Usa webpack/SWC já distribuídos pelo Next e PostCSS/Tailwind já instalados no projeto.
 
-Na pasta `vms-frontend`:
+Na pasta `frontend`:
 
 ```powershell
 node tests/data-table/build.mjs
@@ -33,8 +33,8 @@ Para executar os roteiros a partir da raiz `projeto-vms`, com o servidor ativo:
 ```powershell
 New-Item -ItemType Directory -Force output/playwright/data-table
 npx --yes --package @playwright/cli playwright-cli -s=tables open http://127.0.0.1:13111
-npx --yes --package @playwright/cli playwright-cli -s=tables run-code --filename vms-frontend/tests/data-table/check.cjs
-npx --yes --package @playwright/cli playwright-cli -s=tables run-code --filename vms-frontend/tests/data-table/integration-check.cjs
+npx --yes --package @playwright/cli playwright-cli -s=tables run-code --filename frontend/tests/data-table/check.cjs
+npx --yes --package @playwright/cli playwright-cli -s=tables run-code --filename frontend/tests/data-table/integration-check.cjs
 npx --yes --package @playwright/cli playwright-cli -s=tables close
 ```
 

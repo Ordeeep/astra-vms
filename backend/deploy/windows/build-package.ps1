@@ -1,5 +1,5 @@
 param(
- [string]$FrontendPath=(Join-Path $PSScriptRoot '../../../vms-frontend'),
+ [string]$FrontendPath=(Join-Path $PSScriptRoot '../../../frontend'),
  [string]$Go=(Join-Path $PSScriptRoot '../../../.tools/go/bin/go.exe'),
  [string]$PostgresRoot='C:\Program Files\PostgreSQL\16',
  [Parameter(Mandatory=$true)][string]$MediaMTX,

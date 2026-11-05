@@ -22,11 +22,11 @@ As integrações Dahua e Hikvision são mantidas, incluindo os recursos PTZ já 
 
 | Diretório | Responsabilidade |
 | --- | --- |
-| `vms-frontend/` | Interface em Next.js, React e TypeScript; servidor Node.js em loopback |
-| `vms-backend/cmd/vms/` | Entrada HTTPS, API, autenticação, autorização e proxy da interface |
-| `vms-backend/cmd/vms-worker/` | Processamento de mídia, gravações e exportações com MediaMTX e FFmpeg |
-| `vms-backend/cmd/vms-service/` | Supervisor dos serviços nativos do Windows |
-| `vms-backend/internal/` | Domínio, integrações, mídia e armazenamento |
+| `frontend/` | Interface em Next.js, React e TypeScript; servidor Node.js em loopback |
+| `backend/cmd/vms/` | Entrada HTTPS, API, autenticação, autorização e proxy da interface |
+| `backend/cmd/vms-worker/` | Processamento de mídia, gravações e exportações com MediaMTX e FFmpeg |
+| `backend/cmd/vms-service/` | Supervisor dos serviços nativos do Windows |
+| `backend/internal/` | Domínio, integrações, mídia e armazenamento |
 | `docs/adr/` | Decisões de arquitetura |
 
 PostgreSQL guarda os metadados. Vídeos e índices ficam no disco local. A operação é local, sem serviço de nuvem obrigatório. Baixar dependências e compilar a interface pode exigir internet, inclusive para a fonte usada por `next/font/google`.
@@ -37,7 +37,7 @@ O workspace original mantém frontend e backend em repositórios Git separados. 
 
 O alvo inicial é **Windows 11**, com armazenamento NTFS. Linux e Docker ainda não possuem um procedimento de instalação homologado.
 
-- Go 1.27 ou compatível com `vms-backend/go.mod`.
+- Go 1.27 ou compatível com `backend/go.mod`.
 - Node.js 24 e npm para os comandos documentados.
 - PostgreSQL 16 para o procedimento de referência.
 - MediaMTX, FFmpeg e ffprobe, obtidos separadamente de suas distribuições oficiais.
@@ -48,11 +48,11 @@ As versões das bibliotecas JavaScript estão em `package-lock.json`; as dos mó
 
 ## Baixar, executar e modificar
 
-Quando o repositório estiver publicado, use **Code → Download ZIP** no GitHub ou clone a URL exibida pelo próprio repositório. Abra a pasta que contém este README, `vms-frontend` e `vms-backend`.
+Quando o repositório estiver publicado, use **Code → Download ZIP** no GitHub ou clone a URL exibida pelo próprio repositório. Abra a pasta que contém este README, `frontend` e `backend`.
 
 Consulte [desenvolvimento local](docs/development.md) para preparar PostgreSQL, compilar e iniciar os três processos sem depender do laboratório do mantenedor.
 
-Para construir uma instalação com serviços Windows, consulte [empacotamento e instalação](vms-backend/deploy/windows/README.md). O pacote é gerado a partir dos fontes e exige caminhos explícitos para os runtimes. Os avisos e materiais de redistribuição de cada binário precisam ser conferidos antes de disponibilizar um instalador.
+Para construir uma instalação com serviços Windows, consulte [empacotamento e instalação](backend/deploy/windows/README.md). O pacote é gerado a partir dos fontes e exige caminhos explícitos para os runtimes. Os avisos e materiais de redistribuição de cada binário precisam ser conferidos antes de disponibilizar um instalador.
 
 ## Primeiro acesso
 
@@ -67,7 +67,7 @@ O core gera um certificado local no primeiro início. Para acesso em rede, confi
 
 ## Verificações de desenvolvimento
 
-Na pasta `vms-frontend`:
+Na pasta `frontend`:
 
 ```powershell
 npm ci
@@ -76,13 +76,13 @@ npm run test:recording-timeline
 npm run build
 ```
 
-Na pasta `vms-backend`:
+Na pasta `backend`:
 
 ```powershell
 go test ./...
 ```
 
-Sem as variáveis de integração, parte dos testes Go é pulada. Um resultado verde nessas condições não comprova PostgreSQL, vídeo real nem instalação Windows. Veja [validação](vms-backend/docs/validation.md) para os requisitos adicionais.
+Sem as variáveis de integração, parte dos testes Go é pulada. Um resultado verde nessas condições não comprova PostgreSQL, vídeo real nem instalação Windows. Veja [validação](backend/docs/validation.md) para os requisitos adicionais.
 
 ## Limites conhecidos
 
@@ -100,4 +100,4 @@ O vocabulário está em [GLOSSARY.md](GLOSSARY.md). As regras de autorização d
 
 Licença MIT para o código próprio: consulte [LICENSE](LICENSE).
 
-As dependências conservam suas próprias licenças. Esta variante usa o fundo CSS original OrbitalDawn e não distribui os componentes React Bits. Consulte [THIRD-PARTY.md](vms-backend/deploy/windows/THIRD-PARTY.md) antes de distribuir binários.
+As dependências conservam suas próprias licenças. Esta variante usa o fundo CSS original OrbitalDawn e não distribui os componentes React Bits. Consulte [THIRD-PARTY.md](backend/deploy/windows/THIRD-PARTY.md) antes de distribuir binários.
