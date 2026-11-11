@@ -21,6 +21,26 @@ export function LiveWorkspace({tenant}:{tenant:Tenant;globalAdmin?:boolean}){
  const [policy,setPolicy]=useState<Policy|null>(null),[error,setError]=useState("");
  const [transitionQueue]=useState(createLiveTransitionQueue);
  const [recordingCamera,setRecordingCamera]=useState<{id:string;name:string}|null>(null);
+ const [wallControlsVisible,setWallControlsVisible]=useState(true);
+ useEffect(()=>{
+  if(!fullscreen){
+   setWallControlsVisible(true);
+   return;
+  }
+  let timer:ReturnType<typeof setTimeout>;
+  const showControls=()=>{
+   setWallControlsVisible(true);
+   clearTimeout(timer);
+   timer=setTimeout(()=>setWallControlsVisible(false),3000);
+  };
+  const activityEvents=["pointermove","pointerdown","keydown"] as const;
+  showControls();
+  for(const event of activityEvents)window.addEventListener(event,showControls,true);
+  return()=>{
+   clearTimeout(timer);
+   for(const event of activityEvents)window.removeEventListener(event,showControls,true);
+  };
+ },[fullscreen]);
  const gesture=useRef<{x:number;y:number;from:number;pointerId:number;element:HTMLElement;moved:boolean}|null>(null);
  const suppressClick=useRef(false);
  const [draggedPosition,setDraggedPosition]=useState<number|null>(null);
@@ -51,7 +71,7 @@ export function LiveWorkspace({tenant}:{tenant:Tenant;globalAdmin?:boolean}){
  const focusRule=policy?.rules.find(r=>r.min<=1&&r.max>=1);
  const change=(i:number,value:Partial<Position>)=>setPositions(current=>current.map((p,n)=>n===i?{...p,...value}:p));
  const closeCamera=(i:number)=>{change(i,{cameraId:"",profile:"",fallback:[]});if(maximized===i)setMaximized(null);setPendingCameraId(null);};
- return <section className="live-workspace" data-videowall={fullscreen} aria-label="Visualização ao vivo">
+ return <section className="live-workspace" data-videowall={fullscreen} data-wall-controls-visible={wallControlsVisible} aria-label="Visualização ao vivo">
  <LiveFullscreenControls/>
  {fullscreenError&&<Alert className="alert" role="alert" variant="destructive"><AlertDescription>{fullscreenError}</AlertDescription></Alert>}
  {error&&<Alert className="alert" role="alert" variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}

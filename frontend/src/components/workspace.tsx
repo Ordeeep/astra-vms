@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
-import OrbitalDawn from "@/components/orbital-dawn";
+import LoginBackground from "@/components/login-background";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Separator } from "@/components/ui/separator";
@@ -146,7 +146,7 @@ function Login({error:initialError,onSuccess}:{error:string;onSuccess:()=>Promis
   }
   return <main className="login-page">
     <div className="login-background" aria-hidden="true">
-      <OrbitalDawn/>
+      <LoginBackground/>
     </div>
     <div className="login-story"><AstraBrand/><div><span className="eyebrow">MONITORAMENTO E GRAVAÇÕES</span><h1>Monitore ao vivo.<br/><em>Consulte gravações.</em></h1><p>Acompanhe as câmeras dos seus locais e encontre gravações por câmera, data e horário.</p></div><small>Astra · Gestão de vídeo na sua infraestrutura</small></div>
     <section className="login-panel"><form onSubmit={submit}><span className="eyebrow">ACESSO À CENTRAL</span><h2>Bem-vindo de volta</h2><p>Entre com sua conta da instalação.</p>

@@ -124,7 +124,7 @@
   .live-workspace[data-videowall="true"] .live-grid { grid-auto-rows: minmax(0,1fr); }
   .live-workspace[data-videowall="true"] .live-cell .video-area { flex: 1; min-height: 0; aspect-ratio: auto; }
   .live-wall-controls { position: absolute; z-index: 10; top: 8px; right: 8px; display: flex; align-items: center; gap: 8px; max-width: calc(100% - 16px); padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--card); color: var(--foreground); box-shadow: 0 4px 16px rgb(0 0 0 / .4); }
-  .live-wall-controls[data-awake="false"]:not(:focus-within):not(:hover) { opacity: 0; pointer-events: none; }
+  .live-workspace[data-videowall="true"][data-wall-controls-visible="false"] :is(.live-wall-controls, .live-camera-title) { display: none; }
   .live-wall-label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; }
   .live-wall-label > svg { width: 16px; height: 16px; }
   .live-wall-controls kbd { font-size: 10px; color: var(--muted-foreground); }

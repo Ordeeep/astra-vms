@@ -17,6 +17,12 @@ EXCLUDED = {
     "frontend/src/components/lightfall.css",
     "frontend/src/components/gradient-ascii.tsx",
     "frontend/src/components/gradient-ascii.css",
+    "frontend/src/components/login-background.tsx",
+    "frontend/src/components/login-background.css",
+    "frontend/src/components/topography.jsx",
+    "frontend/src/components/topography.d.ts",
+    "frontend/src/components/Topography.css",
+    "frontend/public/licenses/react-bits.txt",
     "frontend/docs/licenses/react-bits.md",
     "backend/docs/hikvision.md",
 }
@@ -29,18 +35,8 @@ def text(raw):
 def prepare():
     files = {name: raw for name, raw in selection.selected_files()
              if name not in EXCLUDED and not name.startswith("frontend/tests/login-background/")}
-    workspace = "frontend/src/components/workspace.tsx"
-    content = text(files[workspace])
-    if 'import Lightfall from "@/components/lightfall";' in content:
-        content = content.replace('import Lightfall from "@/components/lightfall";',
-                                  'import OrbitalDawn from "@/components/orbital-dawn";')
-        content, count = re.subn(r"<Lightfall\b[^>]*\/>", "<OrbitalDawn/>", content)
-        if count != 1:
-            raise ValueError("Unexpected login markup; review the replacement")
-    elif '<OrbitalDawn' not in content:
-        raise ValueError("Unknown login background; review before exporting")
-    files[workspace] = content.encode("utf-8")
-    if any("@/components/lightfall" in text(raw) or "@/components/gradient-ascii" in text(raw)
+    excluded_imports = ("lightfall", "gradient-ascii", "login-background", "topography")
+    if any(any(f"@/components/{module}" in text(raw) for module in excluded_imports)
            for name, raw in files.items() if name.endswith((".ts", ".tsx"))):
         raise ValueError("A remaining source imports an excluded component")
 

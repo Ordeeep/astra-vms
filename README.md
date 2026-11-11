@@ -100,4 +100,4 @@ O vocabulário está em [GLOSSARY.md](GLOSSARY.md). As regras de autorização d
 
 Licença MIT para o código próprio: consulte [LICENSE](LICENSE).
 
-As dependências conservam suas próprias licenças. Esta variante usa o fundo CSS original OrbitalDawn e não distribui os componentes React Bits. Consulte [THIRD-PARTY.md](backend/deploy/windows/THIRD-PARTY.md) antes de distribuir binários.
+As dependências conservam suas próprias licenças. O login usa o Topography do React Bits sob [MIT + Commons Clause](frontend/public/licenses/react-bits.txt). A exportação pública usa a cena CSS original OrbitalDawn. Consulte [THIRD-PARTY.md](backend/deploy/windows/THIRD-PARTY.md) antes de distribuir binários.

@@ -6,7 +6,7 @@ Esta variante reúne os fontes do Astra e mantém as integrações RTSP, Dahua e
 
 O arquivo `LICENSE` contém a licença MIT aprovada pelo mantenedor para o código próprio. Dependências de terceiros conservam suas próprias licenças; a MIT não substitui seus avisos.
 
-Os componentes visuais derivados de React Bits não fazem parte desta variante. O login usa a cena CSS original `OrbitalDawn`, já existente no projeto.
+O script de exportação pública exclui o Topography do React Bits e usa a cena CSS original `OrbitalDawn` no login. O Topography integra a versão de desenvolvimento sob [MIT + Commons Clause](../frontend/public/licenses/react-bits.txt).
 
 ## Integrações de fabricante
 
