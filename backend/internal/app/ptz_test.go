@@ -43,19 +43,21 @@ func TestPTZAuthorizationIsolationAndRevocation(t *testing.T) {
 	cid := b.call("POST", base+"/cameras", input, 201)["id"].(string)
 	path := base + "/cameras/" + cid + "/ptz"
 	move := map[string]any{"pan": .6, "tilt": .6, "zoom": 0}
-	// Global administration is not physical device authorization.
-	b.call("GET", path, nil, 403)
-	b.call("POST", path+"/commands", move, 403)
-	groupInput := map[string]any{"name": "PTZ operator", "grants": []app.Grant{{Action: "live", Scope: "site", ResourceID: site}, {Action: "ptz.control", Scope: "site", ResourceID: site}}}
-	group := b.call("POST", base+"/groups", groupInput, 201)["id"].(string)
-	b.call("PUT", base+"/operators/"+admin, map[string]any{"groups": []string{group}, "revision": 0}, 200)
+	// Operators without installation administration still need scoped PTZ and live grants.
 	operator := b.call("POST", "/admin/operators", map[string]any{"username": "ptz-second", "password": "ptz-test-password"}, 201)["id"].(string)
-	b.call("PUT", base+"/operators/"+operator, map[string]any{"groups": []string{group}, "revision": 0}, 200)
+	b.call("PUT", base+"/operators/"+operator, map[string]any{"groups": []string{}, "revision": 0}, 200)
 	peerClient := &http.Client{Transport: b.client.Transport}
 	peerClient.Jar, _ = cookiejar.New(nil)
 	peer := &browserClient{t: t, client: peerClient, server: b.server}
 	peer.login("ptz-second", "ptz-test-password")
 	peer.selectTenant(tenant)
+	peer.call("GET", path, nil, 403)
+	peer.call("POST", path+"/commands", move, 403)
+	inventoryGrant := app.Grant{Action: "inventory.manage", Scope: "tenant", ResourceID: tenant}
+	groupInput := map[string]any{"name": "PTZ operator", "grants": []app.Grant{{Action: "live", Scope: "site", ResourceID: site}, {Action: "ptz.control", Scope: "site", ResourceID: site}, inventoryGrant}}
+	group := b.call("POST", base+"/groups", groupInput, 201)["id"].(string)
+	b.call("PUT", base+"/operators/"+admin, map[string]any{"groups": []string{group}, "revision": 0}, 200)
+	b.call("PUT", base+"/operators/"+operator, map[string]any{"groups": []string{group}, "revision": 1}, 200)
 	caps := b.call("GET", path, nil, 200)
 	if caps["panTilt"] != true || caps["zoom"] != true {
 		t.Fatal(caps)
@@ -94,10 +96,10 @@ func TestPTZAuthorizationIsolationAndRevocation(t *testing.T) {
 	second = peer.call("POST", path+"/commands", move, 201)["id"].(string)
 	before = writes.Load()
 	groupInput["revision"] = 1
-	groupInput["grants"] = []app.Grant{{Action: "live", Scope: "site", ResourceID: site}}
+	groupInput["grants"] = []app.Grant{{Action: "live", Scope: "site", ResourceID: site}, inventoryGrant}
 	b.call("PUT", base+"/groups/"+group, groupInput, 200)
 	peer.call("PUT", path+"/commands/"+second, nil, 403)
-	b.call("POST", path+"/commands", move, 403)
+	peer.call("POST", path+"/commands", move, 403)
 	// Revocation cannot prevent the original owner from safely stopping its
 	// existing command; absent a browser, the watchdog performs that cleanup.
 	b.call("DELETE", path+"/commands/"+second, nil, 204)
@@ -109,16 +111,16 @@ func TestPTZAuthorizationIsolationAndRevocation(t *testing.T) {
 		t.Fatal("revoked/lost control was not stopped")
 	}
 	groupInput["revision"] = 2
-	groupInput["grants"] = []app.Grant{{Action: "ptz.control", Scope: "site", ResourceID: site}}
+	groupInput["grants"] = []app.Grant{{Action: "ptz.control", Scope: "site", ResourceID: site}, inventoryGrant}
 	b.call("PUT", base+"/groups/"+group, groupInput, 200)
-	b.call("POST", path+"/commands", move, 403)
-	visible := b.call("GET", base+"/cameras/"+cid, nil, 200)
+	peer.call("POST", path+"/commands", move, 403)
+	visible := peer.call("GET", base+"/cameras/"+cid, nil, 200)
 	if visible["capabilities"].(map[string]any)["ptz.control"] != false {
 		t.Fatal("PTZ without live was exposed as authorized")
 	}
 	otherSite := b.call("POST", base+"/sites", map[string]any{"name": "Other scope", "timezone": "UTC"}, 201)["id"].(string)
 	groupInput["revision"] = 3
-	groupInput["grants"] = []app.Grant{{Action: "live", Scope: "site", ResourceID: site}, {Action: "ptz.control", Scope: "site", ResourceID: otherSite}}
+	groupInput["grants"] = []app.Grant{{Action: "live", Scope: "site", ResourceID: site}, {Action: "ptz.control", Scope: "site", ResourceID: otherSite}, inventoryGrant}
 	b.call("PUT", base+"/groups/"+group, groupInput, 200)
-	b.call("POST", path+"/commands", move, 403)
+	peer.call("POST", path+"/commands", move, 403)
 }

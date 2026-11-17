@@ -58,7 +58,7 @@ func TestDelegatedGrantsSurviveGrantorRevocationWithoutAllowingNewEscalation(t *
 
 func TestInactiveMosaicCreatorPreservesSharedCompositionAndPersonalPrivacy(t *testing.T) {
 	b := newTestAPI(t)
-	admin := b.login("admin", "admin")
+	b.login("admin", "admin")
 	tenant := b.call("GET", "/me", nil, 200)["tenants"].([]any)[0].(map[string]any)["id"].(string)
 	b.selectTenant(tenant)
 	base := "/tenants/" + tenant
@@ -68,7 +68,7 @@ func TestInactiveMosaicCreatorPreservesSharedCompositionAndPersonalPrivacy(t *te
 	c := independentBrowser(t, b, "creator", "creator-password", tenant)
 	shared := c.call("POST", base+"/mosaics", map[string]any{"name": "Shared", "visibility": "shared", "positions": []any{}}, 201)["id"].(string)
 	personal := c.call("POST", base+"/mosaics", map[string]any{"name": "Private", "visibility": "personal", "positions": []any{}}, 201)["id"].(string)
-	b.call("PATCH", "/admin/operators/"+creator, map[string]any{"active": false, "globalAdmin": false, "revision": 1}, 204)
+	b.call("PATCH", "/admin/operators/"+creator, map[string]any{"active": false, "revision": 1}, 204)
 	item := b.call("GET", base+"/mosaics/"+shared, nil, 200)
 	if item["ownerId"] != creator || item["editable"] != true {
 		t.Fatal("shared composition lost ownership or management")
@@ -77,8 +77,10 @@ func TestInactiveMosaicCreatorPreservesSharedCompositionAndPersonalPrivacy(t *te
 	b.call("PUT", base+"/mosaics/"+shared, map[string]any{"name": "Maintained", "visibility": "shared", "positions": []any{}, "revision": 1}, 200)
 	b.call("PUT", base+"/mosaics/"+shared, map[string]any{"name": "Privatized", "visibility": "personal", "positions": []any{}, "revision": 2}, 403)
 	// Managing a shared composition never adds video permissions.
-	b.call("PUT", base+"/operators/"+admin, map[string]any{"groups": []string{group}, "revision": 1}, 200)
-	if b.call("GET", base+"/capabilities", nil, 200)["live"] != false {
+	b.call("PATCH", "/admin/operators/"+creator, map[string]any{"active": true, "revision": 2}, 204)
+	c.login("creator", "creator-password")
+	c.selectTenant(tenant)
+	if c.call("GET", base+"/capabilities", nil, 200)["live"] != false {
 		t.Fatal("composition management implicitly granted live video")
 	}
 }

@@ -66,14 +66,17 @@ type attempt struct {
 	Count int
 	Until time.Time
 }
+
+// GlobalAdmin is derived from a group's installation.manage grant, never an account setting.
 type User struct {
-	ID          string `json:"id"`
-	Username    string `json:"username"`
-	Name        string `json:"name"`
-	Email       string `json:"email"`
-	GlobalAdmin bool   `json:"globalAdmin"`
-	Active      bool   `json:"active"`
-	Revision    int64  `json:"revision"`
+	InstallationGroups []string `json:"installationGroups,omitempty"`
+	ID                 string   `json:"id"`
+	Username           string   `json:"username"`
+	Name               string   `json:"name"`
+	Email              string   `json:"email"`
+	GlobalAdmin        bool     `json:"globalAdmin"`
+	Active             bool     `json:"active"`
+	Revision           int64    `json:"revision"`
 }
 type Tenant struct {
 	ID       string `json:"id"`
@@ -284,7 +287,10 @@ func (a *App) bootstrap(ctx context.Context) error {
 	}
 	if count == 0 {
 		user, tenant, group := newID(), newID(), newID()
-		if _, err = tx.Exec(ctx, "INSERT INTO operators(id,username,name,password_hash,global_admin) VALUES($1,'admin','admin',$2,true)", user, passwordHash("admin")); err != nil {
+		if _, err = tx.Exec(ctx, "INSERT INTO operators(id,username,name,password_hash) VALUES($1,'admin','admin',$2)", user, passwordHash("admin")); err != nil {
+			return err
+		}
+		if _, err = tx.Exec(ctx, "INSERT INTO installation_group_members(group_id,operator_id) VALUES('installation-administrators',$1)", user); err != nil {
 			return err
 		}
 		if _, err = tx.Exec(ctx, "INSERT INTO tenants(id,name) VALUES($1,'Ambiente padrão')", tenant); err != nil {
@@ -406,7 +412,7 @@ func (a *App) protected(next authenticatedHandler) http.HandlerFunc {
 			return
 		}
 		id := identity{SessionHash: digest(cookie.Value)}
-		err = a.db.QueryRow(r.Context(), `SELECT u.id,u.username,u.active,u.global_admin,u.revision,u.name,u.email,s.csrf FROM sessions s JOIN operators u ON u.id=s.operator_id WHERE s.token_hash=$1 AND s.expires>now() AND u.active`, id.SessionHash).Scan(&id.User.ID, &id.User.Username, &id.User.Active, &id.User.GlobalAdmin, &id.User.Revision, &id.User.Name, &id.User.Email, &id.CSRF)
+		err = a.db.QueryRow(r.Context(), `SELECT u.id,u.username,u.active,is_installation_admin(u.id),u.revision,u.name,u.email,s.csrf FROM sessions s JOIN operators u ON u.id=s.operator_id WHERE s.token_hash=$1 AND s.expires>now() AND u.active`, id.SessionHash).Scan(&id.User.ID, &id.User.Username, &id.User.Active, &id.User.GlobalAdmin, &id.User.Revision, &id.User.Name, &id.User.Email, &id.CSRF)
 		if errors.Is(err, pgx.ErrNoRows) {
 			problem(w, 401, "authentication_required")
 			return
@@ -467,7 +473,7 @@ func (a *App) login(w http.ResponseWriter, r *http.Request) {
 	// Legacy contact emails may be duplicated or overlap another username.
 	// Authenticate only an unambiguous identity; never choose an arbitrary match.
 	err := a.db.QueryRow(r.Context(), `WITH candidates AS (
-		SELECT id,username,active,global_admin,revision,name,email,password_hash FROM operators
+		SELECT id,username,active,is_installation_admin(id),revision,name,email,password_hash FROM operators
 		WHERE lower(username)=lower($1) OR (email<>'' AND lower(email)=lower($1))
 	) SELECT * FROM candidates WHERE (SELECT count(*) FROM candidates)=1`, input.Username).Scan(&user.ID, &user.Username, &user.Active, &user.GlobalAdmin, &user.Revision, &user.Name, &user.Email, &hash)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {

@@ -41,11 +41,14 @@ type FormDialogProps = EditorDialogProps & {
   noValidate?: boolean;
   saveDisabled?: boolean;
   footerNote?: ReactNode;
+  footerActions?: ReactNode;
+  actionsAtEnd?: boolean;
 };
 
-export function FormDialog({onSubmit,children,busy=false,saveLabel="Salvar",onClose,noValidate=false,saveDisabled=false,footerNote,...props}: FormDialogProps) {
+export function FormDialog({onSubmit,children,busy=false,saveLabel="Salvar",onClose,noValidate=false,saveDisabled=false,footerNote,footerActions,actionsAtEnd=false,...props}: FormDialogProps) {
   const form = useRef<HTMLFormElement>(null);
   const wasBusy = useRef(false);
+  const saveButton=saveLabel!==null&&<Button type="submit" disabled={busy || saveDisabled}>{busy?"Salvando…":saveLabel}</Button>;
   useEffect(()=>{
     // A disabled submit button can release focus while the request is pending.
     if(wasBusy.current&&!busy&&form.current&&!form.current.closest('[role="dialog"]')?.contains(document.activeElement)) {
@@ -56,9 +59,10 @@ export function FormDialog({onSubmit,children,busy=false,saveLabel="Salvar",onCl
   return <EditorDialog {...props} onClose={onClose} busy={busy}>
     <form ref={form} onSubmit={onSubmit} aria-busy={busy} noValidate={noValidate}>
       <div className="dialog-form-body"><fieldset className="dialog-form-fields" disabled={busy}>{children}</fieldset></div>
-      <div className="form-actions">
-        {saveLabel!==null&&<Button type="submit" disabled={busy || saveDisabled}>{busy?"Salvando…":saveLabel}</Button>}
+      <div className={`form-actions${actionsAtEnd?" form-actions-end":""}`}>
+        {actionsAtEnd?footerActions:saveButton}
         <Button type="button" variant="ghost" onClick={onClose} disabled={busy}>Cancelar</Button>
+        {actionsAtEnd?saveButton:footerActions}
         {footerNote}
       </div>
     </form>

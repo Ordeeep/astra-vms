@@ -1,0 +1,6 @@
+export type ScheduleWindow={day:number;start:number;end:number};
+export type RecordingConfig={enabled:boolean;profile:string;schedule:ScheduleWindow[];always:boolean;retentionDays:number|null;revision:number};
+export type RecordingStatus={cameraId:string;code:string;lastFrame:string|null;lastWrite:string|null;updatedAt:string|null;timezone?:string};
+export type RecordingStatusPage={items:RecordingStatus[];nextCursor?:string;storageConfigured:boolean;quotaConfigured:boolean};
+export const newRecordingConfig=():RecordingConfig=>({enabled:false,profile:"main",schedule:[],always:true,retentionDays:null,revision:0});
+export const recordingLabels:Record<string,string>={recording:"Gravando",connecting:"Conectando",outside_schedule:"Fora da agenda",recording_disabled:"Gravação desabilitada",camera_inactive:"Câmera, site ou captura pausados",quota_transition:"Aplicando alteração de cota",not_configured:"Aguardando captura",profile_unavailable:"Perfil indisponível",capture_unavailable:"Captura indisponível",source_unavailable:"Sem imagens da fonte",storage_capacity:"Sem capacidade disponível",storage_unavailable:"Armazenamento indisponível",storage_not_configured:"Destino de armazenamento pendente",storage_quota_pending:"Cota de gravação pendente",worker_unavailable:"Serviço de mídia indisponível"};

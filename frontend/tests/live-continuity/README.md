@@ -20,7 +20,17 @@ npx --yes --package @playwright/cli playwright-cli -s=live-continuity run-code -
 npx --yes --package @playwright/cli playwright-cli -s=live-continuity close
 ```
 
-O comando `run-code` retorna erro se uma asserção falhar. O caso original falhava com quatro sessões excluídas e quatro abertas ao maximizar; deve preservar as quatro originais e abrir somente uma adicional. Também verifica transições entre faixas, limite de uma preparação adicional, falha e repetição de qualidade, perfil explícito, cancelamento e resposta tardia, mudança de câmera/fonte, atualização de catálogo, watchdog com vídeos ocultos, troca de tenant e revogação de acesso. As capturas ficam em `output/playwright/live-continuity/`.
+O comando `run-code` retorna erro se uma asserção falhar. Maximizar prepara somente o perfil da câmera em destaque e encerra o anterior assim que o novo vídeo fica pronto, preservando as outras câmeras. Restaurar prepara novamente o perfil do mosaico. Também verifica transições entre faixas, limite de uma preparação adicional, falha e repetição de qualidade, perfil explícito, cancelamento e resposta tardia, mudança de câmera/fonte, atualização de catálogo, watchdog com vídeos ocultos, troca de tenant e revogação de acesso. As capturas ficam em `output/playwright/live-continuity/`.
+
+Após gerar o bundle com esbuild, também é possível executar os ensaios diretamente com o Chrome instalado, sem servidor HTTP e sem CLI adicional:
+
+```powershell
+node tests/live-continuity/run.mjs
+node tests/live-continuity/run.mjs --native
+node tests/live-continuity/run.mjs check.cjs --native
+```
+
+O ensaio padrão (`stream-release.cjs`) reproduz a conexão duplicada após maximizar: mantém a transmissão antiga enquanto a nova aguarda imagem e, após a promoção, exige uma única sessão e vídeo para a câmera, fechamento do peer anterior e remoção da mídia do elemento antigo. Confirma também o retorno ao perfil do mosaico. A API permanece simulada, inclusive no modo de transporte nativo.
 
 Para repetir com transporte WebRTC nativo, execute `goto http://127.0.0.1:13110/#native` na mesma sessão antes de `run-code`. O ensaio preserva esse modo ao recarregar a página.
 

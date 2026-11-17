@@ -146,7 +146,7 @@ func (a *App) eventStream(w http.ResponseWriter, r *http.Request, id identity) {
 		// Refresh global-admin state as well as memberships; a snapshot identity
 		// must not keep administrative access after the account is changed.
 		current := id
-		err := a.db.QueryRow(check, `SELECT o.global_admin FROM operators o JOIN sessions s ON s.operator_id=o.id
+		err := a.db.QueryRow(check, `SELECT is_installation_admin(o.id) FROM operators o JOIN sessions s ON s.operator_id=o.id
  WHERE o.id=$1 AND o.active AND s.token_hash=$2 AND s.expires>now()`, id.User.ID, id.SessionHash).Scan(&current.User.GlobalAdmin)
 		if err != nil || !contextValid(check, a.db, r, current) {
 			done()

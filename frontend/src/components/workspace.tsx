@@ -24,7 +24,7 @@ import {CamerasWorkspace} from "@/components/cameras";
 import {LiveHeaderControls} from "@/components/live-header-controls";
 import {LiveWorkspace} from "@/components/live";
 import {LiveViewProvider} from "@/components/live-view-context";
-import {RecordingWorkspace} from "@/components/recording";
+import {StorageWorkspace} from "@/components/storage";
 import {PlaybackWorkspace} from "@/components/playback";
 import {ExportsWorkspace} from "@/components/exports";
 import {OperationsWorkspace} from "@/components/operations";
@@ -39,8 +39,11 @@ export default function Workspace() {
   const [page, setPage] = useState("overview");
   const generation = useRef(0);
   const contextRef = useRef("");
+  const navigationGuard=useRef<(()=>boolean)|null>(null);
+  function navigate(page:string){if(!navigationGuard.current||navigationGuard.current())setPage(page); }
 
   async function selectTenant(next: Tenant) {
+    if(navigationGuard.current&&!navigationGuard.current())return;
     const version = ++generation.current;
     const previous = contextRef.current;
     contextRef.current = "";
@@ -97,6 +100,7 @@ export default function Workspace() {
     return()=>{active=false;source.close();};
   },[contextID,tenant?.id]);
   async function logout() {
+    if(navigationGuard.current&&!navigationGuard.current())return;
     try {
       await api("/auth/logout", "POST");
       generation.current++; setContext(""); contextRef.current = ""; setContextID(""); setCSRF("");
@@ -108,7 +112,7 @@ export default function Workspace() {
   return <SidebarProvider className="workspace" open={true}>
     <LiveViewProvider key={contextID||"no-context"} tenantId={tenant?.id} enabled={page==="live"&&!!contextID}>
     <AppSidebar identity={identity} tenant={tenant} activePage={page}
-      onNavigate={setPage} onTenantSelect={next=>void selectTenant(next)} onLogout={()=>void logout()} />
+      onNavigate={navigate} onTenantSelect={next=>void selectTenant(next)} onLogout={()=>void logout()} />
     <SidebarInset className="min-w-0">
       <header className="flex h-10 shrink-0 items-center gap-2 border-b">
         <div className="flex min-w-0 items-center gap-2 px-4">
@@ -125,7 +129,7 @@ export default function Workspace() {
       <div className={`content${page==="live"&&tenant?" live-content":""}`} key={contextID||"no-context"}>
         {error && <Alert role="alert" className="alert" variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
         {!contextID&&<Button onClick={()=>void refreshIdentity().catch(e=>{if(e instanceof ApiError&&e.status===401)setIdentity(null);else setError((e as Error).message);})} variant="outline">Atualizar meus acessos</Button>}
-        {page==="operations"&&tenant?<OperationsWorkspace tenant={tenant} identity={identity}/>:page==="account" ? <Account user={identity.user} onUpdate={user=>setIdentity(current=>current ? {...current,user} : current)}/> :page==="exports"&&tenant?<ExportsWorkspace tenant={tenant}/>:page==="recording"?<RecordingWorkspace tenant={tenant} identity={identity}/>:page==="playback"&&tenant?<PlaybackWorkspace tenant={tenant}/>:page==="live"&&tenant?<LiveWorkspace tenant={tenant} globalAdmin={identity.user.globalAdmin}/>: page==="sites"&&tenant?<SitesWorkspace tenant={tenant}/>:page==="cameras"&&tenant?<CamerasWorkspace tenant={tenant}/>:(page==="admin"||page==="operators"||page==="groups"||page==="tenants")?<Administration key={page} section={page==="admin"?"access":page} identity={identity} tenant={tenant} onRefresh={refreshIdentity}/>:<>
+        {page==="operations"&&tenant?<OperationsWorkspace tenant={tenant} identity={identity}/>:page==="account" ? <Account user={identity.user} onUpdate={user=>setIdentity(current=>current ? {...current,user} : current)}/> :page==="exports"&&tenant?<ExportsWorkspace tenant={tenant}/>:page==="storage"?<StorageWorkspace tenant={tenant} identity={identity}/>:page==="playback"&&tenant?<PlaybackWorkspace tenant={tenant}/>:page==="live"&&tenant?<LiveWorkspace tenant={tenant} globalAdmin={identity.user.globalAdmin}/>: page==="sites"&&tenant?<SitesWorkspace tenant={tenant}/>:page==="cameras"&&tenant?<CamerasWorkspace tenant={tenant} registerCloseGuard={guard=>{navigationGuard.current=guard;}} onStorage={()=>{navigationGuard.current=null;setPage("storage");}}/>:(page==="operators"||page==="groups"||page==="tenants")?<Administration key={page} section={page} identity={identity} tenant={tenant} onRefresh={refreshIdentity}/>:<>
           <div className="page-heading"><div><span className="eyebrow">CENTRAL DE OPERAÇÃO</span><h1>Visão geral</h1><p>Seu ambiente de monitoramento, em um só lugar.</p></div><Badge className="badge" variant="outline"><span className="status-dot"/>Conectado</Badge></div>
           <Card className="panel welcome gap-0 p-6"><div className="welcome-icon"><Grid2X2 className="size-8" aria-hidden="true"/></div><h2>{tenant ? `Bem-vindo a ${tenant.name}` : "Acesso à instalação"}</h2><p>{tenant ? "Este ambiente mantém seus sites, câmeras e gravações separados dos demais." : "Sua conta ainda não possui um ambiente ativo disponível."}</p></Card>
         </>}

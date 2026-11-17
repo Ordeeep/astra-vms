@@ -7,7 +7,7 @@ import {
   SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 import {
-  Building2, CalendarClock, ChevronRight, CircleUserRound, ClipboardList, Download, History,
+  Building2, HardDrive, ChevronRight, CircleUserRound, ClipboardList, Download, History,
   LayoutDashboard, MapPin, MonitorPlay, Settings2, ShieldCheck, UserRound, UsersRound, Video,
 } from "lucide-react";
 
@@ -26,21 +26,20 @@ const navigationGroups = [
     items: [
       { id: "sites", label: "Sites", icon: MapPin },
       { id: "cameras", label: "Câmeras", icon: Video },
-      { id: "recording", label: "Gravação e agenda", icon: CalendarClock },
     ],
   },
   {
     id: "permissions", label: "Usuários e permissões", icon: UsersRound,
     items: [
       { id: "operators", label: "Operadores", icon: UserRound },
-      { id: "groups", label: "Grupos", icon: ShieldCheck },
-      { id: "admin", label: "Acessos", icon: UsersRound },
+      { id: "groups", label: "Grupos de permissões", icon: ShieldCheck },
     ],
   },
   {
     id: "system", label: "Sistema", icon: Settings2,
     items: [
       { id: "tenants", label: "Ambientes", icon: Building2 },
+      { id: "storage", label: "Armazenamento", icon: HardDrive },
       { id: "operations", label: "Auditoria e diagnóstico", icon: ClipboardList },
     ],
   },
@@ -104,7 +103,7 @@ export function NavMain({ activePage, onNavigate, globalAdmin }: {
       <SidebarGroupLabel>Central de vídeo</SidebarGroupLabel>
       <nav aria-label="Navegação principal">
         <SidebarMenu>
-          {navigationGroups.map(group => <NavigationGroup key={group.id} group={{...group,items:group.items.filter(item=>!["operators","tenants"].includes(item.id)||globalAdmin)}} activePage={activePage} onNavigate={onNavigate} />)}
+          {navigationGroups.map(group => <NavigationGroup key={group.id} group={{...group,items:group.items.filter(item=>item.id!=="tenants"||globalAdmin)}} activePage={activePage} onNavigate={onNavigate} />)}
         </SidebarMenu>
       </nav>
     </SidebarGroup>

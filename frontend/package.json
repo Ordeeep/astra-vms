@@ -9,7 +9,9 @@
     "typecheck": "tsc --noEmit",
     "test": "playwright test",
     "test:live-mosaic": "node --experimental-strip-types --test tests/live-mosaic.node.mjs",
-    "test:recording-timeline": "node --experimental-strip-types --test tests/recording-timeline.node.mjs"
+    "test:camera-recording": "node tests/camera-recording/build.mjs && node tests/camera-recording/run.mjs",
+    "test:recording-timeline": "node --experimental-strip-types --test tests/recording-timeline.node.mjs tests/recording-navigation.node.mjs",
+    "test:live-recording": "node tests/live-recording/build.mjs && node tests/live-recording/run.mjs"
   },
   "dependencies": {
     "@tanstack/react-table": "^8.21.3",
@@ -17,7 +19,7 @@
     "cn": "^0.5.0",
     "hls.js": "1.7.3",
     "lucide-react": "^1.61.0",
-    "next": "16.4.2",
+    "next": "16.4.6",
     "radix-ui": "^1.8.1",
     "react": "19.3.1",
     "react-dom": "19.3.1",

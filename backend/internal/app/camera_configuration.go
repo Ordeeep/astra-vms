@@ -14,27 +14,38 @@ func (a *App) cameraConfiguration(w http.ResponseWriter, r *http.Request, id ide
 		return
 	}
 	var in struct {
-		Name     string         `json:"name"`
-		SiteID   string         `json:"siteId"`
-		Active   bool           `json:"active"`
-		Revision int64          `json:"revision"`
-		Source   *camera.Source `json:"source"`
+		Name          string           `json:"name"`
+		SiteID        string           `json:"siteId"`
+		Active        bool             `json:"active"`
+		Revision      int64            `json:"revision"`
+		Source        *camera.Source   `json:"source"`
+		Recording     *RecordingUpdate `json:"recording"`
+		RecordingOnly bool             `json:"recordingOnly"`
 	}
 	if !body(w, r, &in) {
 		return
 	}
-	if !validName(in.Name) || in.SiteID == "" {
+	if !in.RecordingOnly && (!validName(in.Name) || in.SiteID == "") {
 		problem(w, 422, "invalid_camera")
 		return
 	}
 	cid := r.PathValue("camera")
-	existing, allowed := a.authorizeSourceRequest(w, r, id, tenant, "", cid)
-	if !allowed {
-		return
-	}
-	if existing.Revision != in.Revision {
-		problem(w, 412, "revision_conflict")
-		return
+	var existing Camera
+	if in.RecordingOnly {
+		if in.Recording == nil || in.Source != nil || in.Name != "" || in.SiteID != "" || in.Active {
+			problem(w, 422, "invalid_camera")
+			return
+		}
+	} else {
+		var allowed bool
+		existing, allowed = a.authorizeSourceRequest(w, r, id, tenant, "", cid)
+		if !allowed {
+			return
+		}
+		if existing.Revision != in.Revision {
+			problem(w, 412, "revision_conflict")
+			return
+		}
 	}
 	var configured camera.Source
 	// Ordinary edits retain the origin. Switching integrations starts a new
@@ -69,12 +80,27 @@ func (a *App) cameraConfiguration(w http.ResponseWriter, r *http.Request, id ide
 		problem(w, 404, "camera_not_found")
 		return
 	}
-	if !allowedWith(r.Context(), tx, current, tenant, "inventory.manage", oldSite, cid) {
+	if !in.RecordingOnly && !allowedWith(r.Context(), tx, current, tenant, "inventory.manage", oldSite, cid) {
 		problem(w, 403, "forbidden")
 		return
 	}
 	if revision != in.Revision {
 		problem(w, 412, "revision_conflict")
+		return
+	}
+	if in.RecordingOnly {
+		if !a.saveCameraRecording(w, r, tx, current, tenant, cid, oldSite, in.Recording) {
+			return
+		}
+		if tx.Commit(r.Context()) != nil {
+			dbFailure(w)
+			return
+		}
+		a.cameraResponse(w, r, current, tenant, cid, 200)
+		return
+	}
+	if in.Recording != nil && !allowedWith(r.Context(), tx, current, tenant, "recording.manage", oldSite, cid) {
+		problem(w, 403, "forbidden")
 		return
 	}
 	if oldSite != in.SiteID {
@@ -135,6 +161,12 @@ func (a *App) cameraConfiguration(w http.ResponseWriter, r *http.Request, id ide
 			dbFailure(w)
 			return
 		}
+	}
+	if in.Recording != nil && !a.saveCameraRecording(w, r, tx, current, tenant, cid, in.SiteID, in.Recording) {
+		return
+	}
+	if in.Source != nil && !a.preserveRecordingProfile(w, r, tx, tenant, cid) {
+		return
 	}
 	if audit(r.Context(), tx, current, tenant, "camera.saved", cid, map[string]any{"siteId": in.SiteID, "name": in.Name}) != nil || tx.Commit(r.Context()) != nil {
 		dbFailure(w)

@@ -20,7 +20,8 @@ export function LiveWorkspace({tenant}:{tenant:Tenant;globalAdmin?:boolean}){
  const {fullscreen,fullscreenError,maximized,setMaximized,highlightedPosition,layoutSize,cameraListOpen,cameras,positions,setPositions,activePosition,setActivePosition,chooseCamera,moveCamera,dropPosition,setDropPosition,pendingCameraId,setPendingCameraId}=useLiveView();
  const [policy,setPolicy]=useState<Policy|null>(null),[error,setError]=useState("");
  const [transitionQueue]=useState(createLiveTransitionQueue);
- const [recordingCamera,setRecordingCamera]=useState<{id:string;name:string}|null>(null);
+ const [recordingCamera,setRecordingCamera]=useState<{id:string;name:string;tileId:number}|null>(null);
+ const [recordingHost,setRecordingHost]=useState<HTMLDivElement|null>(null);
  const [wallControlsVisible,setWallControlsVisible]=useState(true);
  useEffect(()=>{
   if(!fullscreen){
@@ -67,10 +68,21 @@ export function LiveWorkspace({tenant}:{tenant:Tenant;globalAdmin?:boolean}){
  },[tenant.id]);
  const visiblePositions=positions.slice(0,layoutSize*layoutSize);
  const occupied=visiblePositions.filter(p=>p.cameraId!=="").length;
+ useEffect(()=>{
+  if(!recordingCamera)return;
+  const index=positions.findIndex(p=>p.tileId===recordingCamera.tileId&&p.cameraId===recordingCamera.id);
+  if(index<0||index>=layoutSize*layoutSize||(maximized!==null&&maximized!==index)||!cameras.some(c=>c.id===recordingCamera.id&&c.capabilities.live))setRecordingCamera(null);
+ },[recordingCamera,positions,layoutSize,maximized,cameras]);
  const rule=policy?.rules.find(r=>Math.max(1,occupied)>=r.min&&Math.max(1,occupied)<=r.max);
  const focusRule=policy?.rules.find(r=>r.min<=1&&r.max>=1);
  const change=(i:number,value:Partial<Position>)=>setPositions(current=>current.map((p,n)=>n===i?{...p,...value}:p));
  const closeCamera=(i:number)=>{change(i,{cameraId:"",profile:"",fallback:[]});if(maximized===i)setMaximized(null);setPendingCameraId(null);};
+ const closeAllCameras=()=>{
+  clearDrag();
+  setPositions(current=>current.map(position=>!position.cameraId?position:{...position,cameraId:"",profile:"",fallback:[]}));
+  setMaximized(null);
+  setPendingCameraId(null);
+ };
  return <section className="live-workspace" data-videowall={fullscreen} data-wall-controls-visible={wallControlsVisible} aria-label="Visualização ao vivo">
  <LiveFullscreenControls/>
  {fullscreenError&&<Alert className="alert" role="alert" variant="destructive"><AlertDescription>{fullscreenError}</AlertDescription></Alert>}
@@ -78,7 +90,7 @@ export function LiveWorkspace({tenant}:{tenant:Tenant;globalAdmin?:boolean}){
  <div className="live-stage">
  <div className="live-grid" data-maximized={maximized!==null} style={{gridTemplateColumns:`repeat(${maximized!==null?1:layoutSize},minmax(0,1fr))`,gridTemplateRows:`repeat(${maximized!==null?1:layoutSize},minmax(0,1fr))`}}>
  {/* Keep DOM order stable; CSS places each tile at its current mosaic position. */}
- {visiblePositions.map((p,i)=>({p,i})).sort((a,b)=>a.p.tileId-b.p.tileId).map(({p,i})=>{const camera=cameras.find(c=>c.id===p.cameraId&&c.capabilities.live);const profile=p.profile||rule?.profile||"main";return <LiveCameraMenu key={p.tileId} occupied={!!camera} maximized={maximized===i} onOpen={()=>setActivePosition(i)} onMaximize={()=>setMaximized(maximized===i?null:i)} onClose={()=>closeCamera(i)} onRecording={()=>{if(camera)setRecordingCamera({id:camera.id,name:camera.name});}} profiles={camera?.profiles??[]} profile={p.profile} onProfileChange={value=>change(i,{profile:value,fallback:[]})}><Card className="live-cell gap-0 p-0" style={{gridRow:maximized!==null?1:Math.floor(i/layoutSize)+1,gridColumn:maximized!==null?1:i%layoutSize+1}} data-live-position={i} data-occupied={!!camera} data-draggable={!!camera&&maximized===null} data-dragging={draggedPosition===i} data-active={activePosition===i} data-highlighted={highlightedPosition===i} hidden={maximized!==null&&maximized!==i} data-drop-target={dropPosition===i} role="group" aria-label={`Posição ${i+1} do mosaico`} tabIndex={0} onClickCapture={event=>{if(suppressClick.current){event.preventDefault();event.stopPropagation();return;}setActivePosition(i);}} onFocusCapture={()=>setActivePosition(i)}
+ {visiblePositions.map((p,i)=>({p,i})).sort((a,b)=>a.p.tileId-b.p.tileId).map(({p,i})=>{const camera=cameras.find(c=>c.id===p.cameraId&&c.capabilities.live);const profile=p.profile||rule?.profile||"main";return <LiveCameraMenu key={p.tileId} occupied={!!camera} maximized={maximized===i} onOpen={()=>setActivePosition(i)} onMaximize={()=>setMaximized(maximized===i?null:i)} onClose={()=>closeCamera(i)} onCloseAll={closeAllCameras} onRecording={()=>{if(camera)setRecordingCamera({id:camera.id,name:camera.name,tileId:p.tileId});}} profiles={camera?.profiles??[]} profile={p.profile} onProfileChange={value=>change(i,{profile:value,fallback:[]})}><Card className="live-cell gap-0 p-0" style={{gridRow:maximized!==null?1:Math.floor(i/layoutSize)+1,gridColumn:maximized!==null?1:i%layoutSize+1}} data-live-position={i} data-occupied={!!camera} data-draggable={!!camera&&maximized===null} data-dragging={draggedPosition===i} data-active={activePosition===i} data-highlighted={highlightedPosition===i} hidden={maximized!==null&&maximized!==i} data-drop-target={dropPosition===i} role="group" aria-label={`Posição ${i+1} do mosaico`} tabIndex={0} onClickCapture={event=>{if(suppressClick.current){event.preventDefault();event.stopPropagation();return;}setActivePosition(i);}} onFocusCapture={()=>setActivePosition(i)}
   onPointerDown={event=>{
    if(event.button!==0||!event.isPrimary)return;
    suppressClick.current=false;
@@ -102,13 +114,13 @@ export function LiveWorkspace({tenant}:{tenant:Tenant;globalAdmin?:boolean}){
   onPointerCancel={clearDrag} onLostPointerCapture={()=>{if(gesture.current)clearDrag();}} onContextMenu={clearDrag}
   onDoubleClick={event=>{if(!suppressClick.current&&camera&&!(event.target as HTMLElement).closest("button,[role=menu]"))setMaximized(maximized===i?null:i);}}
   onKeyDown={event=>{if(event.target!==event.currentTarget)return;if((event.key==="Enter"||event.key===" ")&&pendingCameraId){event.preventDefault();chooseCamera(pendingCameraId,i);setPendingCameraId(null);}if(event.key==="Escape"&&!fullscreen){setPendingCameraId(null);setMaximized(null);}if(event.key==="Enter"&&!pendingCameraId&&camera){event.preventDefault();setMaximized(maximized===i?null:i);}}}>
-  {camera?<LiveCameraViewport key={JSON.stringify([tenant.id,camera.id,camera.sourceVersion,camera.connectionRevision])} name={camera.name} position={i} onClose={()=>closeCamera(i)}>{(policy||p.profile?<LivePlayer key={JSON.stringify([tenant.id,camera.id,camera.sourceVersion,camera.connectionRevision,camera.effectiveActive])} tenant={tenant.id} camera={camera} profile={profile} fallback={p.profile?[]:(rule?.fallback??[])} focusProfile={maximized===i?(p.profile||focusRule?.profile||"main"):undefined} focusFallback={p.profile?[]:(focusRule?.fallback??[])} visible={maximized===null||maximized===i} queue={transitionQueue}/>:<div className="video-state" role="status"><LoaderCircle className="animate-spin" aria-label="Carregando qualidade do mosaico…"/></div>)}</LiveCameraViewport>:<div className="video-area"><Empty className="video-message"><Plus aria-hidden="true"/><p>{p.cameraId?"Sem acesso à câmera":"Arraste uma câmera para cá"}</p></Empty></div>}
+  {camera?<LiveCameraViewport key={recordingCamera?.tileId===p.tileId&&recordingCamera.id===camera.id?`recording-${p.tileId}`:JSON.stringify([tenant.id,camera.id,camera.sourceVersion,camera.connectionRevision])} name={camera.name} position={i} onClose={()=>closeCamera(i)}>{recordingCamera?.tileId===p.tileId&&recordingCamera.id===camera.id?<div ref={setRecordingHost} className="recording-video-host"/>:(policy||p.profile?<LivePlayer key={JSON.stringify([tenant.id,camera.id,camera.sourceVersion,camera.connectionRevision,camera.effectiveActive])} tenant={tenant.id} camera={camera} profile={profile} fallback={p.profile?[]:(rule?.fallback??[])} focusProfile={maximized===i?(p.profile||focusRule?.profile||"main"):undefined} focusFallback={p.profile?[]:(focusRule?.fallback??[])} visible={maximized===null||maximized===i} queue={transitionQueue}/>:<div className="video-state" role="status"><LoaderCircle className="animate-spin" aria-label="Carregando qualidade do mosaico…"/></div>)}</LiveCameraViewport>:<div className="video-area"><Empty className="video-message"><Plus aria-hidden="true"/><p>{p.cameraId?"Sem acesso à câmera":"Arraste uma câmera para cá"}</p></Empty></div>}
  </Card></LiveCameraMenu>})}
  </div>
  <aside id="live-camera-panel" data-collapsed={!cameraListOpen} className="live-camera-panel" aria-label="Visualizações e câmeras">
   <div id="live-camera-list-content" className="live-camera-list-content" hidden={!cameraListOpen}><LiveCameraList/></div>
  </aside>
  </div>
- {recordingCamera&&<LiveRecordingPanel tenantId={tenant.id} camera={recordingCamera} onClose={()=>setRecordingCamera(null)}/>}
+ {recordingCamera&&<LiveRecordingPanel key={`${tenant.id}/${recordingCamera.tileId}/${recordingCamera.id}`} tenantId={tenant.id} camera={recordingCamera} host={recordingHost} onClose={()=>setRecordingCamera(null)}/>}
  </section>;
 }

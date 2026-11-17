@@ -1,6 +1,17 @@
 export type Grant = {action: string; scope: string; resourceId: string};
 export type GrantTarget = Pick<Grant, "scope" | "resourceId">;
 
+export const installationAdministration: Grant = {action: "installation.manage", scope: "installation", resourceId: "installation"};
+
+export function administersInstallation(grants: Grant[]) {
+  return grants.some(grant => sameTarget(grant, installationAdministration) && grant.action === installationAdministration.action);
+}
+
+/** Keep granular grants so turning administration off restores the previous selection. */
+export function setInstallationAdministration(grants: Grant[], enabled: boolean) {
+  return setTargetAction(grants, installationAdministration, installationAdministration.action, enabled);
+}
+
 export const permissionActions = [
   {id: "live", label: "Assistir ao vivo", description: "Visualizar as imagens das câmeras em tempo real.", section: "operation"},
   {id: "ptz.control", label: "Controlar PTZ", description: "Movimentar a câmera e controlar seu zoom óptico. Requer acesso ao vivo às mesmas câmeras.", section: "operation"},
@@ -32,5 +43,6 @@ export function targetActionState(grants: Grant[], target: GrantTarget, action: 
     (target.scope !== "tenant" && grant.scope === "tenant" && grant.resourceId === tenantId) ||
     (target.scope === "camera" && !!siteId && grant.scope === "site" && grant.resourceId === siteId)
   ));
-  return {direct, parents, checked: direct || parents.length > 0};
+  const installation = administersInstallation(grants) && permissionActions.some(item => item.id === action);
+  return {direct, parents, installation, checked: installation || direct || parents.length > 0};
 }

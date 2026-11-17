@@ -18,7 +18,8 @@ func (a *App) exportAuthorized(ctx context.Context, actor, tenant string, plan m
 }
 func exportAuthorizedWith(ctx context.Context, db permissionReader, actor, tenant string, plan media.ExportPlan) bool {
 	var active bool
-	if db.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM operators o JOIN memberships m ON m.operator_id=o.id JOIN tenants t ON t.id=m.tenant_id WHERE o.id=$1 AND t.id=$2 AND o.active AND t.active)", actor, tenant).Scan(&active) != nil || !active {
+	if db.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM operators o CROSS JOIN tenants t WHERE o.id=$1 AND t.id=$2 AND o.active AND t.active
+ AND (is_installation_admin(o.id) OR EXISTS(SELECT 1 FROM memberships m WHERE m.operator_id=o.id AND m.tenant_id=t.id)))`, actor, tenant).Scan(&active) != nil || !active {
 		return false
 	}
 	grants, err := queryGrants(ctx, db, actor, tenant)

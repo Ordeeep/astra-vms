@@ -38,7 +38,7 @@
   .loading { height: 100dvh; display: flex; gap: 28px; align-items: center; justify-content: center; flex-direction: column; }
   .workspace { min-height: 100dvh; }
   .status-dot { width: 6px; height: 6px; background: var(--brand); border-radius: 50%; display: inline-block; flex-shrink: 0; }
-  .content { width: 100%; min-width: 0; padding: 36px; max-width: 1600px; margin: 0 auto; }
+  .content { width: 100%; min-width: 0; padding: 20px; max-width: 1600px; margin: 0 auto; }
   .page-heading { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 26px; }
   .page-heading h1 { margin-top: 10px; }
   .page-heading p { margin-bottom: 0; }
@@ -111,6 +111,7 @@
   .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
   .form-grid .field-label { margin-top: 12px; }
   .form-actions { display: flex; gap: 12px; margin-top: 26px; border-top: 1px solid var(--border); padding-top: 22px; }
+  .form-actions-end { justify-content: flex-end; }
   .grant-row { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; padding: 0 0 16px; border-bottom: 1px solid var(--border); }
   .grant-row .field-label { flex: 1; min-width: 150px; margin: 16px 0 0; }
   .grant-row > [data-slot="button"] { margin-bottom: 1px; }
@@ -119,7 +120,7 @@
   .live-workspace[data-videowall="true"] { position: fixed; inset: 0; z-index: 40; width: 100%; height: 100dvh; margin: 0; background: #000; overflow: hidden; }
   .workspace:has(.live-workspace[data-videowall="true"]) > [data-slot="sidebar"],
   .workspace:has(.live-workspace[data-videowall="true"]) [data-slot="sidebar-inset"] > header { display: none; }
-  .live-workspace[data-videowall="true"] .live-recording-panel { display: none; }
+  .live-workspace[data-videowall="true"] .live-recording-panel { display: block; }
   .live-workspace[data-videowall="true"] .live-camera-panel { position: relative; top: auto; height: 100%; align-self: stretch; padding-top: 48px; }
   .live-workspace[data-videowall="true"] .live-grid { grid-auto-rows: minmax(0,1fr); }
   .live-workspace[data-videowall="true"] .live-cell .video-area { flex: 1; min-height: 0; aspect-ratio: auto; }
@@ -279,11 +280,12 @@
   .live-camera-search > svg { position: absolute; top: 50%; left: 8px; width: 14px; height: 14px; transform: translateY(-50%); color: var(--muted-foreground); pointer-events: none; }
   .live-camera-search input { width: 100%; padding-left: 28px; font-size: 14px; }
   .live-camera-site-trigger { display: flex; width: 100%; min-height: 32px; align-items: center; gap: 8px; padding: 4px 8px; border-radius: var(--radius); text-align: left; font-size: 12px; font-weight: 600; }
+  .live-camera-site > .live-camera-site-trigger { min-height: 28px; padding-block: 2px; }
   .live-camera-site-trigger > svg { width: 14px; height: 14px; flex-shrink: 0; }
   .live-camera-site-trigger[data-state="closed"] > svg { transform: rotate(-90deg); }
   .live-camera-site-trigger > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .live-camera-items { list-style: none; margin: 0 0 6px 12px; padding: 0; }
-  .live-camera-item { display: flex; width: 100%; min-height: 32px; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 0; margin-bottom: 2px; text-align: left; font-size: 12px; line-height: 18px; }
+  .live-camera-item { display: flex; width: 100%; min-height: 28px; align-items: center; gap: 8px; padding: 3px 8px; border-radius: 0; margin-bottom: 2px; text-align: left; font-size: 12px; line-height: 18px; }
   .live-camera-item > svg { width: 14px; height: 14px; flex-shrink: 0; }
   .live-camera-item > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .live-camera-item:hover, .live-camera-site-trigger:hover { background: var(--sidebar-accent); }
@@ -324,7 +326,7 @@
   @media(max-width: 900px) {
     .login-story { padding: 35px 24px; }
     .login-story h1 { font-size: 36px; }
-    .content { padding: 24px; }
+    .content { padding: 16px; }
     .row-actions { flex-wrap: wrap; }
     .archive-search { grid-template-columns: 1fr 1fr; }
     .archive-search .field-label:first-child { grid-column: 1/-1; }
@@ -348,7 +350,7 @@
     .login-panel .field-label { margin: 12px 0; }
     .login-panel [data-slot="input"] { background-color: rgb(20 20 20 / .82); }
     .login-panel [data-slot="button"] { height: 44px; }
-    .content { padding: 24px 16px; }
+    .content { padding: 16px 12px; }
     .page-heading { align-items: flex-start; flex-wrap: wrap; }
     .page-heading h1 { font-size: 25px; line-height: 32px; }
     .welcome { min-height: 280px; }
@@ -374,4 +376,12 @@
 /* Connection data stays readable in the camera dialog at desktop and mobile widths. */
 .vendor-connection-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; }
 .camera-dialog .connection-type-grid > .field-label { margin-top: 0; }
+.recording-schedule-rows { display: grid; gap: 16px; margin-block: 16px; }
+.recording-schedule-row { display: grid; grid-template-columns: minmax(120px, 1fr) auto repeat(2, minmax(90px, 1fr)); align-items: end; gap: 12px; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); }
+.recording-schedule-row > .field-label { margin-top: 0; min-width: 0; }
+.recording-schedule-row > button { grid-column: 1 / -1; justify-self: end; }
+.recording-camera-state { padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 16px; }
+.recording-camera-state p { margin-block: 4px; }
+.storage-section { display: grid; gap: 16px; margin-block: 24px; }
+@media (max-width: 600px) { .recording-schedule-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 600px) { .vendor-connection-grid { grid-template-columns: minmax(0, 1fr); } }

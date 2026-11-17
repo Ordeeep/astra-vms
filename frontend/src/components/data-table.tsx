@@ -22,6 +22,7 @@ export type DataTableColumn<T>={
 type Props<T>={
  data:T[];columns:DataTableColumn<T>[];label:string;getRowId:(row:T)=>string;
  searchPlaceholder?:string;emptyMessage?:ReactNode;loading?:boolean;
+ onRowClick?:(row:T)=>void;canActivateRow?:(row:T)=>boolean;rowLabel?:(row:T)=>string;
  /** Cursor-backed histories expose only their loaded subset to local transforms. */
  partial?:boolean;hasMore?:boolean;onLoadMore?:()=>void|Promise<void>;loadingMore?:boolean;
 };
@@ -60,7 +61,7 @@ function ColumnFilter<T>({column,definition,options,onChange}:{column:Column<T>;
  </div>;
 }
 
-export function DataTable<T>({data,columns,label,getRowId,searchPlaceholder="Buscar…",emptyMessage="Nenhum registro disponível.",loading=false,partial=false,hasMore=false,onLoadMore,loadingMore=false}:Props<T>){
+export function DataTable<T>({data,columns,label,getRowId,searchPlaceholder="Buscar…",emptyMessage="Nenhum registro disponível.",loading=false,partial=false,hasMore=false,onLoadMore,loadingMore=false,onRowClick,canActivateRow,rowLabel}:Props<T>){
  const [search,setSearch]=useState(""),[filters,setFilters]=useState<ColumnFiltersState>([]),[sorting,setSorting]=useState<SortingState>([]),[visibility,setVisibility]=useState<VisibilityState>({}),[pagination,setPagination]=useState<PaginationState>({pageIndex:0,pageSize:10});
  const searchId=useId(),sizeId=useId();
  const definitions=useMemo<ColumnDef<T>[]>(()=>columns.map(definition=>({
@@ -118,7 +119,14 @@ export function DataTable<T>({data,columns,label,getRowId,searchPlaceholder="Bus
      {column.getCanSort()||column.getCanFilter()?<Popover><PopoverTrigger asChild><Button type="button" variant="ghost" size="sm" className="data-table-heading" aria-label={`Opções da coluna ${definition.header}`}>{definition.header}{sorted==="asc"?<ArrowUp aria-hidden="true"/>:sorted==="desc"?<ArrowDown aria-hidden="true"/>:<ArrowUpDown aria-hidden="true"/>}{column.getIsFiltered()&&<Filter className="data-table-filtered" aria-hidden="true"/>}</Button></PopoverTrigger><PopoverContent className="data-table-popover" align="start" aria-label={`Opções de ${definition.header}`}><strong>{definition.header}</strong>{column.getCanSort()&&<div className="data-table-sort-actions"><Button type="button" variant={sorted==="asc"?"secondary":"ghost"} size="sm" onClick={()=>{column.toggleSorting(false);resetPage();}}><ArrowUp/>Ordem crescente</Button><Button type="button" variant={sorted==="desc"?"secondary":"ghost"} size="sm" onClick={()=>{column.toggleSorting(true);resetPage();}}><ArrowDown/>Ordem decrescente</Button>{sorted&&<Button type="button" variant="ghost" size="sm" onClick={()=>{column.clearSorting();resetPage();}}>Remover ordenação</Button>}</div>}{column.getCanFilter()&&<ColumnFilter column={column} definition={definition} options={optionsFor(definition)} onChange={value=>changeFilter(column,value)}/>}</PopoverContent></Popover>:definition.header}
     </TableHead>;
    })}</TableRow>)}</TableHeader>
-   <TableBody>{loading?<TableRow><TableCell colSpan={visible.length} className="data-table-empty" role="status">Carregando registros…</TableCell></TableRow>:table.getRowModel().rows.length?table.getRowModel().rows.map(row=><TableRow key={row.id}>{row.getVisibleCells().map(cell=><TableCell key={cell.id}>{renderCell(row.original,cell.column.id,cell.getValue())}</TableCell>)}</TableRow>):<TableRow><TableCell colSpan={visible.length} className="data-table-empty">{active?<><p>Nenhum resultado para os filtros aplicados.</p><Button type="button" variant="ghost" onClick={clear}>Limpar filtros</Button></>:emptyMessage}</TableCell></TableRow>}</TableBody>
+   <TableBody>{loading?<TableRow><TableCell colSpan={visible.length} className="data-table-empty" role="status">Carregando registros…</TableCell></TableRow>:table.getRowModel().rows.length?table.getRowModel().rows.map(row=>{
+    const clickable=!!onRowClick&&(!canActivateRow||canActivateRow(row.original));
+    return <TableRow key={row.id} tabIndex={clickable?0:undefined} aria-label={clickable?rowLabel?.(row.original):undefined} className={clickable?"cursor-pointer focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2":undefined}
+     onClick={clickable?event=>{if((event.target as HTMLElement).closest('button,a,input,select,textarea,[role="button"],[role="checkbox"],[role="dialog"]'))return;event.currentTarget.focus();onRowClick?.(row.original);}:undefined}
+     onKeyDown={clickable?event=>{if(event.target===event.currentTarget&&(event.key==="Enter"||event.key===" ")){event.preventDefault();onRowClick?.(row.original);}}:undefined}>
+     {row.getVisibleCells().map(cell=><TableCell key={cell.id}>{renderCell(row.original,cell.column.id,cell.getValue())}</TableCell>)}
+    </TableRow>;
+   }):<TableRow><TableCell colSpan={visible.length} className="data-table-empty">{active?<><p>Nenhum resultado para os filtros aplicados.</p><Button type="button" variant="ghost" onClick={clear}>Limpar filtros</Button></>:emptyMessage}</TableCell></TableRow>}</TableBody>
   </Table></div>
   <div className="data-table-footer">
    <p role="status" aria-live="polite">{count?`${pagination.pageIndex*pagination.pageSize+1}–${Math.min((pagination.pageIndex+1)*pagination.pageSize,count)} de ${count}`:"0"} {partial?"registros carregados":"registros"}{active?` (de ${data.length})`:""}</p>

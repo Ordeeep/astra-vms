@@ -19,12 +19,14 @@ async page => {
  await page.waitForFunction(()=>qa.events.some(e=>e.type==='open'&&e.profile==='main'));
  let during=await page.evaluate(()=>({deleted:qa.events.filter(e=>e.type==='delete').length,opened:qa.events.filter(e=>e.type==='open').length,preserved:window.originalVideos.every((v,i)=>v.isConnected&&v.srcObject===window.originalStreams[i])}));
  assert(during.deleted===0&&during.opened===1&&during.preserved,'Maximizar encerrou ou recriou transmissões originais: '+JSON.stringify(during));
- await page.evaluate(()=>qa.release());await waitVideos(5);
+ await page.evaluate(()=>qa.release());await waitVideos(4);
+ await page.waitForFunction(()=>qa.sessions.size===4&&!qa.sessions.has(window.originalSessions[0]));
+ assert(await page.evaluate(()=>window.originalVideos.slice(1).every((v,i)=>v.isConnected&&v.srcObject===window.originalStreams[i+1])),'Maximizar recriou outras câmeras');
  await page.screenshot({path:'output/playwright/live-continuity/maximized.png'});
  await click('Alternar maximização');
- await page.waitForFunction(()=>qa.sessions.size===4);
- assert(await page.evaluate(()=>window.originalVideos.every((v,i)=>v.isConnected&&v.srcObject===window.originalStreams[i])),'Restaurar recriou o mosaico');
- report.maximize=during;report.restore='original video elements and MediaStreams preserved';
+ await settled(4,'sub2');
+ assert(await page.evaluate(()=>window.originalVideos.slice(1).every((v,i)=>v.isConnected&&v.srcObject===window.originalStreams[i+1])),'Restaurar recriou outras câmeras');
+ report.maximize=during;report.restore='focused camera transitioned back; other video elements and MediaStreams preserved';
 
  await save();await click('Três câmeras');await settled(3,'sub2');
  let events=await counts();assert(events.opened===0&&events.deleted===1,'Remoção na mesma faixa reconectou outras câmeras');
@@ -95,9 +97,10 @@ async page => {
  assert(await preserved(),'Atualização de catálogo recriou vídeos');assert((await counts()).opened===0,'Atualização inalterada abriu sessões');
  report.catalogRefresh='preserved';
 
- await save();await click('Alternar maximização');await waitVideos(4);
+ await save();await click('Alternar maximização');
+ await page.waitForFunction(()=>qa.sessions.size===3&&[...qa.sessions.values()].some(s=>s.profile==='main'));
  await page.waitForTimeout(13500);
- events=await counts();assert(events.opened===1&&events.deleted===0&&await preserved(),'Watchdog reiniciou transmissões ocultas que ainda recebem vídeo');
+ events=await counts();assert(events.opened===1&&events.deleted===1&&await page.evaluate(()=>window.savedVideos.slice(1).every((v,i)=>v.isConnected&&v.srcObject===window.savedStreams[i+1])),'Watchdog reiniciou transmissões ocultas que ainda recebem vídeo');
  await click('Alternar maximização');await settled(3,'sub2');report.backgroundWatchdog='no reconnect after 13.5 seconds hidden';
 
  await save();await page.evaluate(()=>qa.delayed.add('main'));await click('Alternar maximização');await page.waitForFunction(()=>qa.events.some(e=>e.type==='open'));

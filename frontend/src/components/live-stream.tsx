@@ -21,6 +21,9 @@ export function LiveStream({tenant,camera,request,presented,visible,queue,onRead
  handlers.current={onReady,onWaiting,onFailure,visible};
  const {profile}=request,fallbackKey=JSON.stringify(request.fallback);
  useEffect(()=>{
+  // React clears the ref before passive unmount cleanup. Keep the owned video
+  // so disposal can still detach its media and stop its tracks.
+  const element=video.current;
   let active=true,run=0,retried=false,pc:RTCPeerConnection|undefined,session:Session|undefined,abort:AbortController|undefined;
   const candidates=[...new Set<string>([profile,...JSON.parse(fallbackKey)])];
   let candidate=0;
@@ -32,8 +35,7 @@ export function LiveStream({tenant,camera,request,presented,visible,queue,onRead
    timer=undefined;watchdog=undefined;startup=undefined;
    abort?.abort();release?.();release=undefined;releasePreparation.current=undefined;
    if(pc){pc.onconnectionstatechange=null;pc.ontrack=null;pc.close();pc=undefined;}
-   const element=video.current;
-   if(element){if(frameCallback!==undefined)element.cancelVideoFrameCallback?.(frameCallback);element.onerror=null;element.pause();element.srcObject=null;}
+   if(element){if(frameCallback!==undefined)element.cancelVideoFrameCallback?.(frameCallback);element.onerror=null;element.pause();if(element.srcObject instanceof MediaStream)element.srcObject.getTracks().forEach(track=>track.stop());element.srcObject=null;}
    frameCallback=undefined;
    const previous=session;session=undefined;
    if(previous)void api(`/tenants/${tenant}/live-sessions/${previous.id}`,"DELETE",undefined,true).catch(()=>{});

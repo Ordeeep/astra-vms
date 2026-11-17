@@ -106,10 +106,19 @@ func TestScheduledCaptureToAuthorizedTemporalPlayback(t *testing.T) {
 	if items[0].(map[string]any)["siteId"] != site {
 		t.Fatal("historical site lost")
 	}
+	availability := b.call("GET", base+"/cameras/"+camera+"/recording-availability"+query, nil, 200)
+	if len(availability["intervals"].([]any)) == 0 || availability["timezone"] != "America/Sao_Paulo" {
+		t.Fatal("captured playable parts missing from live recording availability")
+	}
 	siteB := b.call("POST", base+"/sites", map[string]any{"name": "Destino", "timezone": "UTC"}, 201)["id"].(string)
 	b.call("POST", base+"/cameras/"+camera+"/site-changes", map[string]any{"revision": 1, "siteId": siteB}, 200)
 	group := b.call("POST", base+"/groups", map[string]any{"name": "Histórico do site anterior", "grants": []app.Grant{{Action: "playback", Scope: "site", ResourceID: site}}}, 201)["id"].(string)
-	b.call("PUT", base+"/operators/"+user, map[string]any{"groups": []string{group}, "revision": 1}, 200)
+	// Installation administrators inherit every action. Use a regular operator
+	// to exercise historical scopes and export revocation independently.
+	admin := b
+	user = admin.call("POST", "/admin/operators", map[string]string{"username": "archive-integration", "password": "archive-integration-password"}, 201)["id"].(string)
+	admin.call("PUT", base+"/operators/"+user, map[string]any{"groups": []string{group}, "revision": 0}, 200)
+	b = independentBrowser(t, admin, "archive-integration", "archive-integration-password", tenant)
 	found := b.call("GET", base+"/recording-cameras", nil, 200)["items"].([]any)
 	if len(found) != 1 || found[0].(map[string]any)["id"] != camera {
 		t.Fatal("historical site operator cannot discover moved camera")
@@ -142,7 +151,7 @@ func TestScheduledCaptureToAuthorizedTemporalPlayback(t *testing.T) {
 	}
 	exportWindow := map[string]any{"cameraId": camera, "start": start.Add(-500 * time.Millisecond), "end": end.Add(500 * time.Millisecond), "timezone": "America/Sao_Paulo"}
 	b.call("POST", base+"/export-previews", exportWindow, 403)
-	b.call("PUT", base+"/groups/"+group, map[string]any{"name": "Histórico e exportação de origem", "revision": 1, "grants": []app.Grant{{Action: "playback", Scope: "site", ResourceID: site}, {Action: "export", Scope: "site", ResourceID: site}}}, 200)
+	admin.call("PUT", base+"/groups/"+group, map[string]any{"name": "Histórico e exportação de origem", "revision": 1, "grants": []app.Grant{{Action: "playback", Scope: "site", ResourceID: site}, {Action: "export", Scope: "site", ResourceID: site}}}, 200)
 	preview := b.call("POST", base+"/export-previews", exportWindow, 201)
 	if len(preview["gaps"].([]any)) < 1 {
 		t.Fatal("export preview omitted missing time")
@@ -220,15 +229,21 @@ func TestScheduledCaptureToAuthorizedTemporalPlayback(t *testing.T) {
 	if output, err := decode.CombinedOutput(); err != nil {
 		t.Fatalf("export not playable: %v %s", err, output)
 	}
-	b.call("PUT", base+"/groups/"+group, map[string]any{"name": "Somente reprodução", "revision": 2, "grants": []app.Grant{{Action: "playback", Scope: "site", ResourceID: site}}}, 200)
+	admin.call("PUT", base+"/groups/"+group, map[string]any{"name": "Somente reprodução", "revision": 2, "grants": []app.Grant{{Action: "playback", Scope: "site", ResourceID: site}}}, 200)
 	b.mediaGet("/api/v1"+jobPath+"/content", "", 403)
 	b.mediaGet("/api/v1"+jobPath+"/report", "", 403)
-	other := b.call("POST", "/admin/tenants", map[string]string{"name": "Outro ambiente"}, 201)["id"].(string)
+	other := admin.call("POST", "/admin/tenants", map[string]string{"name": "Outro ambiente"}, 201)["id"].(string)
+	admin.selectTenant(other)
+	otherBase := "/tenants/" + other
+	otherGroup := admin.call("POST", otherBase+"/groups", map[string]any{"name": "Consulta", "grants": []app.Grant{{Action: "playback", Scope: "tenant", ResourceID: other}}}, 201)["id"].(string)
+	admin.call("PUT", otherBase+"/operators/"+user, map[string]any{"groups": []string{otherGroup}, "revision": 0}, 200)
 	b.selectTenant(other)
 	b.mediaGet(session["manifest"].(string), "", 404)
 	b.selectTenant(tenant)
-	// Old context cannot be reused after switching, even by the same global admin.
+	// Old context cannot be reused after switching, even by the same operator.
 	b.mediaGet(part, "", 410)
+	b = admin
+	b.selectTenant(tenant)
 	policy := b.call("GET", base+"/recording-policy", nil, 200)["policy"].(map[string]any)
 	reduction := b.call("POST", base+"/quota-previews", map[string]any{"targetBytes": 0, "revision": policy["revision"]}, 201)
 	if reduction["result"].(map[string]any)["toFree"].(float64) <= 0 {

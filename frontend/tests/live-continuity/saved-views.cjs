@@ -29,15 +29,15 @@ async page => {
  assert(await page.evaluate(()=>savedVideos.every((video,index)=>video.isConnected&&video.srcObject===savedStreams[index])),'Restoring the saved order must preserve connected players');
  assert(await page.evaluate(()=>qa.events.length===0),'Restoring the same cameras must reuse all original sessions');
  await page.getByRole('button',{name:'Alternar maximização',exact:true}).click();
- await page.waitForFunction(()=>qa.sessions.size===5&&[...qa.sessions.values()].some(session=>session.profile==='main'));
+ await page.waitForFunction(()=>qa.sessions.size===4&&[...qa.sessions.values()].some(session=>session.profile==='main'));
  await load.click();
- await page.waitForFunction(()=>qa.sessions.size===4&&document.querySelector('.live-grid')?.dataset.maximized==='false');
- assert(await page.evaluate(()=>savedSessionIDs.every(id=>qa.sessions.has(id))),'Loading from maximized mode must retain original mosaic sessions');
- assert(await page.evaluate(()=>savedVideos.every((video,index)=>video.isConnected&&video.srcObject===savedStreams[index])),'Loading a saved view must retain original video elements');
- await page.waitForFunction(()=>savedVideos.every(video=>video.readyState>=2&&video.getVideoPlaybackQuality().totalVideoFrames>5));
+ await page.waitForFunction(()=>qa.sessions.size===4&&[...qa.sessions.values()].every(session=>session.profile==='sub2')&&document.querySelector('.live-grid')?.dataset.maximized==='false');
+ assert(await page.evaluate(()=>savedSessionIDs.filter(id=>id!==savedSessionIDs[0]).every(id=>qa.sessions.has(id))),'Loading from maximized mode must retain other cameras sessions');
+ assert(await page.evaluate(()=>savedVideos.slice(1).every((video,index)=>video.isConnected&&video.srcObject===savedStreams[index+1])),'Loading a saved view must retain other cameras video elements');
+ await page.waitForFunction(()=>[...document.querySelectorAll('video[data-presented="true"]')].every(video=>video.readyState>=2&&video.getVideoPlaybackQuality().totalVideoFrames>5));
  await page.getByRole('button',{name:'Trocar tenant',exact:true}).click();
  await page.getByRole('tab',{name:'Visualização',exact:true}).click();
  await page.getByText('Nenhuma visualização salva. Monte seu mosaico e salve para abri-lo novamente.',{exact:true}).waitFor();
  assert(await load.count()===0,'Views from the previous tenant must not appear');
- return {passed:true,transport:'native WebRTC',checks:['save without reconnecting','restore camera order without reconnecting','restore layout from maximized view','retain original decoded video streams','tenant isolation']};
+ return {passed:true,transport:'native WebRTC',checks:['save without reconnecting','restore camera order without reconnecting','restore layout from maximized view','retain other cameras decoded video streams','tenant isolation']};
 }

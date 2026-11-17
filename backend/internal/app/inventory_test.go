@@ -96,7 +96,7 @@ func (b *browserClient) selectTenant(tenant string) {
 }
 func TestInventoryVersionsAndScopedGrants(t *testing.T) {
 	b := newTestAPI(t)
-	user := b.login("admin", "admin")
+	b.login("admin", "admin")
 	tenant := b.call("POST", "/admin/tenants", map[string]any{"name": "Factory"}, 201)["id"].(string)
 	b.selectTenant(tenant)
 	base := "/tenants/" + tenant
@@ -117,9 +117,11 @@ func TestInventoryVersionsAndScopedGrants(t *testing.T) {
 		restored.Close()
 		t.Fatal("restored database silently replaced its encryption key")
 	}
-	group := b.call("POST", base+"/groups", map[string]any{"name": "Site A ao vivo", "grants": []app.Grant{{Action: "live", Scope: "site", ResourceID: siteA}, {Action: "export", Scope: "site", ResourceID: siteB}}}, 201)
+	group := b.call("POST", base+"/groups", map[string]any{"name": "Site A ao vivo", "grants": []app.Grant{{Action: "live", Scope: "site", ResourceID: siteA}, {Action: "export", Scope: "site", ResourceID: siteB}, {Action: "inventory.manage", Scope: "tenant", ResourceID: tenant}}}, 201)
+	user := b.call("POST", "/admin/operators", map[string]any{"username": "scoped", "password": "password"}, 201)["id"].(string)
 	b.call("PUT", base+"/operators/"+user, map[string]any{"groups": []string{group["id"].(string)}, "revision": 0}, 200)
-	current := b.call("GET", base+"/cameras/"+cid, nil, 200)
+	scoped := independentBrowser(t, b, "scoped", "password", tenant)
+	current := scoped.call("GET", base+"/cameras/"+cid, nil, 200)
 	if current["capabilities"].(map[string]any)["live"] != true || current["capabilities"].(map[string]any)["export"] != false {
 		t.Fatal("cross product grants")
 	}
@@ -128,6 +130,7 @@ func TestInventoryVersionsAndScopedGrants(t *testing.T) {
 		t.Fatal("source replacement lost identity/version")
 	}
 	current = b.call("POST", base+"/cameras/"+cid+"/site-changes", map[string]any{"revision": 2, "siteId": siteB}, 200)
+	current = scoped.call("GET", base+"/cameras/"+cid, nil, 200)
 	if current["siteId"] != siteB || current["capabilities"].(map[string]any)["live"] != false {
 		t.Fatal("site scope did not follow current location")
 	}

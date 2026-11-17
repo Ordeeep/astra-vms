@@ -83,6 +83,10 @@ _Evitar_: perfil de vídeo, gravação
 Conjunto de períodos em que uma câmera deve ser gravada continuamente.
 _Evitar_: retenção, gravação por movimento
 
+**Configuração de gravação**:
+Definição individual de uma câmera que reúne a habilitação da gravação, o perfil de vídeo gravado, a agenda e a retenção própria ou herdada do tenant.
+_Evitar_: perfil de vídeo, agenda de gravação, configuração de armazenamento
+
 **Retenção**:
 Prazo configurado para conservar gravações antes de sua remoção automática. O histórico efetivamente disponível também depende da capacidade de armazenamento e da política de sobrescrita.
 _Evitar_: agenda de gravação
@@ -114,6 +118,18 @@ _Evitar_: visualização ao vivo
 **Linha do tempo de gravações**:
 Representação dos períodos com gravações disponíveis de uma câmera e das lacunas entre eles.
 _Evitar_: agenda de gravação
+
+**Janela temporal visível**:
+Intervalo do acervo apresentado na linha do tempo de gravações, que pode atravessar datas e ser diferente do período em reprodução.
+_Evitar_: dia selecionado, duração do vídeo
+
+**Posição de reprodução**:
+Instante do acervo selecionado para consultar as imagens de uma câmera, indicado por um marcador na linha do tempo de gravações.
+_Evitar_: horário ao vivo, posição do mouse
+
+**Trecho contínuo de gravação**:
+Período com imagens disponíveis de uma câmera sem lacunas de gravação, que pode atravessar a meia-noite e reunir várias partes do acervo.
+_Evitar_: arquivo de vídeo, dia de gravação
 
 **Acervo**:
 Conjunto de gravações preservadas de um tenant, com a origem de cada registro mantida ao longo das mudanças de câmera e site.

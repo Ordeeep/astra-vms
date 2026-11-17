@@ -101,78 +101,21 @@ func (a *App) recordingConfig(w http.ResponseWriter, r *http.Request, id identit
 		response(w, 200, c)
 		return
 	}
-	var in struct {
-		RecordingConfig
-		ConfirmImpact bool `json:"confirmImpact"`
-	}
+	var in RecordingUpdate
 	if !body(w, r, &in) {
 		return
 	}
-	if !profileID.MatchString(in.Profile) || !validSchedule(in.Schedule) || (in.Retention != nil && (*in.Retention < 1 || *in.Retention > 3650)) {
-		problem(w, 422, "invalid_recording_config")
-		return
-	}
-	if _, err := a.cameraSource(r.Context(), tenant, camera, currentSource(a, r, tenant, camera), in.Profile); err != nil {
-		problem(w, 422, "recording_profile_unavailable")
-		return
-	}
-	tx, id, err := a.accessTransaction(r, id)
+	tx, current, err := a.accessTransaction(r, id)
 	if err != nil {
 		dbFailure(w)
 		return
 	}
 	defer tx.Rollback(r.Context())
-	var source string
-	if tx.QueryRow(r.Context(), "SELECT site_id,source_version FROM cameras WHERE tenant_id=$1 AND id=$2 AND deleted_at IS NULL", tenant, camera).Scan(&site, &source) != nil {
+	if tx.QueryRow(r.Context(), "SELECT site_id FROM cameras WHERE tenant_id=$1 AND id=$2 AND deleted_at IS NULL FOR UPDATE", tenant, camera).Scan(&site) != nil {
 		problem(w, 404, "camera_not_found")
 		return
 	}
-	if !allowedWith(r.Context(), tx, id, tenant, "recording.manage", site, camera) {
-		problem(w, 403, "forbidden")
-		return
-	}
-	var containsProfile bool
-	if tx.QueryRow(r.Context(), `SELECT EXISTS(SELECT 1 FROM camera_sources s,jsonb_array_elements(s.profiles) p WHERE s.tenant_id=$1 AND s.camera_id=$2 AND s.id=$3 AND p->>'id'=$4)`, tenant, camera, source, in.Profile).Scan(&containsProfile) != nil || !containsProfile {
-		problem(w, 422, "recording_profile_unavailable")
-		return
-	}
-	var revision int64
-	err = tx.QueryRow(r.Context(), "SELECT revision FROM recording_configs WHERE tenant_id=$1 AND camera_id=$2 FOR UPDATE", tenant, camera).Scan(&revision)
-	if err != nil && err != pgx.ErrNoRows {
-		dbFailure(w)
-		return
-	}
-	if revision != in.Revision {
-		problem(w, 412, "revision_conflict")
-		return
-	}
-	days := in.Retention
-	if days == nil {
-		var n int
-		if tx.QueryRow(r.Context(), "SELECT retention_days FROM recording_policies WHERE tenant_id=$1", tenant).Scan(&n) == nil {
-			days = &n
-		}
-	}
-	var impact int64
-	if days != nil {
-		tx.QueryRow(r.Context(), "SELECT coalesce(sum(charged),0) FROM archive_segments WHERE tenant_id=$1 AND camera_id=$2 AND available AND end_at<now()-make_interval(days=>$3)", tenant, camera, *days).Scan(&impact)
-	}
-	if impact > 0 && !in.ConfirmImpact {
-		response(w, 409, map[string]any{"code": "retention_impact_confirmation", "eligibleBytes": impact})
-		return
-	}
-	raw, _ := json.Marshal(in.Schedule)
-	if in.Schedule == nil {
-		raw = []byte("[]")
-	}
-	_, err = tx.Exec(r.Context(), `INSERT INTO recording_configs(tenant_id,camera_id,enabled,profile,schedule,always_on,retention_days) VALUES($1,$2,$3,$4,$5,$6,$7)
-	ON CONFLICT(tenant_id,camera_id) DO UPDATE SET enabled=$3,profile=$4,schedule=$5,always_on=$6,retention_days=$7,revision=recording_configs.revision+1`, tenant, camera, in.Enabled, in.Profile, raw, in.Always, in.Retention)
-	if err != nil {
-		dbFailure(w)
-		return
-	}
-	if _, err = tx.Exec(r.Context(), "INSERT INTO audit_events(actor_id,tenant_id,action,resource_id,revision) SELECT $1,$2,'recording.configured',$3,revision FROM recording_configs WHERE tenant_id=$2 AND camera_id=$3", id.User.ID, tenant, camera); err != nil {
-		dbFailure(w)
+	if !a.saveCameraRecording(w, r, tx, current, tenant, camera, site, &in) {
 		return
 	}
 	if tx.Commit(r.Context()) != nil {
@@ -182,11 +125,7 @@ func (a *App) recordingConfig(w http.ResponseWriter, r *http.Request, id identit
 	in.Revision++
 	response(w, 200, in.RecordingConfig)
 }
-func currentSource(a *App, r *http.Request, tenant, camera string) string {
-	var source string
-	a.db.QueryRow(r.Context(), "SELECT source_version FROM cameras WHERE tenant_id=$1 AND id=$2", tenant, camera).Scan(&source)
-	return source
-}
+
 func (a *App) storageConfig(w http.ResponseWriter, r *http.Request, id identity) {
 	if !id.User.GlobalAdmin {
 		problem(w, 403, "forbidden")
@@ -630,7 +569,12 @@ func (a *App) recordingStatuses(w http.ResponseWriter, r *http.Request, id ident
 	if !ok {
 		return
 	}
-	rows, err := a.db.Query(r.Context(), `SELECT c.id,c.site_id,coalesce(s.code,'not_configured'),s.last_frame,s.last_write,s.updated_at FROM cameras c LEFT JOIN recording_status s ON s.tenant_id=c.tenant_id AND s.camera_id=c.id WHERE c.tenant_id=$1 AND c.deleted_at IS NULL ORDER BY c.id LIMIT 200`, tenant)
+	var storageConfigured, quotaConfigured bool
+	if a.db.QueryRow(r.Context(), "SELECT EXISTS(SELECT 1 FROM settings WHERE key='storage'),EXISTS(SELECT 1 FROM recording_policies WHERE tenant_id=$1 AND quota_bytes>0)", tenant).Scan(&storageConfigured, &quotaConfigured) != nil {
+		dbFailure(w)
+		return
+	}
+	rows, err := a.db.Query(r.Context(), `SELECT c.id,c.site_id,coalesce(s.code,'not_configured'),s.last_frame,s.last_write,s.updated_at,r.enabled,cs.timezone FROM cameras c JOIN sites cs ON cs.tenant_id=c.tenant_id AND cs.id=c.site_id LEFT JOIN recording_status s ON s.tenant_id=c.tenant_id AND s.camera_id=c.id LEFT JOIN recording_configs r ON r.tenant_id=c.tenant_id AND r.camera_id=c.id WHERE c.tenant_id=$1 AND c.deleted_at IS NULL AND c.id>$2 ORDER BY c.id LIMIT 201`, tenant, r.URL.Query().Get("cursor"))
 	if err != nil {
 		dbFailure(w)
 		return
@@ -642,22 +586,42 @@ func (a *App) recordingStatuses(w http.ResponseWriter, r *http.Request, id ident
 		return
 	}
 	items := []map[string]any{}
+	cursor, count := "", 0
 	for rows.Next() {
-		var camera, site, code string
+		var camera, site, code, timezone string
 		var frame, write, updated *time.Time
-		if rows.Scan(&camera, &site, &code, &frame, &write, &updated) != nil {
+		var enabled *bool
+		if rows.Scan(&camera, &site, &code, &frame, &write, &updated, &enabled, &timezone) != nil {
 			dbFailure(w)
 			return
 		}
+		count++
+		if count > 200 {
+			break
+		}
+		cursor = camera
 		if !id.User.GlobalAdmin && !permits(grants, tenant, "recording.manage", site, camera) && !permits(grants, tenant, "playback", site, camera) {
 			continue
 		}
-		if updated != nil && time.Since(*updated) > 5*time.Second {
+		if enabled == nil || !*enabled {
+			code = "recording_disabled"
+		} else if !storageConfigured {
+			code = "storage_not_configured"
+		} else if !quotaConfigured {
+			code = "storage_quota_pending"
+		} else if updated != nil && time.Since(*updated) > 5*time.Second {
 			code = "worker_unavailable"
 		}
-		items = append(items, map[string]any{"cameraId": camera, "code": code, "lastFrame": frame, "lastWrite": write, "updatedAt": updated})
+		items = append(items, map[string]any{"cameraId": camera, "code": code, "lastFrame": frame, "lastWrite": write, "updatedAt": updated, "timezone": timezone})
 	}
-	response(w, 200, map[string]any{"items": items})
+	if rows.Err() != nil {
+		dbFailure(w)
+		return
+	}
+	if count <= 200 {
+		cursor = ""
+	}
+	response(w, 200, map[string]any{"items": items, "nextCursor": cursor, "storageConfigured": storageConfigured, "quotaConfigured": quotaConfigured})
 }
 func (a *App) registerRecording(mux *http.ServeMux) {
 	for _, method := range []string{"GET", "POST"} {

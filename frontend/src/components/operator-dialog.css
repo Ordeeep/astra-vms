@@ -1,0 +1,16 @@
+.operator-editor-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 28px;
+}
+.operator-account-fields, .operator-groups { min-width: 0; }
+.operator-dialog .operator-groups { margin-top: 12px; }
+.operator-dialog .operator-groups .check { align-items: start; }
+.operator-dialog .operator-groups .check small { margin-left: auto; white-space: nowrap; }
+.operator-dialog .operator-account-fields > .field-label:first-child { margin-top: 0; }
+@media (max-width: 600px) {
+  .operator-editor-layout { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+}
+
+.operator-permission-groups { display: flex; flex-direction: column; gap: 20px; min-width: 0; }

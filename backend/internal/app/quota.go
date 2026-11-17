@@ -233,7 +233,7 @@ func (a *App) stepQuota() {
 	}
 	var user User
 	var tenantActive bool
-	err = tx.QueryRow(ctx, "SELECT o.id,o.active,o.global_admin,t.active FROM operators o CROSS JOIN tenants t WHERE o.id=$1 AND t.id=$2", j.Actor, j.Tenant).Scan(&user.ID, &user.Active, &user.GlobalAdmin, &tenantActive)
+	err = tx.QueryRow(ctx, "SELECT o.id,o.active,is_installation_admin(o.id),t.active FROM operators o CROSS JOIN tenants t WHERE o.id=$1 AND t.id=$2", j.Actor, j.Tenant).Scan(&user.ID, &user.Active, &user.GlobalAdmin, &tenantActive)
 	if err != nil || !user.Active || !tenantActive || !allowedWith(ctx, tx, identity{User: user}, j.Tenant, "recording.manage", "", "") {
 		tx.Exec(ctx, "UPDATE quota_jobs SET status='failed',code='authority_revoked' WHERE id=$1", j.ID)
 		tx.Commit(ctx)

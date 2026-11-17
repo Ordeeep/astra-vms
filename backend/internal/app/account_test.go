@@ -86,6 +86,10 @@ func TestProfileMigrationPreservesExistingCredentials(t *testing.T) {
 	}
 	defer db.Close(ctx)
 	// Recreate the version-one shape only in this test's temporary namespace.
+	legacySchema := pgx.Identifier{b.options.Schema}.Sanitize()
+	if _, err = db.Exec(ctx, "DROP FUNCTION "+legacySchema+".is_installation_admin(text); DROP TABLE "+legacySchema+".installation_group_members; DROP TABLE "+legacySchema+".installation_groups; ALTER TABLE "+legacySchema+".operators DROP COLUMN deleted_at, ADD COLUMN global_admin boolean NOT NULL DEFAULT true"); err != nil {
+		t.Fatal(err)
+	}
 	schema := pgx.Identifier{b.options.Schema}.Sanitize()
 	if _, err = db.Exec(ctx, "DROP TABLE "+schema+".camera_deletions; DROP FUNCTION "+schema+".require_operational_camera() CASCADE; ALTER TABLE "+schema+".cameras DROP COLUMN deleted_at"); err != nil {
 		t.Fatal(err)

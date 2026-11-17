@@ -1,4 +1,4 @@
-export type Operator = {id: string; username: string; name: string; email: string; globalAdmin: boolean; active: boolean; revision: number};
+export type Operator = {id: string; username: string; name: string; email: string; globalAdmin: boolean; installationGroups?: string[]; active: boolean; revision: number};
 export type Tenant = {id: string; name: string; active: boolean; revision: number};
 export type Identity = {user: Operator; tenants: Tenant[]; csrfToken: string};
 export class ApiError extends Error {
@@ -7,6 +7,11 @@ export class ApiError extends Error {
   }
 }
 const messages: Record<string,string> = {
+  recording_profile_unavailable: "O perfil gravado não está disponível. Escolha outro perfil ou desabilite a gravação.",
+  recording_profile_change_required: "Esta alteração remove o perfil de uma gravação habilitada. Um operador com permissão para editar a câmera e a gravação deve selecionar outro perfil ou desabilitar a gravação.",
+  invalid_recording_config: "Confira o perfil, os horários da agenda e a retenção de gravação.",
+  storage_worker_unavailable: "O serviço de armazenamento está indisponível. Tente novamente.",
+  storage_configuration_rejected: "O destino de armazenamento foi recusado. Confira a pasta e os limites do servidor.",
   ptz_unsupported: "Esta câmera não oferece este recurso de PTZ.",
   invalid_ptz_command: "O comando PTZ é inválido.",
   ptz_superseded: "Outro comando assumiu o PTZ. Solte o controle e pressione novamente para assumir.",
@@ -40,7 +45,12 @@ const messages: Record<string,string> = {
   current_password_required: "Confirme sua senha atual para alterar o e-mail.",
   current_password_incorrect: "A senha atual está incorreta.",
   email_unavailable: "Este e-mail não está disponível. Use outro endereço.",
-  operator_conflict: "Este usuário já está em uso ou corresponde ao e-mail de outra conta.",
+  last_installation_admin: "Mantenha ao menos um administrador ativo vinculado a um grupo da instalação.",
+  installation_group_not_found: "Um grupo da instalação não está mais disponível. Atualize o cadastro.",
+  invalid_installation_group: "Confira o nome e as permissões do grupo da instalação.",
+  cannot_delete_self: "Você não pode excluir a própria conta.",
+  operator_conflict: "O usuário ou e-mail informado já está em uso por outra conta.",
+  invalid_operator: "Confira o usuário (até 128 caracteres) e a senha informados.",
   invalid_profile_name: "Informe um nome válido com até 128 caracteres.",
   invalid_email: "Informe um endereço de e-mail válido com até 254 caracteres.",
   invalid_password: "Informe uma senha com até 1.024 caracteres.",

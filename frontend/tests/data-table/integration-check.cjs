@@ -15,9 +15,9 @@ async page => {
  assert((await region('Câmeras').getByRole('status').innerText()).includes('de 19'),'Integration facet');
  await page.screenshot({path:'output/playwright/data-table/cameras-dark.png'});
  await goto('groups');await waitRows('Grupos de permissões',10);
- await goto('management');await waitRows('Acessos',10);
- await region('Acessos').getByRole('textbox').fill('Grupo 14');await waitRows('Acessos',1);
- assert((await region('Acessos').locator('tbody').innerText()).includes('operador.14'),'Group array search');
+ await goto('management');await waitRows('Operadores',10);
+ await region('Operadores').getByRole('textbox').fill('Grupo 14');await waitRows('Operadores',1);
+ assert((await region('Operadores').locator('tbody').innerText()).includes('operador.14'),'Group array search');
  await goto('operators');await waitRows('Operadores',10);
  await goto('tenants');await waitRows('Ambientes',1);
  await goto('exports');await waitRows('Exportações',10);

@@ -537,6 +537,7 @@ func (a *App) proxyArchiveBytes(w http.ResponseWriter, r *http.Request, tenant, 
 	}
 }
 func (a *App) registerPlayback(mux *http.ServeMux) {
+	mux.HandleFunc("GET /api/v1/tenants/{tenant}/cameras/{camera}/recording-availability", a.protected(a.recordingAvailability))
 	mux.HandleFunc("GET /api/v1/tenants/{tenant}/recording-cameras", a.protected(a.recordingCameras))
 	mux.HandleFunc("GET /api/v1/tenants/{tenant}/cameras/{camera}/timeline", a.protected(a.timeline))
 	mux.HandleFunc("POST /api/v1/tenants/{tenant}/playback-sessions", a.protected(a.createPlayback))

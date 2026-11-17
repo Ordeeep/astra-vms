@@ -8,6 +8,9 @@
 .permission-group-dialog .form-actions { flex-shrink: 0; align-items: center; flex-direction: row-reverse; gap: 8px; margin-top: 14px; padding-top: 12px; }
 .permission-group-dialog .form-actions [data-slot="button"] { min-height: 32px; padding-inline: 12px; font-size: 13px; }
 .permission-editor { min-width: 0; }
+.permission-installation { border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 14px; }
+.permission-installation p { margin: 2px 0 0 27px; font-size: 12px; line-height: 18px; color: var(--muted-foreground); }
+.permission-action-label:has([data-slot="checkbox"]:disabled) { cursor: default; }
 .permission-workspace { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 20px; align-items: start; }
 .permission-resources { min-width: 0; border-right: 1px solid var(--border); padding-right: 16px; }
 .permission-search { position: relative; margin-bottom: 8px; }

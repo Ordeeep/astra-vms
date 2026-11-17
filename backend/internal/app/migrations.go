@@ -56,7 +56,7 @@ func migrate(ctx context.Context, db *pgxpool.Pool) error {
  END $$;
  CREATE TRIGGER live_operational_camera BEFORE INSERT ON live_sessions FOR EACH ROW EXECUTE FUNCTION require_operational_camera();
  CREATE TRIGGER playback_operational_camera BEFORE INSERT ON playback_sessions FOR EACH ROW EXECUTE FUNCTION require_operational_camera();
- `}
+ `, `ALTER TABLE operators ADD COLUMN deleted_at timestamptz;`, installationGroupsMigration, linkedInstallationAdministrationMigration}
 	if version > len(migrations) {
 		return errors.New("database requires a newer VMS core")
 	}

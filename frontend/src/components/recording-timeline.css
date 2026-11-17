@@ -1,0 +1,87 @@
+.recording-panel { padding: 8px 12px 4px; color: var(--foreground); max-height: 48svh; overflow-y: auto; }
+.live-workspace:has(.recording-panel) .live-stage { overflow: hidden; }
+.recording-toolbar, .recording-controls { display: flex; align-items: center; gap: 8px; min-width: 0; flex-wrap: wrap; }
+.recording-toolbar { margin-bottom: 2px; }
+.recording-toolbar-end { display: flex; margin-left: auto; flex-shrink: 0; }
+.recording-toolbar .recording-panel-status { flex: 1 1 180px; min-width: 0; flex-wrap: wrap; overflow-wrap: anywhere; }
+.recording-controls { display: grid; align-items: end; grid-template-columns: min(var(--recording-name-width),45%) minmax(0,1fr) auto; gap: 4px; margin-bottom: 0; }
+.recording-playback-controls { grid-column: 2; grid-row: 1; margin-bottom: 32px; display: flex; align-items: center; justify-content: center; gap: 4px; }
+.recording-speed { min-width: 34px; text-align: center; font-size: 11px; font-variant-numeric: tabular-nums; }
+.recording-position-clock { grid-column: 1; grid-row: 1; justify-self: start; width: 100%; height: auto; container-type: inline-size; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 4px 6px; border: 1px solid var(--border); border-radius: 4px; background: color-mix(in srgb, var(--foreground) 4%, var(--background)); font-variant-numeric: tabular-nums; }
+.recording-position-clock { cursor: pointer; color: var(--foreground); transition: background-color .15s, border-color .15s; }
+.recording-position-clock:hover, .recording-position-clock[data-state="open"] { background: color-mix(in srgb, var(--foreground) 8%, var(--background)); border-color: var(--muted-foreground); }
+.recording-position-clock:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.recording-clock-value { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.recording-clock-time { font-size: clamp(11px,18cqw,18px); line-height: 1.2; font-weight: 600; letter-spacing: -.025em; white-space: nowrap; }
+.recording-clock-date { font-size: clamp(8px,11cqw,11px); line-height: 1.2; color: var(--muted-foreground); white-space: nowrap; }
+.recording-navigation-controls { grid-column: 3; grid-row: 1; margin-bottom: 32px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-left: auto; }
+.recording-panel-status { display: flex; align-items: center; gap: 6px; min-height: 24px; font-size: 11px; color: var(--muted-foreground); }
+.recording-panel-status svg { width: 12px; height: 12px; flex-shrink: 0; }
+.recording-panel-status[role="alert"] { color: var(--destructive); }
+.recording-compact-name { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+.recording-panel[data-compact="true"] .recording-toolbar { margin-bottom: 2px; }
+.recording-panel[data-compact="true"] .recording-panel-status { min-height: 18px; }
+.recording-ruler-row { display: grid; grid-template-columns: min(var(--recording-name-width),45%) 10px minmax(0,1fr); align-items: stretch; min-width: 0; padding-block: 0; }
+.recording-camera-name { display: block; align-self: center; text-align: left; padding: 3px 6px 3px 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; font-weight: 500; }
+.recording-name-divider { position: relative; cursor: col-resize; touch-action: none; border-inline: 1px solid transparent; }
+.recording-name-divider::after { content: ""; position: absolute; top: 8px; bottom: 5px; left: 4px; border-left: 2px solid var(--border); }
+.recording-name-divider:hover::after, .recording-name-divider:focus-visible::after { border-color: var(--primary); }
+.recording-ruler { position: relative; min-width: 0; height: 56px; margin-top: -32px; margin-inline: 4px; cursor: grab; user-select: none; touch-action: none; }
+.recording-ruler:active { cursor: grabbing; }
+.recording-ruler:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; border-radius: 3px; }
+.recording-date-scale { position: relative; height: 14px; line-height: 14px; overflow: hidden; color: var(--foreground); font-size: 10px; }
+.recording-date-scale span { position: absolute; white-space: nowrap; padding-left: 4px; }
+.recording-hour-scale { position: relative; height: 18px; overflow: hidden; font-variant-numeric: tabular-nums; }
+.recording-hour-scale > i { position: absolute; height: 4px; bottom: 0; border-left: 1px solid color-mix(in srgb,var(--muted-foreground) 65%,transparent); font-style: normal; }
+.recording-hour-scale > i[data-major="true"] { height: 7px; border-color: var(--foreground); }
+.recording-hour-scale > i > span { position: absolute; bottom: 7px; left: 0; transform: translateX(-50%); font-size: 10px; white-space: nowrap; color: var(--muted-foreground); }
+.recording-band { position: relative; height: 12px; margin-block: 6px; overflow: hidden; border: 1px solid var(--border); border-radius: 3px; background: var(--background); }
+.recording-available { position: absolute; top: 2px; bottom: 2px; background: var(--primary); pointer-events: none; }
+.recording-day-boundary { position: absolute; top: 0; bottom: 0; border-left: 1px dashed var(--muted-foreground); pointer-events: none; }
+.recording-marker { position: absolute; top: 14px; bottom: 6px; width: 14px; margin-left: -7px; z-index: 3; cursor: ew-resize; touch-action: none; }
+.recording-marker::after { content: ""; position: absolute; top: 6px; bottom: 0; left: 6px; width: 2px; background: var(--foreground); box-shadow: 0 0 0 1px var(--card); }
+.recording-marker > i { position: absolute; left: 2px; top: 0; width: 10px; height: 10px; background: var(--foreground); clip-path: polygon(0 0,100% 0,100% 50%,50% 100%,0 50%); }
+.recording-hover-line { position: absolute; top: 18px; bottom: 6px; z-index: 2; border-left: 1px dotted var(--foreground); pointer-events: none; }
+.recording-hover-time { position: absolute; top: -3px; transform: translateX(-50%); z-index: 4; padding: 3px 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--popover); color: var(--popover-foreground); box-shadow: 0 2px 8px #0002; white-space: nowrap; font-size: 11px; font-variant-numeric: tabular-nums; pointer-events: none; }
+.recording-calendar { width: 224px; gap: 4px; padding: 8px; }
+.recording-calendar-heading [data-slot="button"] { width: 24px; height: 24px; }
+.recording-calendar-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.recording-calendar-heading strong { font-size: 11px; text-transform: capitalize; }
+.recording-calendar table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+.recording-calendar th { font-size: 10px; font-weight: 400; color: var(--muted-foreground); padding-block: 2px; }
+.recording-calendar td { height: 26px; padding: 1px; text-align: center; }
+.recording-calendar td button { position: relative; width: 100%; height: 24px; font-size: 11px; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--foreground); }
+.recording-calendar td button:hover { background: var(--accent); }
+.recording-calendar td button[data-outside="true"] { opacity: .45; }
+.recording-calendar td button[data-recorded="true"] { color: var(--primary); font-weight: 700; background: var(--brand-selection); }
+.recording-calendar td button[data-recorded="true"]::after { content: ""; position: absolute; bottom: 2px; left: calc(50% - 2px); width: 4px; height: 4px; border-radius: 50%; background: var(--primary); }
+.recording-calendar td[aria-selected="true"] button { border-color: var(--foreground); }
+.recording-calendar-status { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; min-height: 20px; font-size: 10px; color: var(--muted-foreground); }
+.recording-calendar-status svg { width: 12px; height: 12px; }
+.recording-calendar-status[role="alert"] { color: var(--destructive); }
+.recording-video-host { position: absolute; inset: 0; background: #000; color: #fff; container-type: inline-size; }
+.recording-video, .recording-video video { width: 100%; height: 100%; }
+.recording-video video { object-fit: contain; }
+.recording-video-prompt { padding: 12px; text-align: center; font-size: 13px; }
+.recording-video-message { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: #000d; padding: 16px; text-align: center; font-size: 12px; }
+@media (max-width: 800px) {
+  .recording-panel { padding-inline: 8px; }
+  .recording-toolbar { gap: 6px; }
+  .recording-controls { display: flex; justify-content: center; }
+  .recording-playback-controls { flex: 1 0 100%; margin-bottom: 0; }
+  .recording-position-clock { width: min(var(--recording-name-width),45%); margin-right: auto; }
+  .recording-navigation-controls { margin-left: auto; }
+
+}
+@media (max-width: 420px) {
+  .recording-toolbar { gap: 4px; }
+  .recording-toolbar-end { order: 2; }
+  .recording-panel [data-slot="button"] { font-size: 10px; }
+  .recording-controls { gap: 2px; }
+  .recording-navigation-controls { gap: 2px; }
+  .recording-navigation-controls [data-slot="button"] { padding-inline: 5px; }
+  .recording-panel-status { font-size: 10px; }
+}
+@media (max-width: 640px) {
+  .live-workspace:has(.recording-panel) .live-camera-panel { position: relative; top: auto; height: auto; align-self: stretch; }
+}

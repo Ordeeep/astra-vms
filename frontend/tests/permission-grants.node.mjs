@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {setTargetAction, targetActionState} from '../src/lib/permission-grants.ts';
+import {administersInstallation, installationAdministration, permissionActions, setInstallationAdministration, setTargetAction, targetActionState} from '../src/lib/permission-grants.ts';
 
 const tenant = {scope: 'tenant', resourceId: 'tenant-a'};
 const site = {scope: 'site', resourceId: 'site-a'};
@@ -74,4 +74,28 @@ test('site-only editing never promotes or deletes legacy camera grants', () => {
   assert.deepEqual(enabled, [...legacy, {...site,action:'export'}]);
   const disabled = setTargetAction(enabled, site, 'export', false);
   assert.deepEqual(disabled, legacy);
+});
+
+test('installation administration covers every action and future resources without copying grants', () => {
+  const original = [{...site, action: 'playback'}, {...camera, action: 'export'}];
+  const enabled = setInstallationAdministration(original, true);
+  assert.deepEqual(enabled, [...original, installationAdministration]);
+  for (const target of [tenant, site, camera, {scope: 'site', resourceId: 'future-site'}]) {
+    for (const action of permissionActions) {
+      const state = targetActionState(enabled, target, action.id, tenant.resourceId);
+      assert.equal(state.checked, true);
+      assert.equal(state.installation, true);
+    }
+  }
+  assert.deepEqual(setInstallationAdministration(enabled, true), enabled);
+  assert.equal(administersInstallation(enabled), true);
+  assert.deepEqual(setInstallationAdministration(enabled, false), original);
+  assert.equal(targetActionState(original, tenant, 'live', tenant.resourceId).checked, false);
+});
+
+test('similar but invalid installation grants do not lock or grant actions', () => {
+  for (const grant of [{...installationAdministration, scope:'tenant'}, {...installationAdministration, resourceId:'other'}, {...installationAdministration, action:'live'}]) {
+    assert.equal(administersInstallation([grant]), false);
+    assert.equal(targetActionState([grant], site, 'live', tenant.resourceId).checked, false);
+  }
 });

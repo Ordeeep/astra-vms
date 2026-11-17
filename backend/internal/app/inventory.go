@@ -89,7 +89,7 @@ func (a *App) sites(w http.ResponseWriter, r *http.Request, id identity) {
 			}
 			cursor = s.ID
 			visible := id.User.GlobalAdmin
-			s.Capabilities = map[string]bool{"inventory.manage": id.User.GlobalAdmin || permits(grants, tenant, "inventory.manage", s.ID, "")}
+			s.Capabilities = map[string]bool{"inventory.manage": id.User.GlobalAdmin || permits(grants, tenant, "inventory.manage", s.ID, ""), "recording.manage": id.User.GlobalAdmin || permits(grants, tenant, "recording.manage", s.ID, "")}
 			for _, g := range grants {
 				if (g.Scope == "tenant" && g.ResourceID == tenant) || (g.Scope == "site" && g.ResourceID == s.ID) {
 					visible = true
@@ -271,8 +271,9 @@ func (a *App) cameras(w http.ResponseWriter, r *http.Request, id identity) {
 		Name   string `json:"name"`
 		SiteID string `json:"siteId"`
 		camera.Source
-		Active   bool  `json:"active"`
-		Revision int64 `json:"revision"`
+		Active    bool             `json:"active"`
+		Revision  int64            `json:"revision"`
+		Recording *RecordingUpdate `json:"recording"`
 	}
 	if !body(w, r, &in) {
 		return
@@ -352,6 +353,9 @@ func (a *App) cameras(w http.ResponseWriter, r *http.Request, id identity) {
 	}
 	if err != nil {
 		dbFailure(w)
+		return
+	}
+	if in.Recording != nil && !a.saveCameraRecording(w, r, tx, current, tenant, cid, site, in.Recording) {
 		return
 	}
 	if audit(r.Context(), tx, current, tenant, "camera.saved", cid, map[string]any{"siteId": site, "name": in.Name}) != nil || tx.Commit(r.Context()) != nil {
@@ -474,6 +478,9 @@ func (a *App) cameraChange(w http.ResponseWriter, r *http.Request, id identity) 
 	}
 	if err != nil {
 		dbFailure(w)
+		return
+	}
+	if !a.preserveRecordingProfile(w, r, tx, tenant, cid) {
 		return
 	}
 	if audit(r.Context(), tx, current, tenant, action, cid, details) != nil || tx.Commit(r.Context()) != nil {
