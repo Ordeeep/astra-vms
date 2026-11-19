@@ -17,7 +17,6 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
-	"os/signal"
 	"path/filepath"
 	"strings"
 	"time"
@@ -55,7 +54,7 @@ func main() {
 	if err != nil || target.Scheme != "http" || net.ParseIP(target.Hostname()) == nil || !net.ParseIP(target.Hostname()).IsLoopback() {
 		log.Fatal("frontend must use a loopback HTTP address")
 	}
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	ctx, cancel := servicehost.SignalContext(context.Background())
 	defer cancel()
 	servicehost.WatchParent(cancel)
 	api, err := app.New(ctx, app.Options{DatabaseURL: os.Getenv("VMS_DATABASE_URL"), SecureCookies: true, DataDir: *data, WorkerURL: *worker, WHEPURL: *whep, WorkerSecret: os.Getenv("VMS_WORKER_SECRET")})

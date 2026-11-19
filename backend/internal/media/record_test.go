@@ -7,6 +7,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
+	"strconv"
 	"testing"
 	"time"
 
@@ -39,12 +41,18 @@ func TestFragmentedVideoRemainsDecodableAcrossQuotaOverwrite(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer s.Close()
-	if err := s.SetLimit("a", storage.Recording, 128<<10); err != nil {
+	quota, fragments := int64(128<<10), 6
+	if runtime.GOOS == "linux" {
+		// ext4 admission includes temporary tree metadata headroom. Provide room
+		// for a complete open fragment and enough input to still force eviction.
+		quota, fragments = 768<<10, 36
+	}
+	if err := s.SetLimit("a", storage.Recording, quota); err != nil {
 		t.Fatal(err)
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
 	defer cancel()
-	producer := exec.CommandContext(ctx, ffmpeg, "-hide_banner", "-loglevel", "error", "-f", "lavfi", "-i", "testsrc2=size=320x180:rate=10", "-t", "6", "-an", "-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency", "-g", "10", "-bf", "0", "-movflags", "frag_keyframe+empty_moov+default_base_moof", "-f", "mp4", "pipe:1")
+	producer := exec.CommandContext(ctx, ffmpeg, "-hide_banner", "-loglevel", "error", "-f", "lavfi", "-i", "testsrc2=size=320x180:rate=10", "-t", strconv.Itoa(fragments), "-an", "-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency", "-g", "10", "-bf", "0", "-movflags", "frag_keyframe+empty_moov+default_base_moof", "-f", "mp4", "pipe:1")
 	out, err := producer.StdoutPipe()
 	if err != nil {
 		t.Fatal(err)
@@ -61,11 +69,11 @@ func TestFragmentedVideoRemainsDecodableAcrossQuotaOverwrite(t *testing.T) {
 	if err := producer.Wait(); err != nil {
 		t.Fatal(err)
 	}
-	if count != 6 {
-		t.Fatalf("fragments=%d want 6", count)
+	if count != fragments {
+		t.Fatalf("fragments=%d want %d", count, fragments)
 	}
 	entries := s.Entries("a", storage.Recording)
-	if len(entries) == 0 || len(entries) >= 6 {
+	if len(entries) == 0 || len(entries) >= fragments {
 		t.Fatalf("expected overwrite with survivors, got %d", len(entries))
 	}
 	for _, entry := range entries {

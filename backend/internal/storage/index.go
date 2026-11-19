@@ -11,6 +11,7 @@ import (
 	"time"
 
 	bolt "go.etcd.io/bbolt"
+	"vms.local/backend/internal/durablefile"
 )
 
 var indexBuckets = []string{"entries", "metadata", "chronology", "tenant_chronology", "catalog", "deleted", "limits", "operations", "plans", "usage", "control"}
@@ -34,6 +35,9 @@ func (s *Store) openIndex() error {
 		return err
 	}
 	s.index = db
+	if err = durablefile.SyncDirectory(s.root); err != nil {
+		return err
+	}
 	ready := false
 	err = db.Update(func(tx *bolt.Tx) error {
 		for _, name := range indexBuckets {

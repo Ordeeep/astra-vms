@@ -1,3 +1,5 @@
+//go:build windows
+
 package media_test
 
 import (

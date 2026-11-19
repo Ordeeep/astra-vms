@@ -1,0 +1,10 @@
+[Unit]
+Description=Astra consistent backup to configured external storage
+ConditionPathExists=/etc/astra/backup.env
+After=postgresql@16-main.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/astra/current/backup-daily.sh
+UMask=0077
+TimeoutStartSec=infinity

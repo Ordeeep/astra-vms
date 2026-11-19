@@ -101,6 +101,9 @@ func TestScheduledCaptureToAuthorizedTemporalPlayback(t *testing.T) {
 	}
 	items := timeline["items"].([]any)
 	if len(items) == 0 {
+		native := httptest.NewRecorder()
+		archive.ServeHTTP(native, httptest.NewRequest("GET", "/archive/catalog?after=0", nil))
+		t.Logf("native archive catalog: status=%d body=%s", native.Code, native.Body.String())
 		t.Fatalf("no catalog after capture: %+v", b.call("GET", base+"/recording-status", nil, 200))
 	}
 	if items[0].(map[string]any)["siteId"] != site {

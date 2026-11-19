@@ -1,6 +1,8 @@
 # Validação do backend
 
-Os testes combinam verificações unitárias e integrações com PostgreSQL, NTFS, MediaMTX e FFmpeg. Simulações de falhas não substituem a homologação física.
+Os testes combinam verificações unitárias e integrações com PostgreSQL, NTFS no Windows ou ext4 local no Ubuntu, MediaMTX e FFmpeg. Simulações de falhas não substituem a homologação física.
+
+Para Ubuntu 24.04 x86_64, use [validação Linux](../deploy/linux/README.md#verificação). Defina `TMPDIR` em ext4 com blocos de 4096 bytes e compile `bin/vms-worker` sem `.exe`. A suíte inclui encerramento de descendentes após morte do dono, SIGTERM, exclusividade, crescimento com metadados de extents e recuperação de checkpoints. Parte dos testes continua exigindo variáveis de integração; confira omissões antes de interpretar o resultado.
 
 ## Testes sem infraestrutura
 

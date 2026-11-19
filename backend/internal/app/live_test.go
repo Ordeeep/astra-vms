@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -31,12 +32,16 @@ func testPublicLiveGatewayCutsActualVideoAfterGrantRevocation(t *testing.T, code
 	if engine == "" || os.Getenv("VMS_TEST_DB") == "" {
 		t.Skip("real PostgreSQL and media engine required")
 	}
-	binary, err := filepath.Abs("../../bin/vms-worker.exe")
+	name := "vms-worker"
+	if runtime.GOOS == "windows" {
+		name += ".exe"
+	}
+	binary, err := filepath.Abs(filepath.Join("../../bin", name))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if _, err = os.Stat(binary); err != nil {
-		t.Skip("build bin/vms-worker.exe before this integrated test")
+		t.Fatal("build the platform worker in backend/bin before this integrated test")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
 	defer cancel()
@@ -75,7 +80,7 @@ func testPublicLiveGatewayCutsActualVideoAfterGrantRevocation(t *testing.T, code
 		o.WorkerSecret = secret
 		o.WHEPURL = "http://127.0.0.1:28889"
 	})
-	uid := b.login("admin", "admin")
+	b.login("admin", "admin")
 	me := b.call("GET", "/me", nil, 200)
 	tenant := me["tenants"].([]any)[0].(map[string]any)["id"].(string)
 	b.selectTenant(tenant)
@@ -99,6 +104,13 @@ func testPublicLiveGatewayCutsActualVideoAfterGrantRevocation(t *testing.T, code
 	if video["codec"] != codec || video["h264Candidate"] != (codec == "h264") {
 		t.Fatal("synthetic source codec misclassified")
 	}
+	// Installation administrators inherit video grants. Exercise revocation on
+	// a regular operator whose authority actually depends on the tenant group.
+	admin := b
+	group := admin.call("POST", base+"/groups", map[string]any{"name": "Live integration", "grants": []app.Grant{{Action: "live", Scope: "tenant", ResourceID: tenant}}}, 201)["id"].(string)
+	uid := admin.call("POST", "/admin/operators", map[string]string{"username": "live-integration", "password": "live-integration-password"}, 201)["id"].(string)
+	admin.call("PUT", base+"/operators/"+uid, map[string]any{"groups": []string{group}, "revision": 0}, 200)
+	b = independentBrowser(t, admin, "live-integration", "live-integration-password", tenant)
 	s := b.call("POST", base+"/live-sessions", map[string]any{"cameraId": camera, "profile": "sub2", "fallback": []string{"main"}}, 201)
 	if s["profile"] != "main" || s["fallback"] != true {
 		t.Fatal("live fallback was not explicit")
@@ -178,8 +190,8 @@ func testPublicLiveGatewayCutsActualVideoAfterGrantRevocation(t *testing.T, code
 	if packets.Load() < 3 {
 		t.Fatal("public live path produced no RTP")
 	}
-	// Bootstrap membership revision is 1. Remove its complete video grants.
-	b.call("PUT", base+"/operators/"+uid, map[string]any{"groups": []string{}, "revision": 1}, 200)
+	// Membership revision is 1. Remove the operator's complete video grants.
+	admin.call("PUT", base+"/operators/"+uid, map[string]any{"groups": []string{}, "revision": 1}, 200)
 	started := time.Now()
 	before := packets.Load()
 	time.Sleep(1600 * time.Millisecond)

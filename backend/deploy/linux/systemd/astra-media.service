@@ -1,0 +1,33 @@
+[Unit]
+Description=Astra media worker
+After=network-online.target
+Wants=network-online.target
+RequiresMountsFor=/srv/astra/archive /var/lib/astra/media
+StartLimitIntervalSec=120
+StartLimitBurst=10
+
+[Service]
+Type=simple
+User=astra-media
+Group=astra-media
+WorkingDirectory=/var/lib/astra/media
+EnvironmentFile=/etc/astra/media.env
+Environment=PATH=/opt/astra/current/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/opt/astra/current/bin/vms-worker --mediamtx /opt/astra/current/bin/mediamtx --data /var/lib/astra/media --host ${ASTRA_PUBLIC_HOST} --udp :18189
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=30
+KillMode=mixed
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/astra/media /srv/astra/archive
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target

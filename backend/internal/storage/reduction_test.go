@@ -27,10 +27,27 @@ func TestAdministrativeReductionPreservesProtectedHistoryAndOldLimit(t *testing.
 	if err != nil {
 		t.Fatal(err)
 	}
-	result, err := s.ReduceRecording(context.Background(), "tenant", 0, time.Now().Add(time.Second))
-	if err != nil {
-		t.Fatal(err)
+	// Reduction is deliberately paged by an IO budget. Slow durable writes may
+	// require several calls before the protected object is reached.
+	reduce := func() storage.Reduction {
+		t.Helper()
+		deadline := time.Now().Add(30 * time.Second)
+		for time.Now().Before(deadline) {
+			result, err := s.ReduceRecording(context.Background(), "tenant", 0, deadline)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if result.Applied || result.Protected {
+				return result
+			}
+			if result.Limit != 12288 {
+				t.Fatalf("limit changed between steps: %+v", result)
+			}
+		}
+		t.Fatal("reduction did not reach a stable result")
+		return storage.Reduction{}
 	}
+	result := reduce()
 	if result.Applied || !result.Protected || result.Usage != 4096 || result.Limit != 12288 {
 		t.Fatalf("premature quota application: %+v", result)
 	}
@@ -39,9 +56,9 @@ func TestAdministrativeReductionPreservesProtectedHistoryAndOldLimit(t *testing.
 		t.Fatal("administrative reduction preempted reader")
 	}
 	protected.Close()
-	result, err = s.ReduceRecording(context.Background(), "tenant", 0, time.Now().Add(time.Second))
-	if err != nil || !result.Applied || result.Usage != 0 || result.Limit != 0 {
-		t.Fatalf("quota not applied after release: %+v %v", result, err)
+	result = reduce()
+	if !result.Applied || result.Usage != 0 || result.Limit != 0 {
+		t.Fatalf("quota not applied after release: %+v", result)
 	}
 	if _, err = s.Create("tenant", storage.Recording, 1); err == nil {
 		t.Fatal("new write exceeded reduced quota")

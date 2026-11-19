@@ -75,6 +75,8 @@ func allocate(f *os.File, n int64) error {
 	return nil
 }
 
+func reservationSize(data int64) int64 { return data }
+
 func allocation(f *os.File) (int64, error) {
 	var info struct {
 		AllocationSize int64

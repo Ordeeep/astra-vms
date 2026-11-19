@@ -15,9 +15,9 @@ FORBIDDEN_PARTS = {
     "test-results", "playwright-report", "__pycache__",
 }
 TEXT_SUFFIXES = {".md", ".txt", ".go", ".mod", ".sum", ".sql", ".ts", ".tsx",
-                 ".css", ".mjs", ".cjs", ".json", ".ps1", ".py", ".toml", ".svg"}
+                 ".css", ".mjs", ".cjs", ".json", ".ps1", ".py", ".toml", ".svg", ".sh", ".service", ".timer"}
 ASSETS = {"frontend/src/app/apple-icon.png", "frontend/src/app/favicon.ico"}
-DOTFILES = {".gitignore", ".gitleaks.toml", "LICENSE"}
+DOTFILES = {".gitattributes", ".gitignore", ".gitleaks.toml", "LICENSE"}
 
 
 def public_login(content):

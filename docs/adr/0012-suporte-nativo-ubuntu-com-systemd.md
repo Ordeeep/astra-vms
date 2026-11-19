@@ -1,0 +1,3 @@
+# Adicionar Ubuntu 24.04 nativo mantendo Windows
+
+O Astra passa a ter Ubuntu 24.04 como alvo de suporte nativo adicional ao Windows, ampliando a prioridade inicial registrada na ADR 0002 para permitir implantação em um servidor Linux disponível com maior capacidade de armazenamento. No Ubuntu, a operação será gerida por systemd, com adaptadores de armazenamento e processos específicos de cada sistema e preservação dos contratos funcionais compartilhados. A primeira implantação será limpa, pela rede interna e com poucas câmeras; a decisão de plataforma não equivale à homologação ou liberação para produção, que depende dos ensaios e critérios de aceite registrados em `docs/homologacao-ubuntu-24.04.md`.

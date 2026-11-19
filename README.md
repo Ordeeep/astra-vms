@@ -35,7 +35,7 @@ O workspace original mantém frontend e backend em repositórios Git separados. 
 
 ## Requisitos
 
-O alvo inicial é **Windows 11**, com armazenamento NTFS. Linux e Docker ainda não possuem um procedimento de instalação homologado.
+Há implementação nativa para **Windows 11 / NTFS** e **Ubuntu 24.04 x86_64 / ext4 local com blocos de 4096 bytes**. No Ubuntu, os componentes operam como serviços systemd. A homologação de produção depende do servidor, das câmeras e da carga; Docker não possui procedimento de referência.
 
 - Go 1.27 ou compatível com `backend/go.mod`.
 - Node.js 24 e npm para os comandos documentados.
@@ -53,6 +53,8 @@ Quando o repositório estiver publicado, use **Code → Download ZIP** no GitHub
 Consulte [desenvolvimento local](docs/development.md) para preparar PostgreSQL, compilar e iniciar os três processos sem depender do laboratório do mantenedor.
 
 Para construir uma instalação com serviços Windows, consulte [empacotamento e instalação](backend/deploy/windows/README.md). O pacote é gerado a partir dos fontes e exige caminhos explícitos para os runtimes. Os avisos e materiais de redistribuição de cada binário precisam ser conferidos antes de disponibilizar um instalador.
+
+Para Ubuntu, consulte [deploy Linux](docs/deploy/linux.md) e [empacotamento nativo](backend/deploy/linux/README.md). Compile o frontend no Linux; artefatos e dependências nativas do Windows não devem ser copiados para o servidor Ubuntu. O [registro de homologação](docs/homologacao-ubuntu-24.04.md) distingue os resultados dos testes e o que ainda exige validação operacional.
 
 ## Primeiro acesso
 

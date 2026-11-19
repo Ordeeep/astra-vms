@@ -18,6 +18,8 @@ import (
 	"regexp"
 	"sync"
 	"time"
+
+	"vms.local/backend/internal/durablefile"
 )
 
 type Kind string
@@ -218,7 +220,8 @@ func (s *Store) create(tenant string, kind Kind, capacity int64, operation strin
 	if !validTenant.MatchString(tenant) || (kind != Recording && kind != Export) || capacity <= 0 || capacity > 1<<40 {
 		return nil, errors.New("invalid writer request")
 	}
-	charge := (capacity + s.unit - 1) / s.unit * s.unit
+	dataAllocation := (capacity + s.unit - 1) / s.unit * s.unit
+	charge := reservationSize(dataAllocation)
 	limit, ok := s.state.Limits[key(tenant, kind)]
 	if !ok || charge > limit-s.usage(tenant, kind) || charge > s.opts.VolumeLimit-s.total() {
 		return nil, ErrCapacity
@@ -250,7 +253,12 @@ func (s *Store) create(tenant string, kind Kind, capacity int64, operation strin
 		s.fault = err
 		return nil, err
 	}
-	err = allocate(f, charge)
+	if err = durablefile.SyncDirectory(s.root); err != nil {
+		f.Close()
+		s.fault = err
+		return nil, err
+	}
+	err = allocate(f, dataAllocation)
 	actual, measureErr := allocation(f)
 	if err != nil || measureErr != nil || actual > charge {
 		f.Close()
@@ -283,7 +291,7 @@ func (s *Store) CreateCaptureUntil(ctx context.Context, tenant string, capacity 
 		if !errors.Is(err, ErrCapacity) {
 			return w, err
 		}
-		charge := (capacity + s.unit - 1) / s.unit * s.unit
+		charge := reservationSize((capacity + s.unit - 1) / s.unit * s.unit)
 		limit := s.state.Limits[key(tenant, Recording)]
 		if charge > limit || charge > s.opts.VolumeLimit {
 			return nil, ErrCapacity
@@ -333,7 +341,8 @@ func (w *Writer) GrowUntil(ctx context.Context, capacity int64, forCapture bool,
 	if capacity > 1<<40 {
 		return ErrCapacity
 	}
-	charge := (capacity + s.unit - 1) / s.unit * s.unit
+	dataAllocation := (capacity + s.unit - 1) / s.unit * s.unit
+	charge := reservationSize(dataAllocation)
 	extra := charge - w.entry.Charged
 	for {
 		if ctx.Err() != nil || (!expires.IsZero() && !time.Now().Before(expires)) {
@@ -363,7 +372,7 @@ func (w *Writer) GrowUntil(ctx context.Context, capacity int64, forCapture bool,
 	if err := s.commit(ledgerChange{Entry: w.entry}); err != nil {
 		return err
 	}
-	if err := allocate(w.file, charge); err != nil {
+	if err := allocate(w.file, dataAllocation); err != nil {
 		s.fault = err
 		return err
 	}
@@ -642,6 +651,10 @@ func (s *Store) delete(tenant, id string, forCapture bool) error {
 	}
 	if err := os.Remove(s.path(id)); err != nil {
 		s.event("delete-failed", e, err)
+		return err
+	}
+	if err := durablefile.SyncDirectory(s.root); err != nil {
+		s.fault = err
 		return err
 	}
 	delete(s.readers, id)

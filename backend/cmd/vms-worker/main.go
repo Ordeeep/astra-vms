@@ -10,7 +10,6 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-	"os/signal"
 	"path/filepath"
 	"sync"
 	"time"
@@ -46,7 +45,7 @@ func main() {
 	if err := os.MkdirAll(*data, 0700); err != nil {
 		log.Fatal(err)
 	}
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	ctx, cancel := servicehost.SignalContext(context.Background())
 	defer cancel()
 	servicehost.WatchParent(cancel)
 	var owned *media.OwnedProcess

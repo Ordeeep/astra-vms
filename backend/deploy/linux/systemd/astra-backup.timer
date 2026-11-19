@@ -1,0 +1,10 @@
+[Unit]
+Description=Astra daily backup schedule
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+Persistent=true
+Unit=astra-backup.service
+
+[Install]
+WantedBy=timers.target

@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"vms.local/backend/internal/durablefile"
 	"vms.local/backend/internal/storage"
 )
 
@@ -162,7 +163,7 @@ func (a *ArchiveService) configure(config ArchiveConfig) error {
 		return err
 	}
 	raw, _ := json.Marshal(config)
-	if err = os.WriteFile(a.configPath, raw, 0600); err != nil {
+	if err = durablefile.Write(a.configPath, raw); err != nil {
 		store.Close()
 		return err
 	}

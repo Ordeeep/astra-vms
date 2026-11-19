@@ -30,4 +30,4 @@ Na cópia gerada, antes de instalar dependências ou criar builds:
 gitleaks dir . --config .gitleaks.toml --redact=100 --no-banner
 ```
 
-Confira o manifesto, os links dos documentos e os arquivos que serão enviados. A varredura reduz riscos e não prova ausência absoluta de informação confidencial. Publique apenas os fontes aprovados, com histórico novo. Não envie o workspace original, pacotes de `dist/`, diretórios de runtime ou relatórios privados de inspeção.
+Confira o manifesto, os links dos documentos e os arquivos que serão enviados. A varredura reduz riscos e não prova ausência absoluta de informação confidencial. Na primeira exportação de um workspace privado, publique apenas os fontes aprovados com histórico novo. Em um repositório público já existente, preserve o histórico e revise o diff antes de enviar as atualizações. Não envie pacotes de `dist/`, diretórios de runtime ou relatórios privados de inspeção. A lista explícita deve acompanhar os novos fontes e procedimentos de cada plataforma.
