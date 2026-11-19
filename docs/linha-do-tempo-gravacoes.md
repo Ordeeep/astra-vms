@@ -2,16 +2,70 @@
 
 Desenho consolidado e aprovado em 17/11/2026 com a habilidade grill-with-docs. O usuário confirmou o entendimento e autorizou a implementação, concluída conforme o fluxo abaixo. As decisões registram o pedido e as respostas de três rodadas de entrevista.
 
+## Revisão de otimização — 19/11/2026
+
+Desenho aprovado com grill-with-docs em 19/11/2026. O usuário confirmou Q1 a Q6 e autorizou a implementação, preservando as regras anteriores de navegação e reprodução.
+
+### Decisões confirmadas
+
+- A faixa azul deve crescer conforme novos trechos se tornarem efetivamente disponíveis para reprodução. A meta aceita é de até cinco segundos entre captura e disponibilidade reproduzível/visual em operação normal.
+- As faixas já carregadas permanecem durante arraste e zoom. Consultas devem buscar os períodos ainda desconhecidos, reaproveitando os conhecidos.
+- A chegada de novas gravações continua atualizando as faixas durante o gesto de navegação; o arraste não pode bloquear ou descartar essas atualizações.
+- O canal SSE existente será reaproveitado, com identificação da câmera e do período afetado, agrupamento de notificações, reconciliação após reconexão e conferência periódica de baixa frequência como recuperação.
+- Os arquivos continuam com aproximadamente 30 segundos, disponibilizando as partes completas já persistidas antes de seu fechamento.
+- Fontes que impeçam a meta de atraso conservam sua disponibilidade real, com indicação de atraso e sem reconfiguração automática da câmera nem transcodificação adicional para cumprir a meta.
+
+### Evidências anteriores à implementação
+
+- Hover apenas atualiza o estado local da régua. Arraste e zoom alteram a janela temporal visível; a consulta aguarda 140 ms sem nova alteração, e há atualização periódica a cada 30 segundos. Portanto, movimento de ponteiro e requisição HTTP não têm relação de um para um.
+- O painel associa os intervalos à janela temporal exata e à revisão. Quando essa chave muda, fornece uma lista vazia à régua até receber a nova resposta. Esse caminho explica o apagamento das faixas durante a navegação por inspeção estática; não houve reprodução no navegador nesta revisão.
+- As respostas de consultas antigas são ignoradas, mas essas requisições não são canceladas. Não há cache de blocos temporais reutilizáveis nesse painel.
+- Já existe um EventSource compartilhado por contexto de visualização. O painel reage aos eventos, mas invalida também consultas após alterações em outras câmeras. O evento ArchiveChanged expõe o identificador do segmento, sem a identidade da câmera no JSON; o filtro por câmera exige complementar esse contrato.
+- O serviço de mídia fecha normalmente os segmentos a cada 30 segundos; apenas segmentos finalizados são publicados no catálogo. O backend importa esse catálogo a cada dois segundos. Trocar o transporte de eventos não elimina essa espera até a disponibilização do vídeo.
+- A sessão de reprodução tem renovação HTTP a cada 600 ms, separada das consultas da linha do tempo, e expiração de dez segundos. A autorização de cada entrega de mídia é independente, inclusive com rechecagem a cada 400 ms em transferências em andamento. A inspeção estática permite propor renovação a cada dois segundos, mantendo a expiração e as verificações de autorização; o comportamento precisa ser validado com pausa, revogação, lentidão e expiração. O custo real ainda não foi medido nesta revisão.
+
+Fontes: `frontend/src/components/live-recording-panel.tsx`, `recording-ruler.tsx`, `recording-video.tsx` e `workspace.tsx`; `backend/internal/app/recording.go`; `backend/internal/media/archive_service.go`; `backend/internal/storage/index.go`.
+
+### Implementação da otimização
+
+- O cache pertence ao painel da câmera no contexto autorizado e conserva até dezesseis dias usados recentemente, além das páginas visíveis durante sua troca. Pan e zoom reaproveitam dias conhecidos. Regiões novas são consultadas após 140 ms; consultas de páginas abandonadas são canceladas. Uma única consulta por página fica em andamento, com reconciliação posterior quando chegam outros eventos.
+- Notificações de acervo identificam câmera, revisão e intervalo. Eventos da outra câmera não refazem consultas. Mudanças de gravação atualizam somente a região afetada dentro de um dia em cache, preservando o restante; mudanças de retenção podem reduzir as faixas. A atualização por SSE é agrupada em 120 ms e continua durante arraste, sem deslocar a janela manualmente escolhida.
+- A conferência completa ocorre a cada sessenta segundos e após reconexão. Erros transitórios e desconexão preservam as faixas conhecidas e indicam falha/desatualização. Revogação ou resincronização de autorização elimina disponibilidade e reprodução; respostas abortadas não restauram esses dados.
+- O calendário só consulta enquanto aberto, preserva o cancelamento e não refaz consultas quando um evento apenas estende um dia já marcado. Mudanças relevantes são agrupadas, com recuperação periódica de sessenta segundos.
+- Cada checkpoint durável publica uma revisão do mesmo objeto. A leitura abre atomicamente metadados e prefixo confirmado, com tamanho fixo inclusive para Range e SeekEnd. O Core importa páginas a cada 500 ms e drena lotes, aplicando revisões monotônicas sem reativar registros descartados. Checkpoints inválidos após reinício geram remoção no catálogo sem liberar indevidamente a cota.
+- A exportação valida o hash do prefixo da prévia, mesmo quando partes posteriores são gravadas. A conversão para o navegador mantém a chave de cache por parte e libera a proteção de leitura também nos acertos de cache.
+- A sessão de reprodução é renovada a cada dois segundos: frequência nominal de cem para trinta requisições por minuto por sessão, sem aumentar a expiração de dez segundos ou relaxar as verificações de autorização da mídia. Só a renovação recebe timeout de seis segundos para não aguardar além da validade; demais operações conservam seu timeout anterior.
+- A disponibilidade recente informa atraso observado quando a captura continua recebendo quadros e sua cauda ou seus fragmentos excedem a meta. A câmera conserva seus parâmetros. A escolha estrutural está registrada no ADR `0013-disponibilidade-das-partes-em-gravacao.md`.
+
+### Validação da otimização — 19/11/2026
+
+- Treze testes de calendário, navegação, relógio e cache aprovados; TypeScript e build de produção com Webpack aprovados.
+- Dezessete cenários no Chrome com componentes reais e HLS sintético decodificado aprovados. Incluem faixa preservada sem consulta no pan conhecido, atualização SSE durante o arraste, filtro de outra câmera, reconexão sem apagar faixas, pausa com renovação a cada dois segundos, revogação e layouts de 1440, 390 e 320 px nos dois temas.
+- A integração com PostgreSQL e RTSP sintético de GOP de um segundo tornou o primeiro trecho reproduzível em **1,74 segundo**, antes de fechar o arquivo. A disponibilidade cresceu, os bytes foram decodificados e a exportação preservou a prévia original enquanto a captura continuava. Essa rodada manteve a sincronização de disco do PostgreSQL. O resultado valida esse laboratório e não representa uma garantia para câmeras físicas ou todas as cargas.
+- O pacote completo de aplicação passou isoladamente com PostgreSQL descartável; a fonte sintética voltou a ficar reproduzível em **2,24 segundos**. Essa rodada usou sincronização de disco desativada somente na instância descartável do banco, sem alterar a persistência do armazenamento de vídeo. O ensaio opcional de oito fontes não foi habilitado.
+- O pacote de mídia passou na execução agregada. Os testes de HEVC e H.264 com quadros reordenados foram ampliados para consultar arquivo ainda aberto e repetidos com aprovação. HTTP Range, leitura limitada, prefixo estável de exportação, autorização, remoção e recuperação foram exercitados.
+- O pacote completo de armazenamento passou na rodada inicial (471 segundos). A rodada agregada concorrente excedeu o limite de 600 segundos durante o teste de escala e causou timeouts na limpeza de schemas; os testes de snapshot, crescimento, corrupção e recuperação passaram nessa rodada. A aplicação foi então repetida isoladamente, com o resultado registrado acima.
+
+Essa rodada inicial não reiniciou os processos do VMS. A ativação posterior está registrada abaixo; os resultados sintéticos não constituem homologação de todas as câmeras ou cargas.
+
+### Ativação no ambiente local — 19/11/2026
+
+O usuário autorizou o reinício do Core e do Worker. Na preparação, foi identificada e corrigida a necessidade de uma migração incremental para instalações existentes: a versão 9 adiciona `catalog_sequence` e atualiza o contrato de eventos, sem depender da recriação do schema inicial. O teste de atualização de uma instalação na versão 8 reproduziu a ausência da coluna antes da correção e passou depois, junto com os testes de catálogo, credenciais, reinício e migrações anteriores.
+
+Core e Worker foram reiniciados às **16:57 de 19/11/2026**, no fuso America/Sao_Paulo, mantendo os diretórios, credenciais e configurações existentes. A API retornou `status: ok`, a interface respondeu HTTP 200 e a única câmera com gravação habilitada retomou a captura. O banco confirmou a migração 9, revisões de checkpoints e eventos com identificação da câmera e do intervalo. O catálogo do Worker expôs um objeto com `Finalized: false` enquanto o Core já indexava suas partes completas.
+
+Essa verificação observou captura real e publicação de disponibilidade no ambiente local. Não incluiu inspeção visual de reprodução da câmera no navegador nem homologação de outras fontes. Nenhum parâmetro da câmera ou agenda de gravação foi alterado.
+
 ## Fluxo implementado
 
 1. No Ao vivo, o operador abre Gravação pelo menu de um quadro. Somente esse quadro entra em modo de gravação, mesmo que a mesma câmera esteja repetida no mosaico. O quadro aguarda a escolha de horário e não inicia vídeo automaticamente.
 2. A régua abre com uma visão de 24 horas do dia atual no fuso do site atual da câmera. O calendário distingue dias com gravações autorizadas, dias vazios, seleção, carregamento e falha. A disponibilidade é baseada em imagens do acervo, não na agenda de captura.
-3. O operador navega arrastando a régua ou escolhendo uma data. Isso não muda as imagens que já estão tocando. A janela pode atravessar datas livremente; o zoom vai de um minuto até dois dias, com botões +/− e roda ancorada no horário sob o ponteiro. Marcas e rótulos se adaptam à escala, sem sobreposição.
+3. O operador navega arrastando a régua ou escolhendo uma data. Isso não muda as imagens que já estão tocando. A janela pode atravessar datas livremente; o zoom vai de um minuto até dois dias, com botões +/−, slider entre os botões e roda ancorada no horário sob o ponteiro. O slider usa escala logarítmica e acompanha o zoom aplicado pelos demais controles. Marcas e rótulos se adaptam à escala, sem sobreposição.
 4. O calendário representa a data de navegação, distinta da data/hora da reprodução. A data de navegação acompanha o dia no centro da régua; escolher uma data abre diretamente a janela de 24 horas a partir de 00:00 do dia escolhido, sem botão de confirmação. O calendário é aberto pelo próprio card quadrado do horário (hora em destaque e data abaixo), com acesso por clique, Enter ou Espaço; o botão de data separado foi removido. O calendário tem 224 px de largura e células compactas, sem a legenda dos dias em azul; os indicadores de disponibilidade, carregamento e erro permanecem. O relógio nos controles continua indicando o instante das imagens. A régua identifica as viradas de data e o tooltip informa data e HH:mm:ss.
 5. Clicar em um horário gravado na régua inicia a primeira reprodução. Depois disso, os deslocamentos da posição preservam o estado de pausa ou reprodução. Arrastar o marcador busca imagens, enquanto arrastar a régua apenas navega. A consulta do vídeo é efetivada ao concluir o gesto do marcador, sem criar uma sessão a cada movimento do mouse.
 6. O vídeo percorre automaticamente as partes consecutivas de um trecho contínuo, inclusive através da meia-noite. Ao atingir uma lacuna, para e oferece o próximo trecho. Ao alcançar o fim das imagens disponíveis, informa isso; fechar o painel retorna ao vivo. Um clique ou salto que caia em uma lacuna informa a ausência naquele instante, sem deslocar silenciosamente a escolha para outro horário.
 7. Reproduzir/pausar, −10s/+10s, trecho contínuo anterior/próximo e velocidades de −8× a 8× controlam o quadro selecionado. Os botões de zoom ficam à direita, sem indicador numérico de escala. Navegar manualmente suspende o acompanhamento automático; saltar para o trecho anterior/próximo o retoma.
-8. O divisor amplia em conjunto o card de data/hora e a coluna do nome da câmera, mantendo os dois alinhados. O nome fica centralizado na área à esquerda; o ajuste é conservado nas próximas aberturas neste navegador. O painel funciona no modo normal, com quadro maximizado e em Video Wall. Recolher mantém uma versão compacta com indicação e acesso aos controles; Fechar encerra a reprodução e restaura o vídeo ao vivo.
+8. O divisor amplia em conjunto o card de data/hora e a coluna do nome da câmera, mantendo os dois alinhados, e se estende até o topo da data da régua. O ajuste é conservado nas próximas aberturas neste navegador. O painel funciona no modo normal, com quadro maximizado e em Video Wall. O recolhimento foi removido; Fechar fica ao lado do zoom, encerra a reprodução e restaura o vídeo ao vivo. O status fixo acima dos controles foi removido; falhas de consulta ou reprodução aparecem em toast com opção de tentar novamente, quando aplicável.
 9. Trocar a câmera controlada encerra a reprodução anterior. Remover ou ocultar o quadro por mudança de layout, sair do Ao vivo ou mudar de contexto encerra a sessão. Trocar apenas a aba do navegador não é tratado como remoção do quadro.
 10. O fuso é sempre o do site atual da câmera, também para o acervo de sites anteriores. Os instantes das gravações e as autorizações pelo site de origem são preservados.
 
@@ -159,7 +213,7 @@ Nenhum ADR novo foi criado: os requisitos visuais e as decisões de interação 
 - `frontend/src/components/recording-ruler.tsx`: régua com marcas adaptativas, datas, hover com segundos, pan, zoom ancorado, busca ao concluir o gesto e divisor ajustável por ponteiro/teclado com largura memorizada.
 - `frontend/src/components/recording-date-picker.tsx`: composição Popover/Calendar no conjunto shadcn/Radix já usado no projeto, com navegação por teclado, disponibilidade azul e estados de consulta distintos. Também consulta os meses adjacentes presentes nas seis semanas exibidas.
 - `frontend/src/lib/recording-navigation.ts`: calendário e conversão explícita para o fuso do site, incluindo rejeição de horários civis inexistentes. Quando um horário digitado se repete na mudança de horário de verão, usa a primeira ocorrência; a régua continua navegável em todos os instantes.
-- `frontend/src/components/recording-timeline.css` e `frontend/src/app/workspace.css`: apresentação integrada ao Astra, temas, modo compacto, tela cheia e prevenção de sobreposição pela lista lateral em telas pequenas.
+- `frontend/src/components/recording-timeline.css` e `frontend/src/app/workspace.css`: apresentação integrada ao Astra, temas, slider de zoom, toast, tela cheia e prevenção de sobreposição pela lista lateral em telas pequenas.
 - `backend/internal/app/recording_availability.go`: consulta protegida de metadados, dias do mês, intervalos de até 48 horas e trecho anterior/próximo. Agrega partes realmente reproduzíveis no banco, aplicando a autorização pelo site de origem antes de unir os intervalos.
 
 A rota é `GET /api/v1/tenants/{tenant}/cameras/{camera}/recording-availability`. Sem filtros, retorna o fuso do site atual. `month=AAAA-MM` retorna dias com gravações; `start/end` retorna trechos contínuos; `direction=previous|next&at=...` localiza o bloco vizinho. Ela preserva o isolamento por tenant e atende concessões somente à câmera sem exigir consulta administrativa de site. O limite de 48 horas é visual/de disponibilidade; as sessões de vídeo continuam limitadas a uma hora e são encadeadas pela reprodução.

@@ -25,7 +25,7 @@ BEGIN
   END IF;
  ELSIF TG_TABLE_NAME='archive_segments' THEN
   INSERT INTO event_outbox(tenant_id,resource_id,camera_id,site_id,revision,kind,payload)
-  VALUES(NEW.tenant_id,NEW.id,NEW.camera_id,NEW.site_id,0,'ArchiveChanged',jsonb_build_object('available',NEW.available));
+  VALUES(NEW.tenant_id,NEW.id,NEW.camera_id,NEW.site_id,NEW.catalog_sequence,'ArchiveChanged',jsonb_build_object('available',NEW.available,'start',NEW.start_at,'end',NEW.end_at));
  ELSIF TG_TABLE_NAME='export_jobs' THEN
   IF TG_OP='INSERT' OR NEW.status IS DISTINCT FROM OLD.status THEN
    INSERT INTO event_outbox(tenant_id,resource_id,revision,kind,payload)
@@ -38,7 +38,7 @@ CREATE OR REPLACE TRIGGER camera_event AFTER INSERT OR UPDATE ON cameras
  FOR EACH ROW EXECUTE FUNCTION publish_vms_event();
 CREATE OR REPLACE TRIGGER capture_event AFTER INSERT ON recording_events
  FOR EACH ROW EXECUTE FUNCTION publish_vms_event();
-CREATE OR REPLACE TRIGGER archive_event AFTER INSERT OR UPDATE OF available ON archive_segments
+CREATE OR REPLACE TRIGGER archive_event AFTER INSERT OR UPDATE OF available,metadata ON archive_segments
  FOR EACH ROW EXECUTE FUNCTION publish_vms_event();
 CREATE OR REPLACE TRIGGER export_event AFTER INSERT OR UPDATE OF status ON export_jobs
  FOR EACH ROW EXECUTE FUNCTION publish_vms_event();

@@ -52,6 +52,24 @@ func IndexHash(index SegmentIndex) string {
 	sum := sha256.Sum256(raw)
 	return hex.EncodeToString(sum[:])
 }
+
+// ExportSnapshot reconstructs the exact preview prefix from a growing index.
+// Appends are allowed; any change to the selected prefix or its origin is not.
+func ExportSnapshot(current SegmentIndex, clip ExportClip) (SegmentIndex, bool) {
+	if current.End.Before(clip.Index.End) {
+		return SegmentIndex{}, false
+	}
+	parts := current.Parts[:0:0]
+	for _, part := range current.Parts {
+		if part.End.After(clip.Index.End) {
+			break
+		}
+		parts = append(parts, part)
+	}
+	current.Parts = parts
+	current.End = clip.Index.End
+	return current, len(parts) > 0 && parts[len(parts)-1].End.Equal(current.End) && IndexHash(current) == clip.MetadataHash
+}
 func exportHash(plan ExportPlan) string {
 	raw, _ := json.Marshal(plan)
 	sum := sha256.Sum256(raw)
@@ -268,9 +286,18 @@ func (a *ArchiveService) renderExport(ctx context.Context, request ExportRequest
 	}()
 	deadline := func() time.Time { a.mu.Lock(); defer a.mu.Unlock(); return job.expires }
 	for n, clip := range request.Plan.Clips {
-		entry, e := store.Entry(request.Plan.Tenant, clip.ID)
+		reader, entry, e := store.Snapshot(request.Plan.Tenant, clip.ID)
+		if reader != nil {
+			reader.Close()
+		}
 		var index SegmentIndex
-		if e != nil || !entry.Finalized || entry.Kind != storage.Recording || json.Unmarshal(entry.Metadata, &index) != nil || IndexHash(index) != clip.MetadataHash || index.Tenant != request.Plan.Tenant || index.Camera != request.Plan.Camera {
+		if e != nil || entry.Kind != storage.Recording || json.Unmarshal(entry.Metadata, &index) != nil || index.Tenant != request.Plan.Tenant || index.Camera != request.Plan.Camera {
+			code = "source_changed_repreview"
+			return
+		}
+		var ok bool
+		index, ok = ExportSnapshot(index, clip)
+		if !ok {
 			code = "source_changed_repreview"
 			return
 		}
@@ -289,9 +316,18 @@ func (a *ArchiveService) renderExport(ctx context.Context, request ExportRequest
 	output := &exportWriter{writer: content, ctx: ctx, deadline: deadline}
 	hash := sha256.New()
 	err = RenderExport(ctx, "ffmpeg", request.Plan, func(ctx context.Context, clip ExportClip) (io.ReadCloser, error) {
-		reader, err := store.Read(request.Plan.Tenant, clip.ID)
+		reader, entry, err := store.Snapshot(request.Plan.Tenant, clip.ID)
 		if err != nil {
 			return nil, errors.New("source unavailable")
+		}
+		var current SegmentIndex
+		if json.Unmarshal(entry.Metadata, &current) != nil {
+			reader.Close()
+			return nil, errors.New("source changed")
+		}
+		if _, ok := ExportSnapshot(current, clip); !ok {
+			reader.Close()
+			return nil, errors.New("source changed")
 		}
 		return CanonicalExportInput(ctx, reader, clip.Index), nil
 	}, io.MultiWriter(output, hash), func(frames int64) { a.mu.Lock(); job.status.Frames = frames; a.mu.Unlock() })

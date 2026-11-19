@@ -22,6 +22,7 @@ type notification struct {
 	ContextID     string          `json:"contextId"`
 	TenantID      string          `json:"tenantId"`
 	ResourceID    string          `json:"resourceId"`
+	CameraID      string          `json:"cameraId,omitempty"`
 	Revision      int64           `json:"resourceRevision"`
 	OccurredAt    time.Time       `json:"occurredAt"`
 	Type          string          `json:"type"`
@@ -210,6 +211,7 @@ func (a *App) eventStream(w http.ResponseWriter, r *http.Request, id identity) {
 			if !a.eventAuthorized(check, current, tenant, grants, e) {
 				continue
 			}
+			e.CameraID = e.camera
 			// No client queue: a bounded batch and bounded socket write. Check
 			// the deadline before each send; slow clients must reconnect.
 			if check.Err() != nil {

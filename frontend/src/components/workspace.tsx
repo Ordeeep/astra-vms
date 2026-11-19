@@ -79,6 +79,9 @@ export default function Workspace() {
     if(!contextID||!tenant)return;
     let received=false,active=true;
     const source=new EventSource(`/api/v1/tenants/${tenant.id}/events?context=${encodeURIComponent(contextID)}`);
+    source.onerror=()=>{
+      if(active&&contextRef.current===contextID)window.dispatchEvent(new CustomEvent("vms:change",{detail:{type:"Disconnected",contextId:contextID,tenantId:tenant.id}}));
+    };
     source.onmessage=message=>{
       if(!active||contextRef.current!==contextID)return;
       let event:Notification;

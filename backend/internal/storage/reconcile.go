@@ -90,6 +90,7 @@ func (s *Store) reconcileObject(header Entry) error {
 	defer f.Close()
 	e := header
 	changed := false
+	var tombstone *Entry
 	if !e.Finalized && e.Kind == Recording && e.CheckpointSize > 0 {
 		h := sha256.New()
 		read, hashErr := io.CopyN(h, f, e.CheckpointSize)
@@ -108,6 +109,9 @@ func (s *Store) reconcileObject(header Entry) error {
 			e.SHA256 = e.CheckpointHash
 			s.state.Sequence++
 			e.Sequence = s.state.Sequence
+		} else if e.Sequence > 0 {
+			s.state.Sequence++
+			tombstone = &Entry{ID: e.ID, Tenant: e.Tenant, Kind: e.Kind, Sequence: s.state.Sequence, Deleted: true}
 		}
 		e.CheckpointSize = 0
 		e.CheckpointHash = ""
@@ -121,7 +125,6 @@ func (s *Store) reconcileObject(header Entry) error {
 	if err != nil {
 		return err
 	}
-	var tombstone *Entry
 	if e.Finalized && stat.Size() != e.Size {
 		e.Finalized = false
 		s.state.Sequence++

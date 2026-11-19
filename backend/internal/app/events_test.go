@@ -18,6 +18,7 @@ type streamEvent struct {
 	ContextID  string          `json:"contextId"`
 	TenantID   string          `json:"tenantId"`
 	ResourceID string          `json:"resourceId"`
+	CameraID   string          `json:"cameraId"`
 	Type       string          `json:"type"`
 	Payload    json.RawMessage `json:"payload"`
 }

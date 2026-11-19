@@ -86,7 +86,68 @@ func TestScheduledCaptureToAuthorizedTemporalPlayback(t *testing.T) {
 	camera := b.call("POST", base+"/cameras", map[string]any{"name": "Captura temporal", "siteId": site, "profiles": []map[string]string{{"id": "main", "name": "Principal", "url": source}}}, 201)["id"].(string)
 	start := time.Now().UTC()
 	b.call("PUT", base+"/cameras/"+camera+"/recording", map[string]any{"enabled": true, "profile": "main", "schedule": []any{}, "always": true, "revision": 0}, 200)
-	time.Sleep(6 * time.Second)
+	// Publish and play a complete checkpoint while the 30s file is still open.
+	activeQuery := "?start=" + url.QueryEscape(start.Format(time.RFC3339Nano)) + "&end=" + url.QueryEscape(start.Add(time.Minute).Format(time.RFC3339Nano))
+	activeDeadline := time.Now().Add(5 * time.Second)
+	var activeIntervals []any
+	for time.Now().Before(activeDeadline) {
+		activeIntervals = b.call("GET", base+"/cameras/"+camera+"/recording-availability"+activeQuery, nil, 200)["intervals"].([]any)
+		if len(activeIntervals) > 0 {
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	if len(activeIntervals) == 0 {
+		t.Fatal("active recording not available within 5 seconds")
+	}
+	firstPlayableDelay := time.Since(start)
+	firstEnd := activeIntervals[0].(map[string]any)["end"].(string)
+	activeStart := activeIntervals[0].(map[string]any)["start"].(string)
+	activeSession := b.call("POST", base+"/playback-sessions", map[string]any{"cameraId": camera, "start": activeStart, "end": start.Add(time.Minute)}, 201)
+	activePlaylist := string(b.mediaGet(activeSession["manifest"].(string), "", 200))
+	var activeInit, activePart string
+	for _, line := range strings.Split(activePlaylist, "\n") {
+		if strings.HasPrefix(line, "#EXT-X-MAP:") && activeInit == "" {
+			activeInit = strings.Split(line, "\"")[1]
+		}
+		if strings.HasPrefix(line, "/api/") && activePart == "" {
+			activePart = line
+		}
+	}
+	activeBytes := append(b.mediaGet(activeInit, "", 200), b.mediaGet(activePart, "", 200)...)
+	activeDecode := exec.Command("ffmpeg", "-v", "error", "-xerror", "-i", "pipe:0", "-f", "null", "-")
+	activeDecode.Stdin = bytes.NewReader(activeBytes)
+	if out, err := activeDecode.CombinedOutput(); err != nil {
+		t.Fatalf("active checkpoint not decodable: %v %s", err, out)
+	}
+	b.call("DELETE", base+"/playback-sessions/"+activeSession["id"].(string), nil, 204)
+	activePreview := b.call("POST", base+"/export-previews", map[string]any{"cameraId": camera, "start": activeStart, "end": firstEnd, "timezone": "UTC"}, 201)
+	grown := false
+	for time.Now().Before(activeDeadline.Add(3 * time.Second)) {
+		activeIntervals = b.call("GET", base+"/cameras/"+camera+"/recording-availability"+activeQuery, nil, 200)["intervals"].([]any)
+		if len(activeIntervals) > 0 && activeIntervals[0].(map[string]any)["end"].(string) != firstEnd {
+			grown = true
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	if !grown {
+		t.Fatal("active checkpoint availability did not grow")
+	}
+	activeJob := b.call("POST", base+"/exports", map[string]any{"previewId": activePreview["id"], "revision": 1, "idempotencyKey": "active-prefix-export-0001"}, 202)
+	activeJobPath := base + "/exports/" + activeJob["id"].(string)
+	exportDeadline := time.Now().Add(12 * time.Second)
+	for time.Now().Before(exportDeadline) {
+		activeJob = b.call("GET", activeJobPath, nil, 200)
+		if activeJob["status"] == "completed" || activeJob["status"] == "failed" {
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	if activeJob["status"] != "completed" {
+		t.Fatalf("export preview prefix invalidated by active growth: %+v", activeJob)
+	}
+	t.Logf("Active checkpoint became playable in %.2fs; continued growing and exported original preview while capture remained active", firstPlayableDelay.Seconds())
 	b.call("PUT", base+"/cameras/"+camera+"/recording", map[string]any{"enabled": false, "profile": "main", "schedule": []any{}, "always": true, "revision": 1}, 200)
 	end := time.Now().UTC()
 	query := "?start=" + url.QueryEscape(start.Format(time.RFC3339Nano)) + "&end=" + url.QueryEscape(end.Format(time.RFC3339Nano))

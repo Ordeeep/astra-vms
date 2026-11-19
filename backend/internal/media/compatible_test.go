@@ -239,7 +239,7 @@ func testRealReorderedArchive(t *testing.T, nativeCodec string) {
 	writer.Write(part.Data)
 	index := SegmentIndex{Tenant: "tenant-a", Camera: "camera", Source: "source", Start: part.Start, End: part.End, InitLength: int64(len(part.Init)), Parts: []PartIndex{{ArchivePart: part, Offset: int64(len(part.Init)), Length: int64(len(part.Data))}}}
 	meta, _ := json.Marshal(index)
-	if e = writer.FinishWithMetadata(meta); e != nil {
+	if e = writer.Checkpoint(meta); e != nil {
 		t.Fatal(e)
 	}
 	var converted []byte
@@ -268,6 +268,9 @@ func testRealReorderedArchive(t *testing.T, nativeCodec string) {
 		}
 	}
 	// H265 source export remains H264 and preserves the planned elapsed time.
+	if e = writer.FinishWithMetadata(meta); e != nil {
+		t.Fatal(e)
+	}
 	plan := ExportPlan{Tenant: "tenant-a", Start: part.Start, End: part.End, Width: 160, Height: 96, FPS: 10, Clips: []ExportClip{{ID: writer.ID(), Index: index}}}
 	var output bytes.Buffer
 	e = RenderExport(ctx, "ffmpeg", plan, func(ctx context.Context, _ ExportClip) (io.ReadCloser, error) {

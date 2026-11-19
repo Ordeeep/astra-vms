@@ -155,6 +155,18 @@ func (a *App) recordingAvailability(w http.ResponseWriter, r *http.Request, id i
 			return
 		}
 		result["intervals"] = intervals
+		if start.Before(time.Now()) && end.After(time.Now().Add(-5*time.Second)) {
+			var delay float64
+			err = a.db.QueryRow(r.Context(), `SELECT coalesce(max(greatest(extract(epoch FROM (now()-s.end_at)),extract(epoch FROM ((p->>'end')::timestamptz-(p->>'start')::timestamptz)))),0)
+ FROM (SELECT end_at,metadata FROM archive_segments WHERE tenant_id=$1 AND camera_id=$2 AND available AND ($3::boolean OR site_id=ANY($4::text[])) ORDER BY end_at DESC LIMIT 1) s
+ CROSS JOIN LATERAL jsonb_array_elements(coalesce(s.metadata->'parts','[]'::jsonb)) p
+ WHERE EXISTS(SELECT 1 FROM recording_status WHERE tenant_id=$1 AND camera_id=$2 AND code='recording' AND last_frame>now()-interval '5 seconds')`, tenant, camera, all, sites).Scan(&delay)
+			if err != nil {
+				dbFailure(w)
+				return
+			}
+			result["sourceDelaySeconds"] = delay
+		}
 	}
 	response(w, 200, result)
 }

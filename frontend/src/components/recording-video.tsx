@@ -84,10 +84,10 @@ export function RecordingVideo({tenant, camera, request, playing, speed, onPosit
         timer = setInterval(() => {
           if (renewing || !current()) return;
           renewing = true;
-          void scoped(`/tenants/${tenant}/playback-sessions/${opened.id}`, "PUT", {}).catch(() => {
+          void scoped(`/tenants/${tenant}/playback-sessions/${opened.id}`, "PUT", {}, 6000).catch(() => {
             if (current()) fail("Consulta encerrada. Verifique suas permissões ou tente novamente.");
           }).finally(() => { renewing = false; });
-        }, 600);
+        }, 2000);
         const url = new URL(opened.manifest, location.origin); url.searchParams.set("format", "json");
         const map = await scoped<Manifest>(url.pathname.replace(/^\/api\/v1/, "") + url.search);
         if (!current()) return;

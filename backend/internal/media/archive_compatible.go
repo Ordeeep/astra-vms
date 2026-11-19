@@ -195,7 +195,7 @@ func (a *ArchiveService) compatibleHTTP(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 	// Check current tenant ownership on cache hits as well as conversion misses.
-	entry, err := store.Entry(tenant, id)
+	reader, entry, err := store.Snapshot(tenant, id)
 	if err != nil {
 		if errors.Is(err, storage.ErrNotFound) {
 			http.NotFound(w, r)
@@ -204,6 +204,11 @@ func (a *ArchiveService) compatibleHTTP(w http.ResponseWriter, r *http.Request, 
 		}
 		return
 	}
+	defer reader.Close()
+	deadline := time.AfterFunc(10*time.Second, func() { reader.Close() })
+	defer deadline.Stop()
+	stopRead := context.AfterFunc(r.Context(), func() { reader.Close() })
+	defer stopRead()
 	var index SegmentIndex
 	if entry.Kind != storage.Recording || json.Unmarshal(entry.Metadata, &index) != nil || index.Tenant != tenant || number >= len(index.Parts) || index.InitLength < 1 || index.InitLength > 64<<10 {
 		http.Error(w, "invalid archive index", 422)
@@ -214,7 +219,12 @@ func (a *ArchiveService) compatibleHTTP(w http.ResponseWriter, r *http.Request, 
 		http.Error(w, "invalid archive part", 422)
 		return
 	}
-	digest := sha256.Sum256(entry.Metadata)
+	// Appending a later part must not invalidate already converted parts.
+	identity, _ := json.Marshal(struct {
+		Init int64
+		Part PartIndex
+	}{index.InitLength, part})
+	digest := sha256.Sum256(identity)
 	key := fmt.Sprintf("%s\x00%s\x00%d\x00%x", tenant, id, number, digest)
 	// A single request's cancellation terminates its worker and releases admission.
 	converted, err := a.compatible.get(r.Context(), key, func() (BrowserPart, error) {
@@ -222,23 +232,14 @@ func (a *ArchiveService) compatibleHTTP(w http.ResponseWriter, r *http.Request, 
 		defer cancel()
 		stopService := context.AfterFunc(a.ctx, cancel)
 		defer stopService()
-		reader, e := store.Read(tenant, id)
-		if e != nil {
-			return BrowserPart{}, errors.New("archive part unavailable")
-		}
-		defer reader.Close()
-		deadline := time.AfterFunc(10*time.Second, func() { reader.Close() })
-		defer deadline.Stop()
-		stop := context.AfterFunc(r.Context(), func() { reader.Close() })
-		defer stop()
 		input := make([]byte, index.InitLength+part.Length)
-		if _, e = io.ReadFull(reader, input[:index.InitLength]); e != nil {
+		if _, e := io.ReadFull(reader, input[:index.InitLength]); e != nil {
 			return BrowserPart{}, errors.New("archive initialization unavailable")
 		}
-		if _, e = reader.Seek(part.Offset, io.SeekStart); e != nil {
+		if _, e := reader.Seek(part.Offset, io.SeekStart); e != nil {
 			return BrowserPart{}, errors.New("archive part unavailable")
 		}
-		if _, e = io.ReadFull(reader, input[index.InitLength:]); e != nil {
+		if _, e := io.ReadFull(reader, input[index.InitLength:]); e != nil {
 			return BrowserPart{}, errors.New("archive part unavailable")
 		}
 		reader.Close() // release recording protection before CPU conversion
@@ -252,6 +253,7 @@ func (a *ArchiveService) compatibleHTTP(w http.ResponseWriter, r *http.Request, 
 		}
 		return converted, nil
 	})
+	reader.Close() // cache hits and shared flights release protection too
 	if err != nil {
 		http.Error(w, "compatible playback unavailable", 503)
 		return

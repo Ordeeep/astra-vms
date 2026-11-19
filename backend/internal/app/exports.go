@@ -272,10 +272,10 @@ func (a *App) exportSourcesAvailable(ctx context.Context, plan media.ExportPlan)
 }
 func exportSourcesAvailableWith(ctx context.Context, db permissionReader, plan media.ExportPlan) bool {
 	ids := make([]string, 0, len(plan.Clips))
-	expected := map[string]string{}
+	expected := map[string]media.ExportClip{}
 	for _, clip := range plan.Clips {
 		ids = append(ids, clip.ID)
-		expected[clip.ID] = clip.MetadataHash
+		expected[clip.ID] = clip
 	}
 	rows, err := db.Query(ctx, "SELECT id,metadata FROM archive_segments WHERE tenant_id=$1 AND id=ANY($2) AND available AND EXISTS(SELECT 1 FROM cameras WHERE cameras.tenant_id=archive_segments.tenant_id AND cameras.id=archive_segments.camera_id AND cameras.deleted_at IS NULL)", plan.Tenant, ids)
 	if err != nil {
@@ -290,7 +290,10 @@ func exportSourcesAvailableWith(ctx context.Context, db permissionReader, plan m
 			return false
 		}
 		var index media.SegmentIndex
-		if json.Unmarshal(raw, &index) != nil || media.IndexHash(index) != expected[id] {
+		if json.Unmarshal(raw, &index) != nil {
+			return false
+		}
+		if _, ok := media.ExportSnapshot(index, expected[id]); !ok {
 			return false
 		}
 		count++

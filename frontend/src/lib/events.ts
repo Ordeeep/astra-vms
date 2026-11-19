@@ -1,5 +1,6 @@
 export type Notification = {
   eventId:string; contextId:string; tenantId:string; resourceId:string;
+  cameraId?:string;
   resourceRevision:number; occurredAt:string; type:string; correlationId:string;
   payload:Record<string,unknown>;
 };

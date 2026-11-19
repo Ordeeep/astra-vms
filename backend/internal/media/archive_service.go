@@ -475,12 +475,13 @@ func (a *ArchiveService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "method", 405)
 			return
 		}
-		reader, err := store.Read(tenant, id)
+		reader, snapshot, err := store.Snapshot(tenant, id)
 		if err != nil {
 			http.NotFound(w, r)
 			return
 		}
 		defer reader.Close()
+		entry = snapshot
 		// Protections expire even if a client stalls. Capture can preempt sooner.
 		protection := 10 * time.Second
 		if entry.Kind == storage.Export {

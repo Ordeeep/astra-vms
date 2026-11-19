@@ -119,6 +119,10 @@ _Evitar_: visualização ao vivo
 Representação dos períodos com gravações disponíveis de uma câmera e das lacunas entre eles.
 _Evitar_: agenda de gravação
 
+**Disponibilidade de gravações**:
+Períodos do acervo de uma câmera com imagens efetivamente disponíveis para reprodução pelo operador. Não inclui a previsão de captura nem imagens ainda não disponíveis para consulta.
+_Evitar_: disponibilidade de câmera, agenda de gravação, gravação prevista
+
 **Janela temporal visível**:
 Intervalo do acervo apresentado na linha do tempo de gravações, que pode atravessar datas e ser diferente do período em reprodução.
 _Evitar_: dia selecionado, duração do vídeo

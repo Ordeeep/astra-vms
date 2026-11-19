@@ -1,10 +1,11 @@
 "use client";
 
-import {useEffect, useRef, useState} from "react";
+import {useEffect, useRef, useState, type ReactNode} from "react";
 import type {RecordingInterval} from "@/lib/recording-timeline";
 import {recordingDate, recordingInstant, recordingLabel, recordingTicks, shiftRecordingDate, zoomRecordingWindow} from "@/lib/recording-navigation";
 
-export function RecordingRuler({nameWidth, onNameWidthChange, name, zone, view, intervals, position, onNavigate, onSeek}: {
+export function RecordingRuler({clock, nameWidth, onNameWidthChange, name, zone, view, intervals, position, onNavigate, onSeek}: {
+  clock: ReactNode;
   nameWidth: number; onNameWidthChange: (width: number) => void;
   name: string; zone: string; view: RecordingInterval; intervals: RecordingInterval[]; position: number | null;
   onNavigate: (view: RecordingInterval) => void; onSeek: (at: number) => void;
@@ -38,7 +39,7 @@ export function RecordingRuler({nameWidth, onNameWidthChange, name, zone, view, 
     if (at !== null && at < view.end) dates.push({date, at: Math.max(view.start, at)});
   }
   return <div className="recording-ruler-row" ref={row}>
-    <strong className="recording-camera-name" title={name}>{name}</strong>
+    <div className="recording-camera-column">{clock}<strong className="recording-camera-name" title={name}>{name}</strong></div>
     <div className="recording-name-divider" role="separator" tabIndex={0} aria-label="Largura do nome da câmera" aria-orientation="vertical" aria-valuemin={64} aria-valuemax={600} aria-valuenow={nameWidth}
       onPointerDown={event => { if (event.button !== 0) return; event.preventDefault(); resize.current = {id: event.pointerId, x: event.clientX, width: event.currentTarget.previousElementSibling!.getBoundingClientRect().width}; event.currentTarget.setPointerCapture(event.pointerId); }}
       onPointerMove={event => { const current = resize.current; if (current?.id === event.pointerId) onNameWidthChange(Math.round(Math.max(64, Math.min(600, (row.current?.clientWidth ?? 1000) * .45, current.width + event.clientX - current.x)))); }}

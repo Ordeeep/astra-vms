@@ -79,8 +79,8 @@ let csrf = "";
 let currentContext = "";
 export function setCSRF(value: string) { csrf = value; }
 export function setContext(value: string) { currentContext = value; }
-export async function api<T>(path: string, method = "GET", data?: unknown, scoped = false): Promise<T> {
-  return requestAPI<T>(path,method,data,{scoped,context:currentContext,token:csrf});
+export async function api<T>(path: string, method = "GET", data?: unknown, scoped = false, signal?: AbortSignal): Promise<T> {
+  return requestAPI<T>(path,method,data,{scoped,context:currentContext,token:csrf,signal});
 }
 // Freeze the tab context for cleanup after a tenant switch. A late DELETE must
 // never borrow the NEW tenant context to stop an OLD camera command.
@@ -88,13 +88,13 @@ export async function api<T>(path: string, method = "GET", data?: unknown, scope
 // component/session must discard stale display data and dispose its commands.
 export function captureScopedAPI() {
   const context=currentContext,token=csrf;
-  return <T>(path:string,method="GET",data?:unknown)=>requestAPI<T>(path,method,data,{scoped:true,context,token,keepalive:method==="DELETE",bounded:true,acceptStaleContext:true});
+  return <T>(path:string,method="GET",data?:unknown,timeoutMs=10000)=>requestAPI<T>(path,method,data,{scoped:true,context,token,keepalive:method==="DELETE",bounded:true,timeoutMs,acceptStaleContext:true});
 }
-type RequestScope={scoped:boolean;context:string;token:string;keepalive?:boolean;bounded?:boolean;acceptStaleContext?:boolean};
-async function requestAPI<T>(path:string,method:string,data:unknown,{scoped,context,token,keepalive=false,bounded=false,acceptStaleContext=false}:RequestScope):Promise<T> {
+type RequestScope={scoped:boolean;context:string;token:string;keepalive?:boolean;bounded?:boolean;timeoutMs?:number;acceptStaleContext?:boolean;signal?:AbortSignal};
+async function requestAPI<T>(path:string,method:string,data:unknown,{scoped,context,token,keepalive=false,bounded=false,timeoutMs=10000,acceptStaleContext=false,signal}:RequestScope):Promise<T> {
   const res = await fetch(`/api/v1${path}`, {
     method, credentials: "same-origin", cache: "no-store", keepalive,
-    ...(bounded&&!keepalive?{signal:AbortSignal.timeout(10000)}:{}),
+    ...(signal?{signal}:bounded&&!keepalive?{signal:AbortSignal.timeout(timeoutMs)}:{}),
     headers: {
       "Content-Type": "application/json",
       ...(token ? {"X-CSRF-Token": token} : {}),

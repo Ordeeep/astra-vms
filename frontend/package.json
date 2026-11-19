@@ -10,7 +10,7 @@
     "test": "playwright test",
     "test:live-mosaic": "node --experimental-strip-types --test tests/live-mosaic.node.mjs",
     "test:camera-recording": "node tests/camera-recording/build.mjs && node tests/camera-recording/run.mjs",
-    "test:recording-timeline": "node --experimental-strip-types --test tests/recording-timeline.node.mjs tests/recording-navigation.node.mjs",
+    "test:recording-timeline": "node --experimental-strip-types --test tests/recording-timeline.node.mjs tests/recording-navigation.node.mjs tests/recording-availability-cache.node.mjs",
     "test:live-recording": "node tests/live-recording/build.mjs && node tests/live-recording/run.mjs"
   },
   "dependencies": {

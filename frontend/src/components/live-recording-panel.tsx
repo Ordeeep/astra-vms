@@ -4,11 +4,12 @@ import "./recording-timeline.css";
 
 import {useCallback, useEffect, useRef, useState, type CSSProperties} from "react";
 import {createPortal} from "react-dom";
-import {ChevronDown, ChevronUp, FastForward, Rewind, LoaderCircle, Minus, Pause, Play, Plus, SkipBack, SkipForward, Undo2, Redo2, X} from "lucide-react";
+import {FastForward, Rewind, Minus, Pause, Play, Plus, SkipBack, SkipForward, Undo2, Redo2, X} from "lucide-react";
 import {Button} from "@/components/ui/button";
 import {RecordingDatePicker} from "@/components/recording-date-picker";
 import {RecordingRuler} from "@/components/recording-ruler";
 import {RecordingVideo, type RecordingRequest, type RecordingVideoState} from "@/components/recording-video";
+import {useRecordingAvailability} from "@/components/use-recording-availability";
 import {api} from "@/lib/api";
 import type {Notification} from "@/lib/events";
 import type {RecordingInterval, RecordingSegment} from "@/lib/recording-timeline";
@@ -27,14 +28,19 @@ export function LiveRecordingPanel({tenantId, camera, host, onClose}: {
   useEffect(() => { try { const saved = Number(localStorage.getItem("astra.recording-name-width")); if (saved >= 64 && saved <= 600) setNameWidth(saved); } catch {} }, []);
   const resizeName = (value: number) => { setNameWidth(value); try { localStorage.setItem("astra.recording-name-width", String(value)); } catch {} };
   const [zone, setZone] = useState(""), [metaError, setMetaError] = useState("");
-  const [view, setView] = useState<RecordingInterval | null>(null), [revision, setRevision] = useState(0), [compact, setCompact] = useState(false);
-  const [availability, setAvailability] = useState({key: "", intervals: [] as RecordingInterval[], error: "", loading: true});
+  const [view, setView] = useState<RecordingInterval | null>(null), [revision, setRevision] = useState(0);
+  const [toast, setToast] = useState<{message: string; retry?: () => void} | null>(null);
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 8000);
+    return () => clearTimeout(timer);
+  }, [toast]);
   const [request, setRequest] = useState<RecordingRequest | null>(null), [position, setPosition] = useState<number | null>(null);
   const [playing, setPlaying] = useState(false), [speed, setSpeed] = useState(1), [follow, setFollow] = useState(true);
   const [state, setState] = useState<RecordingVideoState>({phase: "ready", message: "Escolha um horário na linha do tempo."});
   const serial = useRef(0), navigation = useRef(0), selected = useRef(false), playable = useRef(false), live = useRef({playing, request, follow, position, speed});
   live.current = {playing, request, follow, position, speed};
-  const key = `${base}/${view?.start}/${view?.end}/${revision}`;
+  const availability = useRecordingAvailability(base, camera.id, view);
 
   useEffect(() => {
     let active = true;
@@ -50,29 +56,13 @@ export function LiveRecordingPanel({tenantId, camera, host, onClose}: {
       const value = (event as CustomEvent<Notification>).detail;
       if (["AuthorizationChanged", "ResyncRequired"].includes(value.type)) {
         serial.current++; navigation.current++; setRequest(null); setPlaying(false); setPosition(null); selected.current = false; playable.current = false;
-        setAvailability({key: "", intervals: [], error: "", loading: true});
         setState({phase: "ready", message: "Acesso atualizado. Escolha novamente um horário."});
       }
-      if (["AuthorizationChanged", "ResyncRequired", "Connected", "InventoryChanged", "ArchiveChanged", "RecordingChanged"].includes(value.type)) setRevision(value => value + 1);
+      if (["AuthorizationChanged", "ResyncRequired", "Connected", "InventoryChanged"].includes(value.type)) setRevision(value => value + 1);
     };
     window.addEventListener("vms:change", receive);
     return () => { window.removeEventListener("vms:change", receive); serial.current++; navigation.current++; };
   }, []);
-  useEffect(() => {
-    if (!view || !zone) return;
-    let active = true, busy = false;
-    const query = new URLSearchParams({start: new Date(view.start).toISOString(), end: new Date(view.end).toISOString()});
-    const refresh = async () => {
-      if (busy) return; busy = true;
-      try {
-        const value = await api<Availability>(`${base}?${query}`, "GET", undefined, true);
-        if (active) setAvailability({key, intervals: numericIntervals(value), error: "", loading: false});
-      } catch (error) { if (active) setAvailability({key, intervals: [], error: (error as Error).message, loading: false}); }
-      finally { busy = false; }
-    };
-    const delay = setTimeout(() => void refresh(), 140), timer = setInterval(() => void refresh(), 30_000);
-    return () => { active = false; clearTimeout(delay); clearInterval(timer); };
-  }, [base, key, view, zone]);
   const center = view ? (view.start + view.end) / 2 : Date.now(), date = zone ? recordingDate(center, zone) : "";
 
   const navigate = (window: RecordingInterval) => { setFollow(false); setView(window); };
@@ -116,15 +106,23 @@ export function LiveRecordingPanel({tenantId, camera, host, onClose}: {
       const query = new URLSearchParams({direction, at: new Date(live.current.position ?? center).toISOString()});
       const value = await api<{interval: RecordingSegment | null}>(`${base}?${query}`, "GET", undefined, true);
       if (current !== navigation.current) return;
-      if (!value.interval) { setState(previous => ({...previous, message: direction === "next" ? "Nenhuma gravação seguinte disponível." : "Nenhuma gravação anterior disponível."})); return; }
+      if (!value.interval) { setToast({message: direction === "next" ? "Nenhuma gravação seguinte disponível." : "Nenhuma gravação anterior disponível."}); return; }
       const at = direction === "previous" && live.current.speed < 0 ? Math.floor(recordingTimestamp(value.interval.end)) - 1 : recordingSeekInstant(value.interval.start);
       seek(at, resume); setFollow(true);
       setView(current => current ? {start: at - (current.end - current.start) * .3, end: at + (current.end - current.start) * .7} : current);
-    } catch (error) { if (current === navigation.current) setState(previous => ({...previous, message: (error as Error).message})); }
+    } catch (error) { if (current === navigation.current) setToast({message: (error as Error).message, retry: () => void neighbour(direction, resume)}); }
   };
-  const pending = !zone || !view, current = availability.key === key, loading = pending || !current || availability.loading;
-  const error = metaError || (current ? availability.error : "");
-  const intervals = current && !error ? availability.intervals : [];
+  const pending = !zone || !view;
+  const availabilityError = metaError || availability.error;
+  const error = availabilityError || (state.phase === "error" ? state.message : "") || (availability.disconnected ? "Conexão interrompida. Disponibilidade pode estar desatualizada; reconectando…" : "");
+  useEffect(() => {
+    if (!error) { setToast(null); return; }
+    setToast({message: error, retry: availabilityError ? () => {
+      setRevision(value => value + 1);
+      window.dispatchEvent(new CustomEvent("vms:change", {detail: {type: "RecordingChanged", cameraId: camera.id}}));
+    } : state.phase === "error" ? () => { const {position, request} = live.current; if (request) seek(position ?? request.at, true); } : undefined});
+  }, [error, availabilityError, camera.id, state.phase, seek]);
+  const intervals = metaError ? [] : availability.intervals;
   const canPlay = !!request && !["gap", "ended"].includes(state.phase);
   const zoom = (factor: number) => {
     if (!view) return;
@@ -133,20 +131,21 @@ export function LiveRecordingPanel({tenantId, camera, host, onClose}: {
   };
   const video = host && createPortal(<>
     <RecordingVideo tenant={tenantId} camera={camera.id} request={request} playing={playing} speed={speed} onPosition={onPosition} onState={onState} onEnded={finish}/>
-    {request && ["gap", "ended", "error"].includes(state.phase) && <div className="recording-video-message" role={state.phase === "error" ? "alert" : "status"}><p>{state.message}</p>
-      {state.phase === "error" ? <Button variant="secondary" onClick={() => seek(position ?? request.at, true)}>Tentar novamente</Button> : <Button variant="secondary" onClick={() => void neighbour(speed < 0 ? "previous" : "next", true)}>{speed < 0 ? "Ir para a gravação anterior" : "Ir para a próxima gravação"}</Button>}
+    {request && ["gap", "ended"].includes(state.phase) && <div className="recording-video-message" role="status"><p>{state.message}</p>
+      <Button variant="secondary" onClick={() => void neighbour(speed < 0 ? "previous" : "next", true)}>{speed < 0 ? "Ir para a gravação anterior" : "Ir para a próxima gravação"}</Button>
     </div>}
   </>, host);
 
-  return <section className="live-recording-panel recording-panel" data-compact={compact} style={{"--recording-name-width": `${nameWidth}px`} as CSSProperties} aria-label="Gravações da câmera">
+  const zoomValue = view ? Math.log(MAX_RECORDING_SPAN / (view.end - view.start)) / Math.log(MAX_RECORDING_SPAN / MIN_RECORDING_SPAN) * 100 : 0;
+  const zoomSpan = view ? (view.end - view.start) / 60000 : 0;
+  const zoomAmount = Number((zoomSpan >= 60 ? zoomSpan / 60 : zoomSpan).toFixed(1));
+  const zoomUnit = zoomSpan >= 60 ? (zoomAmount === 1 ? "hora" : "horas") : (zoomAmount === 1 ? "minuto" : "minutos");
+  return <section className="live-recording-panel recording-panel" style={{"--recording-name-width": `${nameWidth}px`} as CSSProperties} aria-label="Gravações da câmera">
     {video}
-    <header className="recording-toolbar">
-      {compact && <strong className="recording-compact-name" title={camera.name}>{camera.name}</strong>}
-    <div className="recording-panel-status" role={error || state.phase === "error" ? "alert" : "status"}>
-      {error ? <>{error}<Button variant="ghost" onClick={() => setRevision(value => value + 1)}>Tentar consultar novamente</Button></> : loading ? <><LoaderCircle className="animate-spin" aria-hidden="true"/>Consultando gravações…</> : !request && !intervals.length ? "Nenhuma gravação disponível para sua conta neste período. Escolha outra data ou horário." : state.message || (intervals.length ? "Faixas azuis: gravações disponíveis · Arraste para navegar; clique para reproduzir." : "Nenhuma gravação disponível para sua conta neste período.")}
-    </div>
-      <div className="recording-toolbar-end"><Button variant="ghost" size="icon" aria-label={compact ? "Expandir barra de gravações" : "Recolher barra de gravações"} onClick={() => setCompact(value => !value)}>{compact ? <ChevronUp aria-hidden="true"/> : <ChevronDown aria-hidden="true"/>}</Button><Button variant="ghost" size="icon" aria-label="Fechar painel de gravações" onClick={onClose}><X aria-hidden="true"/></Button></div>
-    </header>
+    {toast && <div className="recording-toast" role="alert"><p>{toast.message}</p>
+      {toast.retry && <Button variant="secondary" onClick={() => { setToast({...toast}); toast.retry?.(); }}>Tentar novamente</Button>}
+      <Button variant="ghost" size="icon" aria-label="Dispensar notificação" onClick={() => setToast(null)}><X aria-hidden="true"/></Button>
+    </div>}
     <div className="recording-controls" role="group" aria-label="Controles de reprodução de gravações">
       <div className="recording-playback-controls">
       <Button variant="ghost" size="icon" aria-label="Gravação anterior" title="Gravação anterior" disabled={pending} onClick={() => void neighbour("previous")}><SkipBack aria-hidden="true"/></Button>
@@ -161,24 +160,28 @@ export function LiveRecordingPanel({tenantId, camera, host, onClose}: {
       <Button variant="ghost" size="icon" aria-label="Próxima gravação" title="Próxima gravação" disabled={pending} onClick={() => void neighbour("next")}><SkipForward aria-hidden="true"/></Button>
       <output className="recording-speed" aria-label="Velocidade da gravação" aria-live="polite">{String(speed).replace(".", ",")}×</output>
       </div>
-      {date && <RecordingDatePicker base={base} date={date} revision={revision} onSelect={value => {
-        if (!view) return;
+      <div className="recording-navigation-controls">
+        <Button variant="ghost" size="icon" aria-label="Diminuir zoom da linha do tempo" disabled={!view || view.end - view.start >= MAX_RECORDING_SPAN} onClick={() => zoom(2)}><Minus aria-hidden="true"/></Button>
+        <input className="recording-zoom-slider" type="range" min={0} max={100} step="any" value={zoomValue} disabled={!view} aria-label="Zoom da linha do tempo" aria-valuetext={view ? `Janela de ${zoomAmount} ${zoomUnit}` : "Carregando"} onChange={event => {
+          if (view) zoom((MAX_RECORDING_SPAN * (MIN_RECORDING_SPAN / MAX_RECORDING_SPAN) ** (Number(event.target.value) / 100)) / (view.end - view.start));
+        }}/>
+        <Button variant="ghost" size="icon" aria-label="Aumentar zoom da linha do tempo" disabled={!view || view.end - view.start <= MIN_RECORDING_SPAN} onClick={() => zoom(.5)}><Plus aria-hidden="true"/></Button>
+        <Button variant="ghost" size="icon" aria-label="Fechar painel de gravações" title="Fechar painel de gravações" onClick={onClose}><X aria-hidden="true"/></Button>
+      </div>
+    </div>
+    {view && zone && <RecordingRuler nameWidth={nameWidth} onNameWidthChange={resizeName} name={camera.name} zone={zone} view={view} intervals={intervals} position={position} onNavigate={navigate} onSeek={seek} clock={
+      <RecordingDatePicker base={base} date={date} zone={zone} revision={revision} onSelect={value => {
         const at = recordingInstant(value, "00:00:00", zone);
-        if (at === null) { setState(previous => ({...previous, message: "Este horário não existe no fuso do site. Escolha outro horário."})); return; }
+        if (at === null) { setToast({message: "Este horário não existe no fuso do site. Escolha outro horário."}); return; }
         navigate({start: at, end: at + DEFAULT_RECORDING_SPAN});
       }}>
-      <output className="recording-clock-value" aria-label="Horário da reprodução">
-        <span className="recording-clock-time">{position !== null && zone ? recordingClock(position, zone) : "--:--:--"}</span>
-        <span className="recording-clock-date">{(position !== null && zone ? recordingDate(position, zone) : date).split("-").reverse().join(":") || "--:--:----"}</span>
-        {position === null && <span className="sr-only">Aguardando horário</span>}
-      </output>
-      </RecordingDatePicker>}
-      {!compact && <div className="recording-navigation-controls">
-        <Button variant="ghost" size="icon" aria-label="Diminuir zoom da linha do tempo" disabled={!view || view.end - view.start >= MAX_RECORDING_SPAN} onClick={() => zoom(2)}><Minus aria-hidden="true"/></Button>
-        <Button variant="ghost" size="icon" aria-label="Aumentar zoom da linha do tempo" disabled={!view || view.end - view.start <= MIN_RECORDING_SPAN} onClick={() => zoom(.5)}><Plus aria-hidden="true"/></Button>
-      </div>}
-    </div>
-    {!compact && view && zone && <RecordingRuler nameWidth={nameWidth} onNameWidthChange={resizeName} name={camera.name} zone={zone} view={view} intervals={intervals} position={position} onNavigate={navigate} onSeek={seek}/>}
+        <output className="recording-clock-value" aria-label="Horário da reprodução">
+          <span className="recording-clock-time">{position !== null ? recordingClock(position, zone) : "--:--:--"}</span>
+          <span className="recording-clock-date">{(position !== null ? recordingDate(position, zone) : date).split("-").reverse().join(":")}</span>
+          {position === null && <span className="sr-only">Aguardando horário</span>}
+        </output>
+      </RecordingDatePicker>
+    }/>}
 
   </section>;
 }

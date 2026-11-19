@@ -12,6 +12,7 @@ const liveSessions=new Map<string,any>();
 let serial=0,deny=false,monthFailure=false,hold=false;
 const releases:(()=>void)[]=[];
 const qa={requests,sessions,liveSessions,deny:(value:boolean)=>{deny=value;},failMonth:(value:boolean)=>{monthFailure=value;},hold:(value:boolean)=>{hold=value;},release:()=>{hold=false;releases.splice(0).forEach(resolve=>resolve());}};
+Object.assign(qa, {grow: () => { blocks[1].end += 10000; window.dispatchEvent(new CustomEvent('vms:change', {detail:{type:'ArchiveChanged',cameraId:'cam1',payload:{start:new Date(blocks[1].start).toISOString(),end:new Date(blocks[1].end).toISOString()}}})); }});
 Object.assign(window,{recordingQA:qa});
 const response=(value:unknown,status=200)=>new Response(status===204?null:JSON.stringify(value),{status,headers:{"Content-Type":"application/json","X-VMS-Contract":"1"}});
 window.fetch=async(input,options)=>{

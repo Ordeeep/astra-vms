@@ -241,7 +241,7 @@ func applyIndexChange(tx *bolt.Tx, c ledgerChange) error {
 			if err = bucket(tx, "usage").Put(usageKey, number(integer(bucket(tx, "usage").Get(usageKey))+copy.Charged)); err != nil {
 				return err
 			}
-			if copy.Finalized && copy.Sequence > 0 {
+			if (copy.Finalized || copy.CheckpointSize > 0) && copy.Sequence > 0 {
 				if err = bucket(tx, "catalog").Put(number(copy.Sequence), append([]byte("e"), []byte(id)...)); err != nil {
 					return err
 				}
@@ -457,6 +457,9 @@ func (s *Store) catalogPage(after int64, limit int) []Entry {
 			}
 			if e == nil {
 				return errors.New("missing catalogue object")
+			}
+			if !e.Finalized && e.CheckpointSize > 0 {
+				e.Size = e.CheckpointSize
 			}
 			entries = append(entries, *e)
 			if len(entries) == limit {

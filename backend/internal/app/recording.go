@@ -435,8 +435,32 @@ func (a *App) recordingLoop() {
 		a.recordingMu.Unlock()
 	}
 }
+func (a *App) importArchiveEntry(ctx context.Context, e storage.Entry) error {
+	if e.Deleted {
+		_, err := a.db.Exec(ctx, `UPDATE archive_segments SET available=false,discard_reason=coalesce(discard_reason,'storage_reclaimed'),catalog_sequence=$3
+ WHERE id=$1 AND tenant_id=$2 AND catalog_sequence<$3`, e.ID, e.Tenant, e.Sequence)
+		return err
+	}
+	if e.Kind != storage.Recording {
+		return nil
+	}
+	var index media.SegmentIndex
+	if err := json.Unmarshal(e.Metadata, &index); err != nil {
+		return err
+	}
+	_, err := a.db.Exec(ctx, `INSERT INTO archive_segments(id,tenant_id,camera_id,site_id,source_version,profile_id,start_at,end_at,bytes,charged,metadata,catalog_sequence)
+ SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12 FROM cameras WHERE tenant_id=$2 AND id=$3 AND deleted_at IS NULL
+ ON CONFLICT(id) DO UPDATE SET end_at=excluded.end_at,bytes=excluded.bytes,charged=excluded.charged,metadata=excluded.metadata,catalog_sequence=excluded.catalog_sequence
+ WHERE archive_segments.available AND archive_segments.catalog_sequence<excluded.catalog_sequence
+ AND archive_segments.tenant_id=excluded.tenant_id AND archive_segments.camera_id=excluded.camera_id
+ AND archive_segments.site_id=excluded.site_id AND archive_segments.source_version=excluded.source_version
+ AND archive_segments.profile_id=excluded.profile_id AND archive_segments.start_at=excluded.start_at AND archive_segments.end_at<=excluded.end_at`,
+		e.ID, index.Tenant, index.Camera, index.Site, index.Source, index.Profile, index.Start, index.End, e.Size, e.Charged, e.Metadata, e.Sequence)
+	return err
+}
+
 func (a *App) archiveMaintenance() {
-	ticker := time.NewTicker(2 * time.Second)
+	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()
 	var cursor int64
 	if err := a.db.QueryRow(a.runContext, "SELECT coalesce((SELECT (value#>>'{}')::bigint FROM settings WHERE key='archive_cursor'),0)").Scan(&cursor); err != nil {
@@ -451,29 +475,15 @@ func (a *App) archiveMaintenance() {
 		case <-ticker.C:
 		}
 		cycle++
-		{
+		for page := 0; page < 10; page++ {
 			scanCtx, done := context.WithTimeout(a.runContext, time.Second)
 			var entries []storage.Entry
 			if a.worker(scanCtx, "GET", "/archive/catalog?after="+strconv.FormatInt(cursor, 10), nil, &entries) == nil {
 				for _, e := range entries {
-					if e.Deleted {
-						if _, err := a.db.Exec(scanCtx, "UPDATE archive_segments SET available=false,discard_reason=coalesce(discard_reason,'storage_reclaimed') WHERE id=$1 AND tenant_id=$2", e.ID, e.Tenant); err != nil {
-							break
-						}
-						cursor = e.Sequence
+					if e.Sequence <= cursor {
 						continue
 					}
-					if e.Kind != storage.Recording {
-						cursor = e.Sequence
-						continue
-					}
-					var index media.SegmentIndex
-					if json.Unmarshal(e.Metadata, &index) != nil {
-						break
-					}
-					_, err := a.db.Exec(scanCtx, `INSERT INTO archive_segments(id,tenant_id,camera_id,site_id,source_version,profile_id,start_at,end_at,bytes,charged,metadata)
-					SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11 FROM cameras WHERE tenant_id=$2 AND id=$3 AND deleted_at IS NULL ON CONFLICT(id) DO NOTHING`, e.ID, index.Tenant, index.Camera, index.Site, index.Source, index.Profile, index.Start, index.End, e.Size, e.Charged, e.Metadata)
-					if err != nil {
+					if err := a.importArchiveEntry(scanCtx, e); err != nil {
 						break
 					}
 					cursor = e.Sequence
@@ -485,8 +495,11 @@ func (a *App) archiveMaintenance() {
 				}
 			}
 			done()
+			if len(entries) < 100 || entries[len(entries)-1].Sequence > cursor {
+				break
+			}
 		}
-		if cycle%15 == 0 {
+		if cycle%60 == 0 {
 			a.expireRecordings()
 		}
 	}

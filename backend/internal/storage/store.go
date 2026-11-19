@@ -13,6 +13,7 @@ import (
 	"fmt"
 	bolt "go.etcd.io/bbolt"
 	"hash"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -111,6 +112,7 @@ type Reader struct {
 	store  *Store
 	id     string
 	file   *os.File
+	view   *io.SectionReader
 	closed bool
 }
 
@@ -435,6 +437,8 @@ func (w *Writer) Checkpoint(metadata json.RawMessage) error {
 	w.entry.Metadata = bytesClone(metadata)
 	w.entry.CheckpointSize = w.entry.Size
 	w.entry.CheckpointHash = hex.EncodeToString(w.hash.Sum(nil))
+	s.state.Sequence++
+	w.entry.Sequence = s.state.Sequence
 	return s.commit(ledgerChange{Entry: w.entry})
 }
 func (w *Writer) Tag(metadata json.RawMessage) error {
@@ -576,23 +580,39 @@ func (s *Store) Entries(tenant string, kind Kind) []Entry {
 func (s *Store) Read(tenant, id string) (*Reader, error) {
 	s.mu.Lock()
 	defer s.unlock()
+	r, _, err := s.snapshot(tenant, id, false)
+	return r, err
+}
+
+// Snapshot atomically opens the immutable, durably committed prefix and its
+// matching index. Later writes/checkpoints cannot extend an existing reader.
+func (s *Store) Snapshot(tenant, id string) (*Reader, Entry, error) {
+	s.mu.Lock()
+	defer s.unlock()
+	return s.snapshot(tenant, id, true)
+}
+
+func (s *Store) snapshot(tenant, id string, active bool) (*Reader, Entry, error) {
 	if err := s.usable(); err != nil {
-		return nil, err
+		return nil, Entry{}, err
 	}
 	e := s.getEntry(id, true)
-	if e == nil || e.Tenant != tenant || !e.Finalized {
-		return nil, ErrNotFound
+	if e == nil || e.Tenant != tenant || (!e.Finalized && (!active || e.Kind != Recording || e.CheckpointSize <= 0)) {
+		return nil, Entry{}, ErrNotFound
+	}
+	if !e.Finalized {
+		e.Size = e.CheckpointSize
 	}
 	f, err := os.Open(s.path(id))
 	if err != nil {
-		return nil, err
+		return nil, Entry{}, err
 	}
-	r := &Reader{store: s, id: id, file: f}
+	r := &Reader{store: s, id: id, file: f, view: io.NewSectionReader(f, 0, e.Size)}
 	if s.readers[id] == nil {
 		s.readers[id] = map[*Reader]bool{}
 	}
 	s.readers[id][r] = true
-	return r, nil
+	return r, *e, nil
 }
 func (r *Reader) Read(p []byte) (int, error) {
 	s := r.store
@@ -601,7 +621,7 @@ func (r *Reader) Read(p []byte) (int, error) {
 	if r.closed {
 		return 0, os.ErrClosed
 	}
-	return r.file.Read(p)
+	return r.view.Read(p)
 }
 func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	s := r.store
@@ -610,7 +630,7 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 	if r.closed {
 		return 0, os.ErrClosed
 	}
-	return r.file.Seek(offset, whence)
+	return r.view.Seek(offset, whence)
 }
 func (r *Reader) close() error {
 	if r.closed {

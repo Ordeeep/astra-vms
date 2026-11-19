@@ -137,6 +137,7 @@ CREATE TABLE IF NOT EXISTS archive_segments (
  FOREIGN KEY(tenant_id,site_id) REFERENCES sites(tenant_id,id)
 );
 CREATE INDEX IF NOT EXISTS archive_camera_time ON archive_segments(tenant_id,camera_id,start_at) WHERE available;
+ALTER TABLE archive_segments ADD COLUMN IF NOT EXISTS catalog_sequence bigint NOT NULL DEFAULT 0;
 CREATE INDEX IF NOT EXISTS archive_expiry ON archive_segments(end_at) WHERE available;
 CREATE TABLE IF NOT EXISTS recording_status (
  tenant_id text NOT NULL,camera_id text NOT NULL,code text NOT NULL,

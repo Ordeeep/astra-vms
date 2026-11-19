@@ -56,7 +56,10 @@ func migrate(ctx context.Context, db *pgxpool.Pool) error {
  END $$;
  CREATE TRIGGER live_operational_camera BEFORE INSERT ON live_sessions FOR EACH ROW EXECUTE FUNCTION require_operational_camera();
  CREATE TRIGGER playback_operational_camera BEFORE INSERT ON playback_sessions FOR EACH ROW EXECUTE FUNCTION require_operational_camera();
- `, `ALTER TABLE operators ADD COLUMN deleted_at timestamptz;`, installationGroupsMigration, linkedInstallationAdministrationMigration}
+ `, `ALTER TABLE operators ADD COLUMN deleted_at timestamptz;`, installationGroupsMigration, linkedInstallationAdministrationMigration,
+		// Existing installations already applied the initial schema. Publish the
+		// checkpoint column and event contract as an additive upgrade as well.
+		`ALTER TABLE archive_segments ADD COLUMN IF NOT EXISTS catalog_sequence bigint NOT NULL DEFAULT 0;` + eventsSQL}
 	if version > len(migrations) {
 		return errors.New("database requires a newer VMS core")
 	}
