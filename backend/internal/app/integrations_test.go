@@ -224,12 +224,9 @@ func TestLegacyRTSPSecretEnvelopeRemainsProbeable(t *testing.T) {
 	plain, _ := json.Marshal(profiles)
 	cid := created["id"].(string)
 	source := created["sourceVersion"].(string)
-	secret := vault.Seal(nonce, nonce, plain, []byte(tenant+"/"+cid+"/"+source))
-	db, e := pgx.Connect(context.Background(), b.options.DatabaseURL)
-	if e != nil {
-		t.Fatal(e)
-	}
-	defer db.Close(context.Background())
+	db := cameraDeletionDB(t, b)
+	cameraKey := cameraTestKey(t, db, tenant, cid)
+	secret := vault.Seal(nonce, nonce, plain, []byte(tenant+"/"+cameraKey+"/"+source))
 	table := pgx.Identifier{b.options.Schema, "camera_sources"}.Sanitize()
 	if _, e = db.Exec(context.Background(), "UPDATE "+table+" SET secrets=$1 WHERE id=$2", secret, source); e != nil {
 		t.Fatal(e)

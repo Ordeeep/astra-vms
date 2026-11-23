@@ -180,8 +180,11 @@ func (a *App) eventStream(w http.ResponseWriter, r *http.Request, id identity) {
 				return
 			}
 		}
-		rows, err := a.db.Query(check, `SELECT delivery,resource_id,camera_id,site_id,revision,kind,payload,occurred_at,correlation_id
- FROM event_outbox WHERE tenant_id=$1 AND delivery>$2 ORDER BY delivery LIMIT 100`, tenant, last)
+		rows, err := a.db.Query(check, `SELECT e.delivery,
+ CASE WHEN e.resource_id=e.camera_id THEN coalesce(c.camera_number::text,e.resource_id) ELSE e.resource_id END,
+ e.camera_id,coalesce(c.camera_number::text,e.camera_id),e.site_id,e.revision,e.kind,e.payload,e.occurred_at,e.correlation_id
+ FROM event_outbox e LEFT JOIN cameras c ON c.tenant_id=e.tenant_id AND c.id=e.camera_id
+ WHERE e.tenant_id=$1 AND e.delivery>$2 ORDER BY e.delivery LIMIT 100`, tenant, last)
 		if err != nil {
 			done()
 			return
@@ -189,7 +192,7 @@ func (a *App) eventStream(w http.ResponseWriter, r *http.Request, id identity) {
 		batch := make([]notification, 0, 100)
 		for rows.Next() {
 			var e notification
-			if err = rows.Scan(&e.sequence, &e.ResourceID, &e.camera, &e.site, &e.Revision, &e.Type, &e.Payload, &e.OccurredAt, &e.CorrelationID); err != nil {
+			if err = rows.Scan(&e.sequence, &e.ResourceID, &e.camera, &e.CameraID, &e.site, &e.Revision, &e.Type, &e.Payload, &e.OccurredAt, &e.CorrelationID); err != nil {
 				break
 			}
 			batch = append(batch, e)
@@ -211,7 +214,6 @@ func (a *App) eventStream(w http.ResponseWriter, r *http.Request, id identity) {
 			if !a.eventAuthorized(check, current, tenant, grants, e) {
 				continue
 			}
-			e.CameraID = e.camera
 			// No client queue: a bounded batch and bounded socket write. Check
 			// the deadline before each send; slow clients must reconnect.
 			if check.Err() != nil {

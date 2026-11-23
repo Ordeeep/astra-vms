@@ -113,8 +113,11 @@ func TestEventsEnforceScopeCurrentGrantsAndContextRevocation(t *testing.T) {
 	}
 	defer db.Close(context.Background())
 	outbox := pgx.Identifier{b.options.Schema, "event_outbox"}.Sanitize()
+	fixtures := cameraDeletionDB(t, b)
+	allowedKey := cameraTestKey(t, fixtures, tenant, allowed)
+	deniedKey := cameraTestKey(t, fixtures, tenant, denied)
 	// A foreign tenant's event and an ungranted camera precede an allowed event.
-	_, err = db.Exec(context.Background(), "INSERT INTO "+outbox+"(tenant_id,resource_id,camera_id,site_id,revision,kind) VALUES($1,'foreign',$3,$4,1,'CameraStatusChanged'),($2,$5,$5,$4,1,'CameraStatusChanged')", other, tenant, allowed, site, denied)
+	_, err = db.Exec(context.Background(), "INSERT INTO "+outbox+"(tenant_id,resource_id,camera_id,site_id,revision,kind) VALUES($1,'foreign',$3,$4,1,'CameraStatusChanged'),($2,$5,$5,$4,1,'CameraStatusChanged')", other, tenant, allowedKey, site, deniedKey)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -254,10 +257,11 @@ func TestQueuedCameraEventUsesCurrentSiteButArchiveEventKeepsOrigin(t *testing.T
 	}
 	defer db.Close(context.Background())
 	table := pgx.Identifier{b.options.Schema, "event_outbox"}.Sanitize()
+	key := cameraTestKey(t, cameraDeletionDB(t, b), tenant, camera)
 	// An event queued before a move cannot reveal current camera state to its
 	// previous site's viewers. Historical archive provenance still belongs there.
 	_, err = db.Exec(context.Background(), "INSERT INTO "+table+`(tenant_id,resource_id,camera_id,site_id,revision,kind)
- VALUES($1,$2,$2,$3,1,'CameraStatusChanged'),($1,'old-recording',$2,$3,1,'ArchiveChanged')`, tenant, camera, siteA)
+ VALUES($1,$2,$2,$3,1,'CameraStatusChanged'),($1,'old-recording',$2,$3,1,'ArchiveChanged')`, tenant, key, siteA)
 	if err != nil {
 		t.Fatal(err)
 	}

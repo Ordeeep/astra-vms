@@ -2,6 +2,9 @@ import {createRoot} from "react-dom/client";
 import {useState} from "react";
 import {LiveViewProvider, useLiveView} from "@/components/live-view-context";
 import {LiveWorkspace} from "@/components/live";
+import {LiveHeaderActions, LiveHeaderControls} from "@/components/live-header-controls";
+import {TooltipProvider} from "@/components/ui/tooltip";
+import {RecordingExportProvider} from "@/components/exports";
 import {setContext} from "@/lib/api";
 
 const cameras=Array.from({length:2},(_,i)=>({id:`cam${i+1}`,name:i===0?"Portaria principal · acesso de funcionários":"Estacionamento",siteId:"site",active:true,effectiveActive:true,revision:1,sourceVersion:"1",profiles:[{id:"main",name:"Principal"}],capabilities:{live:true,playback:true}}));
@@ -10,8 +13,21 @@ const requests:{path:string;method:string;body:any;context:string|null}[]=[];
 const sessions=new Map<string,{at:number;start:number;end:number;next:number|null}>();
 const liveSessions=new Map<string,any>();
 let serial=0,deny=false,monthFailure=false,hold=false;
+const exportPreviews=new Map<string,{cameraId:string;start:string;end:string}>();
+const exportTasks=new Map<string,{id:string;cameraName:string;author:string;createdAt:string;start:string;end:string;status:string;code?:string;frames:number;total:number;hasGaps:boolean;canDownload:boolean;downloadExpired:boolean}>();
+let exportEmpty=false;
 const releases:(()=>void)[]=[];
 const qa={requests,sessions,liveSessions,deny:(value:boolean)=>{deny=value;},failMonth:(value:boolean)=>{monthFailure=value;},hold:(value:boolean)=>{hold=value;},release:()=>{hold=false;releases.splice(0).forEach(resolve=>resolve());}};
+Object.assign(qa,{
+ setExportResult:(status:string,frames:number,downloadExpired=false)=>{
+  const task=exportTasks.get('export-job')!;
+  Object.assign(task,{status,frames,canDownload:status==='completed'&&!downloadExpired,downloadExpired});
+ },
+ setExportFailure:(id:string,code?:string)=>{
+  Object.assign(exportTasks.get(id)!,{status:'failed',code});
+ },
+ setExportEmpty:(value:boolean)=>{exportEmpty=value;},
+});
 Object.assign(qa, {grow: () => { blocks[1].end += 10000; window.dispatchEvent(new CustomEvent('vms:change', {detail:{type:'ArchiveChanged',cameraId:'cam1',payload:{start:new Date(blocks[1].start).toISOString(),end:new Date(blocks[1].end).toISOString()}}})); }});
 Object.assign(window,{recordingQA:qa});
 const response=(value:unknown,status=200)=>new Response(status===204?null:JSON.stringify(value),{status,headers:{"Content-Type":"application/json","X-VMS-Contract":"1"}});
@@ -41,6 +57,32 @@ window.fetch=async(input,options)=>{
   const session=sessions.get(url.searchParams.get('session')!)!;
   return response({offset:(session.at-session.start)/1000,nextStart:session.next?new Date(session.next).toISOString():null,mapping:[{mediaStart:0,start:new Date(session.start).toISOString(),end:new Date(session.end).toISOString()}]});
  }
+ if(path.endsWith('/recording-cameras'))return response({items:cameras.map(camera=>({id:camera.id,name:camera.name,capabilities:{playback:true,export:camera.id==='cam2'}}))});
+ if(path.endsWith('/export-previews')&&method==='POST'){
+  if(exportEmpty)return response({code:'export_has_no_images'},422);
+  const id=`export-preview-${exportPreviews.size+1}`;
+  exportPreviews.set(id,body);
+  return response({id,revision:1,gaps:[{}]},201);
+ }
+ if(path.endsWith('/exports')&&method==='POST'){
+  const {cameraId,start,end}=exportPreviews.get(body.previewId)!;
+  const id=exportTasks.size?`export-job-${exportTasks.size+1}`:'export-job';
+  exportTasks.set(id,{id,cameraName:cameras.find(camera=>camera.id===cameraId)!.name,author:'Operadora QA',createdAt:new Date().toISOString(),start,end,status:'queued',frames:0,total:100,hasGaps:true,canDownload:false,downloadExpired:false});
+  return response({id,status:'queued'},202);
+ }
+ const activeExports=()=>[...exportTasks.values()].filter(task=>task.status==='queued'||task.status==='running');
+ if(path.endsWith('/export-tasks')&&method==='GET')return response({items:[...exportTasks.values()].reverse(),nextCursor:'',hasActive:activeExports().length>0});
+ if(path.endsWith('/exports/cancel')&&method==='POST'){
+  const active=activeExports();
+  active.forEach(task=>{task.status='cancelled';});
+  return response({cancelled:active.length});
+ }
+ if(path.includes('/exports/')&&path.endsWith('/cancel')&&method==='POST'){
+  const task=activeExports().find(item=>item.id===path.split('/').at(-2));
+  if(!task)return response({code:'export_finished'},409);
+  task.status='cancelled';
+  return response(null,204);
+ }
  if(path.endsWith('/cameras'))return response({items:cameras});
  if(path.endsWith('/sites'))return response({items:[{id:'site',name:'Matriz',active:true,timezone:'America/Sao_Paulo'}]});
  if(path.endsWith('/mosaics'))return response({items:[]});
@@ -66,11 +108,11 @@ class Peer {
 }
 Object.assign(window,{RTCPeerConnection:Peer});
 function Controls(){const view=useLiveView();return <nav className="fixture-controls">
- <button onClick={()=>{view.changeLayout(2);view.setPositions([0,1,2,3].map(tileId=>({tileId,cameraId:tileId<2?'cam1':tileId===2?'cam2':'',profile:''})));}}>Mosaico repetido</button>
- <button onClick={()=>view.changeLayout(1)}>Layout 1</button>
+ <button onClick={()=>{view.changeLayout("2x2");view.setPositions([0,1,2,3].map(tileId=>({tileId,cameraId:tileId<2?'cam1':tileId===2?'cam2':'',profile:''})));}}>Mosaico repetido</button>
+ <button onClick={()=>view.changeLayout("1x1")}>Layout 1</button>
  <button onClick={()=>view.setMaximized(view.maximized===0?null:0)}>Maximizar</button>
  <button onClick={()=>void view.toggleFullscreen()}>Video Wall</button>
  </nav>;}
-function Fixture(){const [show,setShow]=useState(true);return <main className="astra-interface"><button onClick={()=>setShow(v=>!v)}>Alternar tela</button><LiveViewProvider tenantId="fixture" enabled={show}><Controls/>{show&&<LiveWorkspace tenant={{id:'fixture',name:'Fixture',active:true,revision:1}}/>}</LiveViewProvider></main>;}
+function Fixture(){const [show,setShow]=useState(true);return <TooltipProvider><main className="astra-interface"><button onClick={()=>setShow(v=>!v)}>Alternar tela</button><LiveViewProvider tenantId="fixture" enabled={show}><RecordingExportProvider tenantId="fixture"><Controls/>{show&&<><header><LiveHeaderControls/><LiveHeaderActions/></header><LiveWorkspace tenant={{id:'fixture',name:'Fixture',active:true,revision:1}}/></>}</RecordingExportProvider></LiveViewProvider></main></TooltipProvider>;}
 setContext('fixture-context');
 createRoot(document.getElementById('root')!).render(<Fixture/>);

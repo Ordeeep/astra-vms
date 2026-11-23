@@ -4,24 +4,40 @@ async page => {
  const dialog=()=>page.getByRole('dialog');
  const panel=name=>dialog().getByRole('tabpanel',{name,exact:true});
  const info=()=>panel('Informações');
+ const displayMode=()=>panel('Geral').getByRole('combobox',{name:'Visualizando',exact:true});
  const streams=()=>panel('Streams');
  const section=async name=>{await dialog().getByRole('tab',{name,exact:true}).click();};
  const fresh=async()=>{await page.goto('http://127.0.0.1:13119');await page.getByRole('button',{name:'+ Nova câmera',exact:true}).click();};
  const requests=()=>page.evaluate(()=>window.cameraFormQA.requests);
  const lastMutation=async()=>[...(await requests())].reverse().find(r=>r.method==='PATCH'||r.method==='POST'&&r.path.endsWith('/cameras'));
  const save=async()=>{await dialog().getByRole('button',{name:/^Salvar/}).click();};
- const close=async()=>{await dialog().getByRole('button',{name:'Cancelar',exact:true}).click();await dialog().waitFor({state:'detached'});};
- const edit=async name=>{await page.getByRole('row').filter({hasText:name}).getByRole('button',{name:'Editar',exact:true}).click();};
+ const close=async()=>{
+  await dialog().getByRole('button',{name:'Cancelar',exact:true}).click();
+  const discard=page.getByRole('alertdialog').getByRole('button',{name:'Descartar alterações',exact:true});
+  if(await discard.isVisible())await discard.click();
+  await dialog().waitFor({state:'detached'});
+ };
+ const edit=async name=>{await page.getByRole('row',{name:`Editar câmera ${name}`,exact:true}).click();};
  const layoutFits=async()=>dialog().evaluate(el=>{
   const bounds=el.getBoundingClientRect();
   return bounds.left>=0&&bounds.right<=innerWidth+1&&bounds.top>=0&&bounds.bottom<=innerHeight+1&&el.scrollWidth<=el.clientWidth+1;
+ });
+ const editorContent=()=>dialog().locator('.camera-editor-content');
+ const layoutBounds=()=>dialog().evaluate(el=>{
+  const bounds=node=>{const {top,height}=node.getBoundingClientRect();return {top,height};};
+  return [el,el.querySelector('.dialog-header'),el.querySelector('[role="tablist"]'),el.querySelector('.dialog-footer')].map(bounds);
  });
 
  try {
  await page.setViewportSize({width:1280,height:900});
  await fresh();
  assert(await info().getByRole('textbox',{name:'Endereço RTSP principal',exact:true}).isVisible(),'Main RTSP connection must be in Informações');
- assert(await dialog().getByRole('tab').count()===2,'Creation must have two sections');
+ assert(await dialog().getByRole('tab').count()===3,'Creation must have Geral, Informações and Streams');
+ await section('Geral');
+ assert(await displayMode().inputValue()==='contain','New cameras must keep the default aspect ratio');
+ assert((await displayMode().locator('option').allTextContents()).join('|')==='Espalhar pela célula|Forçar 4:3|Manter a proporção','Display modes have unexpected labels');
+ await displayMode().selectOption('cover');
+ await section('Informações');
  assert(await info().getByRole('combobox',{name:'Tipo de conexão'}).locator('option').count()===6,'Connection picker lost options');
  for(const name of ['ONVIF','Axis','Intelbras']){
   assert(await info().getByRole('combobox',{name:'Tipo de conexão'}).locator('option').filter({hasText:name}).evaluate(el=>el.disabled),'Unimplemented integration must stay disabled: '+name);
@@ -52,6 +68,7 @@ async page => {
  await save();await dialog().waitFor({state:'detached'});
  const created=await lastMutation();
  assert(created.body.profiles.length===2&&created.body.profiles[0].url==='rtsp://192.0.2.40/main'&&created.body.profiles[1].url==='rtsp://192.0.2.40/sub1','Create payload lost RTSP profiles');
+ assert(created.body.displayMode==='cover','Create payload lost the selected display mode');
  checks.push('RTSP creation, main test in Informações, substream test in Streams, section state and hidden-field validation');
 
  await fresh();await section('Streams');
@@ -70,6 +87,19 @@ async page => {
  let updated=await lastMutation();
  assert(updated.body.revision===7&&updated.body.source.profiles.length===1&&updated.body.source.profiles[0].url==='','RTSP edit did not preserve the existing main address');
  checks.push('RTSP edit preserves saved URL while removing a substream');
+
+ await edit('RTSP existente');
+ await dialog().getByRole('tab',{name:'Informações',exact:true}).focus();
+ await page.keyboard.press('ArrowUp');await displayMode().waitFor();
+ assert(await displayMode().inputValue()==='contain','Existing camera did not open with its saved display mode');
+ await displayMode().selectOption('4:3');
+ await save();await dialog().waitFor({state:'detached'});
+ updated=await lastMutation();
+ assert(updated.body.displayMode==='4:3'&&!('source' in updated.body),'Display mode edit rewrote the source or lost the selection');
+ await edit('RTSP existente');await section('Geral');
+ assert(await displayMode().inputValue()==='4:3','Reopening lost the saved display mode');
+ await close();
+ checks.push('Display modes, keyboard navigation to Geral, save and reopen');
 
  await edit('Dahua existente');
  assert(await info().getByLabel('Senha',{exact:true}).inputValue()==='*********','Saved password is not masked');
@@ -99,7 +129,7 @@ async page => {
  await section('Informações');await section('Streams');
  await streams().getByText(/Vídeo acessível/).waitFor();
  await section('Informações');
- await page.screenshot({path:'output/playwright/camera-form/dahua-desktop-dark.png',fullPage:true});
+ await page.screenshot({path:'output/playwright/camera-form/dahua-desktop-dark.png',fullPage:true,animations:'disabled'});
  await save();await dialog().waitFor({state:'detached'});
  const dahua=await lastMutation();
  assert(dahua.body.connectionType==='dahua'&&dahua.body.connection.protocol==='https'&&dahua.body.connection.httpPort===443&&!('profiles' in dahua.body),'Dahua create payload changed');
@@ -171,22 +201,41 @@ async page => {
  await page.goto('http://127.0.0.1:13119/?light');
  await page.getByRole('button',{name:'+ Nova câmera',exact:true}).click();
  assert(await layoutFits(),'Desktop dialog overflows');
- await page.screenshot({path:'output/playwright/camera-form/rtsp-desktop-light.png',fullPage:true});
+ await page.screenshot({path:'output/playwright/camera-form/rtsp-desktop-light.png',fullPage:true,animations:'disabled'});
  await close();
  for(const width of [390,320]){
   await page.setViewportSize({width,height:844});
   await edit('Dahua existente');
   assert(await layoutFits(),width+'px dialog overflows');
-  const canScroll=await dialog().locator('.dialog-form-body').evaluate(el=>el.scrollHeight>el.clientHeight);
-  assert(canScroll,'Long mobile form cannot scroll');
+  const beforeScroll=await layoutBounds();
+  await editorContent().hover();
+  await page.mouse.wheel(0,300);
+  await page.waitForFunction(()=>document.querySelector('.camera-editor-content')?.scrollTop>0);
+  assert(JSON.stringify(await layoutBounds())===JSON.stringify(beforeScroll),'Scrolling moved the dialog, header, tabs or footer');
+  await section('Geral');
+  assert(JSON.stringify(await layoutBounds())===JSON.stringify(beforeScroll),'A short tab changed the dialog layout');
+  assert(await editorContent().evaluate(el=>el.scrollTop===0&&el.scrollHeight===el.clientHeight),'Short tab has unexpected scrolling');
+  await section('Informações');
   await info().getByRole('textbox',{name:'Endereço',exact:true}).scrollIntoViewIfNeeded();
   await section('Streams');assert(await layoutFits(),'Mobile Streams overflows');
   await section('Informações');
-  await page.screenshot({path:'output/playwright/camera-form/mobile-light-'+width+'.png',fullPage:true});
+  await page.screenshot({path:'output/playwright/camera-form/mobile-light-'+width+'.png',fullPage:true,animations:'disabled'});
   await close();
  }
  await page.setViewportSize({width:1280,height:900});
  checks.push('Dark/light themes, desktop layout, 390px and 320px mobile scrolling and reachable footer');
+ for(const [width,height] of [[390,450],[640,450],[768,900],[1280,900],[1600,900]]){
+  await page.setViewportSize({width,height});
+  await page.getByRole('button',{name:'+ Nova câmera',exact:true}).click();
+  const registrationHeight=(await layoutBounds())[0].height;
+  await section('Geral');
+  assert(await layoutFits()&&(await layoutBounds())[0].height===registrationHeight,`Registration changed height at ${width}px`);
+  await close();
+  await edit('RTSP existente');await section('Geral');
+  assert(await layoutFits()&&await displayMode().isVisible()&&(await layoutBounds())[0].height===registrationHeight,`Editing layout differs from registration at ${width}px`);
+  await close();
+ }
+ checks.push('Registration and editing keep the same dialog height at 390, 640, 768, 1280 and 1600 px');
  return {passed:true,checks};
  } catch(error) {
   await page.screenshot({path:'output/playwright/camera-form/failure.png',fullPage:true});

@@ -17,6 +17,7 @@ type Mosaic struct {
 	Owner      string     `json:"ownerId"`
 	Name       string     `json:"name"`
 	Visibility string     `json:"visibility"`
+	Layout     string     `json:"layout,omitempty"`
 	Positions  []Position `json:"positions"`
 	Revision   int64      `json:"revision"`
 	Editable   bool       `json:"editable"`
@@ -30,6 +31,15 @@ type QualityRule struct {
 
 var defaultQuality = []QualityRule{{Min: 1, Max: 2, Profile: "main", Fallback: []string{}}, {Min: 3, Max: 4, Profile: "sub2", Fallback: []string{"main"}}, {Min: 5, Max: 16, Profile: "sub3", Fallback: []string{"sub2", "main"}}}
 
+// The empty layout keeps the original square layouts for older compositions.
+var mosaicLayoutCapacity = map[string]int{
+	"": 16, "1x1": 1, "2x2": 4, "3x3": 9, "4x4": 16,
+	"corner-6": 6, "corner-8": 8, "center-13": 13, "side-5": 5, "top-6": 6,
+	"3x2": 6, "4x3": 12, "5x4": 20,
+	"5x5": 25, "6x6": 36, "7x7": 49, "8x8": 64, "9x9": 81, "10x10": 100,
+	"6x5": 30, "8x6": 48, "9x7": 63, "11x8": 88, "12x9": 108,
+}
+
 func (a *App) mosaics(w http.ResponseWriter, r *http.Request, id identity) {
 	tenant, ok := a.tenantContext(w, r, id)
 	if !ok {
@@ -38,7 +48,13 @@ func (a *App) mosaics(w http.ResponseWriter, r *http.Request, id identity) {
 	mid := r.PathValue("mosaic")
 	if r.Method == "GET" {
 		manage := a.allowed(r.Context(), id, tenant, "mosaics.manage", "", "")
-		rows, err := a.db.Query(r.Context(), `SELECT id,owner_id,name,visibility,positions,revision FROM mosaics WHERE tenant_id=$1 AND active AND (visibility='shared' OR owner_id=$2) AND ($3='' OR id=$3) AND id>$4 ORDER BY id LIMIT 201`, tenant, id.User.ID, mid, r.URL.Query().Get("cursor"))
+		rows, err := a.db.Query(r.Context(), `SELECT m.id,m.owner_id,m.name,m.visibility,m.layout,
+ (SELECT coalesce(jsonb_agg(CASE WHEN c.camera_number IS NULL THEN p.entry
+  ELSE p.entry || jsonb_build_object('cameraId',c.camera_number::text) END ORDER BY p.ordinal),'[]'::jsonb)
+  FROM jsonb_array_elements(m.positions) WITH ORDINALITY p(entry,ordinal)
+  LEFT JOIN cameras c ON c.tenant_id=m.tenant_id AND c.id=p.entry->>'cameraId'),m.revision
+ FROM mosaics m WHERE m.tenant_id=$1 AND m.active AND (m.visibility='shared' OR m.owner_id=$2)
+  AND ($3='' OR m.id=$3) AND m.id>$4 ORDER BY m.id LIMIT 201`, tenant, id.User.ID, mid, r.URL.Query().Get("cursor"))
 		if err != nil {
 			dbFailure(w)
 			return
@@ -50,7 +66,7 @@ func (a *App) mosaics(w http.ResponseWriter, r *http.Request, id identity) {
 		for rows.Next() {
 			var m Mosaic
 			var raw []byte
-			if rows.Scan(&m.ID, &m.Owner, &m.Name, &m.Visibility, &raw, &m.Revision) != nil || json.Unmarshal(raw, &m.Positions) != nil {
+			if rows.Scan(&m.ID, &m.Owner, &m.Name, &m.Visibility, &m.Layout, &raw, &m.Revision) != nil || json.Unmarshal(raw, &m.Positions) != nil {
 				dbFailure(w)
 				return
 			}
@@ -84,7 +100,8 @@ func (a *App) mosaics(w http.ResponseWriter, r *http.Request, id identity) {
 	if !body(w, r, &input) {
 		return
 	}
-	if r.Method != "DELETE" && (!validName(input.Name) || (input.Visibility != "personal" && input.Visibility != "shared") || len(input.Positions) > 16) {
+	capacity, knownLayout := mosaicLayoutCapacity[input.Layout]
+	if r.Method != "DELETE" && (!validName(input.Name) || (input.Visibility != "personal" && input.Visibility != "shared") || !knownLayout || len(input.Positions) > capacity) {
 		problem(w, 422, "invalid_mosaic")
 		return
 	}
@@ -130,12 +147,14 @@ func (a *App) mosaics(w http.ResponseWriter, r *http.Request, id identity) {
 			return
 		}
 	}
-	for _, p := range input.Positions {
+	stored := append([]Position{}, input.Positions...)
+	for i, p := range input.Positions {
 		if p.CameraID == "" {
 			continue
 		}
-		var exists bool
-		if tx.QueryRow(r.Context(), "SELECT EXISTS(SELECT 1 FROM cameras WHERE tenant_id=$1 AND id=$2 AND deleted_at IS NULL)", tenant, p.CameraID).Scan(&exists) != nil || !exists {
+		var key, number string
+		if tx.QueryRow(r.Context(), `SELECT id,camera_number::text FROM cameras WHERE tenant_id=$1 AND deleted_at IS NULL
+ AND (id=$2 OR camera_number=$3)`, tenant, p.CameraID, cameraNumber(p.CameraID)).Scan(&key, &number) != nil {
 			problem(w, 404, "camera_not_found")
 			return
 		}
@@ -149,22 +168,21 @@ func (a *App) mosaics(w http.ResponseWriter, r *http.Request, id identity) {
 				return
 			}
 		}
+		stored[i].CameraID = key
+		input.Positions[i].CameraID = number
 	}
-	raw, _ := json.Marshal(input.Positions)
-	if input.Positions == nil {
-		raw = []byte("[]")
-	}
+	raw, _ := json.Marshal(stored)
 	status := 200
 	if r.Method == "POST" {
 		mid = newID()
 		input.Revision = 1
 		status = 201
-		_, err = tx.Exec(r.Context(), "INSERT INTO mosaics(id,tenant_id,owner_id,name,visibility,positions) VALUES($1,$2,$3,$4,$5,$6)", mid, tenant, owner, input.Name, input.Visibility, raw)
+		_, err = tx.Exec(r.Context(), "INSERT INTO mosaics(id,tenant_id,owner_id,name,visibility,positions,layout) VALUES($1,$2,$3,$4,$5,$6,$7)", mid, tenant, owner, input.Name, input.Visibility, raw, input.Layout)
 	} else if r.Method == "DELETE" {
 		_, err = tx.Exec(r.Context(), "UPDATE mosaics SET active=false,revision=revision+1 WHERE id=$1", mid)
 	} else {
 		input.Revision++
-		_, err = tx.Exec(r.Context(), "UPDATE mosaics SET name=$1,visibility=$2,positions=$3,revision=revision+1 WHERE id=$4", input.Name, input.Visibility, raw, mid)
+		_, err = tx.Exec(r.Context(), "UPDATE mosaics SET name=$1,visibility=$2,positions=$3,layout=$4,revision=revision+1 WHERE id=$5", input.Name, input.Visibility, raw, input.Layout, mid)
 	}
 	if err != nil {
 		dbFailure(w)

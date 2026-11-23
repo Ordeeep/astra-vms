@@ -12,7 +12,7 @@ import (
 func availabilityFixture(t *testing.T) (*availabilityMonitor, *availabilityEntry, Camera, time.Time) {
 	t.Helper()
 	now := time.Date(2026, 11, 1, 12, 0, 0, 0, time.UTC)
-	c := Camera{ID: "camera", Name: "Entrada", SiteID: "site", Active: true, EffectiveActive: true, SourceVersion: "source", ConnectionRevision: 1, Profiles: []Profile{{ID: "main", Name: "Principal"}, {ID: "sub1", Name: "Sub"}}}
+	c := Camera{key: "camera", Name: "Entrada", SiteID: "site", Active: true, EffectiveActive: true, SourceVersion: "source", ConnectionRevision: 1, Profiles: []Profile{{ID: "main", Name: "Principal"}, {ID: "sub1", Name: "Sub"}}}
 	m := newAvailabilityMonitor()
 	m.reconcile([]availabilityTarget{{"tenant", c}}, now)
 	return m, m.entries["tenant/camera"], c, now

@@ -163,7 +163,7 @@ Os recortes de ISS fornecidos pelo usuário documentam visualmente régua gradua
 - O painel atual usa data civil e fuso do navegador; a agenda de captura usa o fuso do site. O novo fluxo precisa fechar uma regra explícita de apresentação.
 - `frontend/src/app/workspace.css` fixa a largura da coluna de nomes e oculta o painel em modo Video Wall.
 - `frontend/src/lib/recording-timeline.ts` preserva lacunas e trata a duração variável de dias civis. O painel divide consultas em janelas de seis horas.
-- `frontend/src/components/playback.tsx` possui player de acervo separado, sessão HLS, negociação de compatibilidade e mapeamento entre o tempo de mídia e o instante original. Para em lacunas e oferece o próximo intervalo. Ainda não encadeia automaticamente janelas contínuas.
+- O player de gravações no **Ao vivo** usa `frontend/src/components/recording-video.tsx` para reproduzir o acervo via HLS e mapear o tempo de mídia para o horário da gravação.
 - `backend/internal/app/playback.go` limita cada consulta de segmentos a 24 horas e cada sessão de reprodução a uma hora. A consulta interna limita o retorno a 10.000 segmentos. Esses limites de transporte não devem ser confundidos com a escala visual pedida pelo usuário.
 - Não foi encontrada consulta agregada de dias com gravação. O calendário precisará de disponibilidade mensal eficiente, restrita às gravações autorizadas para o operador, sem transformar falha de consulta em ausência de vídeos.
 - O acervo é centralizado no Astra conforme `docs/adr/0001-gravacao-centralizada.md`. Consultar gravações diretamente de NVR/DVR continua sendo outro módulo.

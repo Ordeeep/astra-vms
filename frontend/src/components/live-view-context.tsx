@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { allPages, type Camera, type Site } from "@/components/management";
 import { onEnvironmentChange } from "@/lib/events";
-import { mosaicSize, restoreMosaic, type LiveMosaic, type LiveTile } from "@/lib/live-mosaic";
+import { allMosaicLayouts, mosaicLayouts, restoreMosaic, savedMosaicLayout, type LiveMosaic, type LiveTile, type MosaicLayout } from "@/lib/live-mosaic";
 
 import {useLiveFullscreen} from "@/lib/use-live-fullscreen";
 
@@ -15,9 +15,11 @@ type LiveView = {
   fullscreen: boolean;
   fullscreenError: string;
   toggleFullscreen: () => Promise<void>;
+  debugEnabled: boolean;
+  toggleDebug: () => void;
   tenantId?: string;
-  layoutSize: number;
-  changeLayout: (size: number) => void;
+  layout: MosaicLayout;
+  changeLayout: (id: string) => void;
   cameraListOpen: boolean;
   setCameraListOpen: Dispatch<SetStateAction<boolean>>;
   dropPosition: number | null;
@@ -27,6 +29,7 @@ type LiveView = {
   pendingCameraId: string | null;
   setPendingCameraId: Dispatch<SetStateAction<string | null>>;
   cameras: Camera[];
+  exportCameraIds: ReadonlySet<string>;
   sites: Site[];
   loading: boolean;
   catalogError: string;
@@ -42,6 +45,7 @@ type LiveView = {
   maximized: number | null;
   setMaximized: Dispatch<SetStateAction<number | null>>;
   chooseCamera: (cameraId: string, positionIndex: number) => void;
+  fillMosaic: (cameraIds: readonly string[]) => void;
   moveCamera: (from: number, to: number) => void;
 };
 
@@ -53,14 +57,17 @@ export function LiveViewProvider({ tenantId, enabled, children }: {
   tenantId?: string; enabled: boolean; children: ReactNode;
 }) {
   const fullscreenState=useLiveFullscreen(enabled);
-  const [layoutSize, setLayoutSize] = useState(2);
+  const [debugEnabled, setDebugEnabled] = useState(false);
+  useEffect(() => {
+    if (!enabled) setDebugEnabled(false);
+  }, [enabled]);
+  const [layout, setLayout] = useState(mosaicLayouts[1]);
   const [cameraListOpen, setCameraListOpen] = useState(true);
-  const [wallPanelOpen,setWallPanelOpen]=useState(false);
-  useEffect(()=>{if(!fullscreenState.fullscreen)setWallPanelOpen(false);},[fullscreenState.fullscreen]);
   const [dropPosition, setDropPosition] = useState<number | null>(null);
   const [draggedCameraId, setDraggedCameraId] = useState<string | null>(null);
   const [pendingCameraId, setPendingCameraId] = useState<string | null>(null);
   const [cameras, setCameras] = useState<Camera[]>([]);
+  const [exportCameraIds, setExportCameraIds] = useState<ReadonlySet<string>>(() => new Set());
   const [sites, setSites] = useState<Site[]>([]);
   const [loading, setLoading] = useState(true);
   const [catalogError, setCatalogError] = useState("");
@@ -78,7 +85,7 @@ export function LiveViewProvider({ tenantId, enabled, children }: {
     if(highlightTimer.current)clearTimeout(highlightTimer.current);
     highlightTimer.current=setTimeout(()=>setHighlightedPosition(null),2000);
   }
-  const activePosition = maximized ?? Math.min(activeIndex, positions.length - 1);
+  const activePosition = maximized ?? Math.min(activeIndex, layout.areas.length - 1);
 
   useEffect(() => {
     if (!enabled || !tenantId) return;
@@ -110,18 +117,37 @@ export function LiveViewProvider({ tenantId, enabled, children }: {
     return () => { active = false; unsubscribe(); };
   }, [tenantId, enabled, retry]);
 
-  function changeLayout(size: number) {
-    if (![1,2,3,4].includes(size)) return;
-    const count=size*size;
+  useEffect(() => {
+    if (!enabled || !tenantId) return;
+    let active = true, generation = 0;
+    async function load() {
+      const version = ++generation;
+      try {
+        const catalog = await allPages<Pick<Camera,"id"|"capabilities">>(`/tenants/${tenantId}/recording-cameras`);
+        if (active && version === generation) setExportCameraIds(new Set(catalog.filter(camera => camera.capabilities.export).map(camera => camera.id)));
+      } catch {
+        if (active && version === generation) setExportCameraIds(new Set());
+      }
+    }
+    void load();
+    const unsubscribe = onEnvironmentChange(["InventoryChanged"], () => void load());
+    return () => { active = false; unsubscribe(); };
+  }, [tenantId, enabled, retry]);
+
+  function changeLayout(id: string) {
+    const next = allMosaicLayouts.find(candidate => candidate.id === id);
+    if (!next) return;
+    const count = next.areas.length;
     setPositions(current => current.length >= count ? current : Array.from({length:count},(_,index)=>current[index]??{tileId:nextTileId.current++,cameraId:"",profile:""}));
-    setLayoutSize(size);
+    setLayout(next);
     setActiveIndex(current=>Math.min(current,count-1));
     setMaximized(null);setDropPosition(null);setPendingCameraId(null);
+    setHighlightedPosition(current => current !== null && current >= count ? null : current);
   }
 
   function loadMosaic(mosaic: LiveMosaic) {
-    setPositions(current => restoreMosaic(mosaic.positions, current, () => nextTileId.current++));
-    setLayoutSize(mosaicSize(mosaic.positions));
+    setPositions(current => restoreMosaic(mosaic, current, () => nextTileId.current++));
+    setLayout(savedMosaicLayout(mosaic));
     setSelected(mosaic);
     setActiveIndex(0);
     setMaximized(null);setDropPosition(null);setPendingCameraId(null);setDraggedCameraId(null);
@@ -136,8 +162,21 @@ export function LiveViewProvider({ tenantId, enabled, children }: {
       ? { ...position, cameraId, profile: "", fallback: [] } : position));
   }
 
+  function fillMosaic(cameraIds: readonly string[]) {
+    if (!cameraIds.length) return;
+    const visibleCameraIds = cameraIds.slice(0, layout.areas.length);
+    setPositions(current => {
+      const next = visibleCameraIds.map(cameraId =>
+        current.find(tile => tile.cameraId === cameraId) ?? { cameraId, profile: "" });
+      return restoreMosaic({ layout: layout.id, positions: next }, current, () => nextTileId.current++);
+    });
+    setMaximized(null);
+    setPendingCameraId(null);
+    setActivePosition(0);
+  }
+
   function moveCamera(from: number, to: number) {
-    const count = layoutSize * layoutSize;
+    const count = layout.areas.length;
     if (maximized !== null || !Number.isInteger(from) || !Number.isInteger(to)
       || from === to || from < 0 || to < 0 || from >= count || to >= count
       || !positions[from]?.cameraId) return;
@@ -152,12 +191,11 @@ export function LiveViewProvider({ tenantId, enabled, children }: {
   }
 
   return <LiveViewContext.Provider value={{
-    ...fullscreenState, tenantId, layoutSize, changeLayout,
-    cameraListOpen:fullscreenState.fullscreen?wallPanelOpen:cameraListOpen,
-    setCameraListOpen:fullscreenState.fullscreen?setWallPanelOpen:setCameraListOpen,
-    cameras, sites, loading, catalogError, retryCatalog: () => setRetry(value => value + 1),
+    ...fullscreenState, tenantId, layout, changeLayout, cameraListOpen, setCameraListOpen,
+    debugEnabled: enabled && debugEnabled, toggleDebug: () => setDebugEnabled(value => !value),
+    cameras, exportCameraIds, sites, loading, catalogError, retryCatalog: () => setRetry(value => value + 1),
     highlightedPosition, positions, setPositions, selected, setSelected, loadMosaic, activePosition, setActivePosition,
-    dropPosition, setDropPosition, maximized, setMaximized, chooseCamera, moveCamera, draggedCameraId, setDraggedCameraId, pendingCameraId, setPendingCameraId,
+    dropPosition, setDropPosition, maximized, setMaximized, chooseCamera, fillMosaic, moveCamera, draggedCameraId, setDraggedCameraId, pendingCameraId, setPendingCameraId,
   }}>{children}</LiveViewContext.Provider>;
 }
 

@@ -6,7 +6,7 @@ Esta variante reúne os fontes do Astra e mantém as integrações RTSP, Dahua e
 
 O arquivo `LICENSE` contém a licença MIT aprovada pelo mantenedor para o código próprio. Dependências de terceiros conservam suas próprias licenças; a MIT não substitui seus avisos.
 
-O script de exportação pública exclui o Topography do React Bits e usa a cena CSS original `OrbitalDawn` no login. O Topography integra a versão de desenvolvimento sob [MIT + Commons Clause](../frontend/public/licenses/react-bits.txt).
+O script de exportação pública exclui os componentes derivados de React Bits. O login segue o [guia de design](desing.md).
 
 ## Integrações de fabricante
 
@@ -22,7 +22,7 @@ Na pasta original de desenvolvimento, com Python 3.12 ou superior:
 python tools/prepare-github.py --destination output/github-review
 ```
 
-O destino deve ser novo. A ferramenta usa a lista explícita `tools/public-source-files.txt`, exclui os componentes visuais derivados e aplica os ajustes documentados ao README, login e documentação. O manifesto SHA-256 registra os arquivos finais. A ferramenta não cria repositório remoto nem faz push.
+O destino deve ser novo. A ferramenta usa a lista explícita `tools/public-source-files.txt`, exclui os componentes visuais derivados e aplica os ajustes documentados ao README e à documentação. O manifesto SHA-256 registra os arquivos finais. A ferramenta não cria repositório remoto nem faz push.
 
 Na cópia gerada, antes de instalar dependências ou criar builds:
 

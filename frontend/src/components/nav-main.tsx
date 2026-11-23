@@ -1,24 +1,31 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
-  SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
-  SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem,
+  SidebarGroup, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
+  SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem, useSidebar,
 } from "@/components/ui/sidebar";
 import {
-  Building2, HardDrive, ChevronRight, CircleUserRound, ClipboardList, Download, History,
+  Building2, HardDrive, ChevronRight, CircleUserRound, ClipboardList,
   LayoutDashboard, MapPin, MonitorPlay, Settings2, ShieldCheck, UserRound, UsersRound, Video,
+  type LucideIcon,
 } from "lucide-react";
+import { workspacePaths, type WorkspacePage } from "@/lib/workspace-routes";
 
-const navigationGroups = [
+type NavigationSection = {
+  id: string;
+  label: string;
+  icon: LucideIcon;
+  items: { id: WorkspacePage; label: string; icon: LucideIcon }[];
+};
+
+const navigationGroups: NavigationSection[] = [
   {
     id: "operation", label: "Operação", icon: MonitorPlay,
     items: [
       { id: "overview", label: "Visão geral", icon: LayoutDashboard },
       { id: "live", label: "Ao vivo", icon: MonitorPlay },
-      { id: "playback", label: "Consultar gravações", icon: History },
-      { id: "exports", label: "Exportações", icon: Download },
     ],
   },
   {
@@ -51,18 +58,35 @@ export const navigation = [
   { id: "account", label: "Minha conta", icon: CircleUserRound },
 ];
 
-type NavigationProps = { activePage: string; onNavigate: (page: string) => void };
+type NavigationProps = { activePage: WorkspacePage; onNavigate: (page: WorkspacePage) => void };
 
 function NavigationGroup({ group, activePage, onNavigate }: NavigationProps & {
-  group: typeof navigationGroups[number];
+  group: NavigationSection;
 }) {
   const Icon = group.icon;
   const [open, setOpen] = useState(true);
+  const { isMobile, state } = useSidebar();
   const active = group.items.some(item => item.id === activePage);
 
   useEffect(() => {
     if (active) setOpen(true);
   }, [activePage, active]);
+
+  function followLink(event: MouseEvent<HTMLAnchorElement>, page: WorkspacePage) {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    onNavigate(page);
+  }
+
+  if (!isMobile && state === "collapsed") return group.items.map(({id, label, icon: ItemIcon}) => (
+    <SidebarMenuItem key={id}>
+      <SidebarMenuButton asChild tooltip={label} isActive={activePage === id}>
+        <a href={workspacePaths[id]} aria-label={label} aria-current={activePage === id ? "page" : undefined} onClick={event => followLink(event, id)}>
+          <ItemIcon aria-hidden="true" />
+        </a>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  ));
 
   return (
     <Collapsible asChild open={open} onOpenChange={setOpen}>
@@ -79,10 +103,10 @@ function NavigationGroup({ group, activePage, onNavigate }: NavigationProps & {
         {group.items.map(({ id, label, icon: ItemIcon }) => (
           <SidebarMenuSubItem key={id}>
             <SidebarMenuSubButton asChild isActive={activePage === id} className="w-full">
-              <button type="button" aria-label={label} aria-current={activePage === id ? "page" : undefined} onClick={() => onNavigate(id)}>
+              <a href={workspacePaths[id]} aria-current={activePage === id ? "page" : undefined} onClick={event => followLink(event, id)}>
                 <ItemIcon aria-hidden="true" />
                 <span>{label}</span>
-              </button>
+              </a>
             </SidebarMenuSubButton>
           </SidebarMenuSubItem>
         ))}
@@ -93,14 +117,9 @@ function NavigationGroup({ group, activePage, onNavigate }: NavigationProps & {
   );
 }
 
-export function NavMain({ activePage, onNavigate, globalAdmin }: {
-  activePage: string;
-  onNavigate: (page: string) => void;
-  globalAdmin: boolean;
-}) {
+export function NavMain({ activePage, onNavigate, globalAdmin }: NavigationProps & { globalAdmin: boolean }) {
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Central de vídeo</SidebarGroupLabel>
       <nav aria-label="Navegação principal">
         <SidebarMenu>
           {navigationGroups.map(group => <NavigationGroup key={group.id} group={{...group,items:group.items.filter(item=>item.id!=="tenants"||globalAdmin)}} activePage={activePage} onNavigate={onNavigate} />)}

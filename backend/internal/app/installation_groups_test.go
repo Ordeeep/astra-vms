@@ -68,7 +68,8 @@ func TestInstallationGroupsMigrateExistingAdministrators(t *testing.T) {
 	defer db.Close(ctx)
 	schema := pgx.Identifier{b.options.Schema}.Sanitize()
 	// Recreate the previous released schema with its existing administrator flag.
-	_, err = db.Exec(ctx, "DROP FUNCTION "+schema+".is_installation_admin(text); DROP TABLE "+schema+".installation_group_members; DROP TABLE "+schema+".installation_groups; ALTER TABLE "+schema+".operators ADD COLUMN global_admin boolean NOT NULL DEFAULT false; UPDATE "+schema+".operators SET global_admin=true; DELETE FROM "+schema+".schema_migrations WHERE version>=7")
+	rewindCameraNumbers(t, cameraDeletionDB(t, b))
+	_, err = db.Exec(ctx, "DROP FUNCTION "+schema+".is_installation_admin(text); DROP TABLE "+schema+".installation_group_members; DROP TABLE "+schema+".installation_groups; ALTER TABLE "+schema+".operators ADD COLUMN global_admin boolean NOT NULL DEFAULT false; UPDATE "+schema+".operators SET global_admin=true; ALTER TABLE "+schema+".mosaics DROP COLUMN layout; DELETE FROM "+schema+".schema_migrations WHERE version>=7")
 	if err != nil {
 		t.Fatal(err)
 	}

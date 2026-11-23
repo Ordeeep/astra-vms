@@ -1,5 +1,5 @@
-export type Grant = {action: string; scope: string; resourceId: string};
-export type GrantTarget = Pick<Grant, "scope" | "resourceId">;
+export type Grant = {action: string; scope: string; resourceId: string; tenantId?: string};
+export type GrantTarget = Pick<Grant, "scope" | "resourceId" | "tenantId">;
 
 export const installationAdministration: Grant = {action: "installation.manage", scope: "installation", resourceId: "installation"};
 
@@ -26,7 +26,7 @@ export const permissionActions = [
 ] as const;
 
 export function sameTarget(grant: GrantTarget, target: GrantTarget) {
-  return grant.scope === target.scope && grant.resourceId === target.resourceId;
+  return grant.scope === target.scope && grant.resourceId === target.resourceId && grant.tenantId === target.tenantId;
 }
 
 /** Keep every unrelated action/scope pair, including grants outside the loaded catalog. */

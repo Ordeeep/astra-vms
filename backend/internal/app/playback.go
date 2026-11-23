@@ -40,7 +40,11 @@ func (a *App) recordingCameras(w http.ResponseWriter, r *http.Request, id identi
 		dbFailure(w)
 		return
 	}
-	rows, err := a.db.Query(r.Context(), `SELECT c.id,c.name,c.site_id,ARRAY(SELECT DISTINCT s.site_id FROM archive_segments s WHERE s.tenant_id=c.tenant_id AND s.camera_id=c.id AND s.available) FROM cameras c WHERE c.tenant_id=$1 AND c.deleted_at IS NULL AND c.id>$2 ORDER BY c.id LIMIT 201`, tenant, r.URL.Query().Get("cursor"))
+	after, ok := a.cameraCursor(w, r, tenant)
+	if !ok {
+		return
+	}
+	rows, err := a.db.Query(r.Context(), `SELECT c.id,c.camera_number::text,c.name,c.site_id,ARRAY(SELECT DISTINCT s.site_id FROM archive_segments s WHERE s.tenant_id=c.tenant_id AND s.camera_id=c.id AND s.available) FROM cameras c WHERE c.tenant_id=$1 AND c.deleted_at IS NULL AND c.camera_number>$2 ORDER BY c.camera_number LIMIT 201`, tenant, after)
 	if err != nil {
 		dbFailure(w)
 		return
@@ -50,9 +54,9 @@ func (a *App) recordingCameras(w http.ResponseWriter, r *http.Request, id identi
 	cursor := ""
 	count := 0
 	for rows.Next() {
-		var camera, name, current string
+		var camera, number, name, current string
 		var origins []string
-		if rows.Scan(&camera, &name, &current, &origins) != nil {
+		if rows.Scan(&camera, &number, &name, &current, &origins) != nil {
 			dbFailure(w)
 			return
 		}
@@ -60,14 +64,14 @@ func (a *App) recordingCameras(w http.ResponseWriter, r *http.Request, id identi
 		if count > 200 {
 			break
 		}
-		cursor = camera
+		cursor = number
 		allowed, export := false, false
 		for _, site := range append(origins, current) {
 			allowed = allowed || permits(grants, tenant, "playback", site, camera)
 			export = export || (permits(grants, tenant, "playback", site, camera) && permits(grants, tenant, "export", site, camera))
 		}
 		if allowed {
-			items = append(items, map[string]any{"id": camera, "name": name, "capabilities": map[string]bool{"playback": true, "export": export}})
+			items = append(items, map[string]any{"id": number, "name": name, "capabilities": map[string]bool{"playback": true, "export": export}})
 		}
 	}
 	if rows.Err() != nil {
@@ -132,8 +136,16 @@ func (a *App) timeline(w http.ResponseWriter, r *http.Request, id identity) {
 		return
 	}
 	out := []archiveSegment{}
+	var number string
 	for _, s := range segments {
 		if permits(grants, tenant, "playback", s.Site, s.Camera) {
+			if number == "" {
+				if a.db.QueryRow(r.Context(), `SELECT camera_number::text FROM cameras WHERE tenant_id=$1 AND id=$2`, tenant, s.Camera).Scan(&number) != nil {
+					dbFailure(w)
+					return
+				}
+			}
+			s.Camera = number
 			out = append(out, s)
 		}
 	}
@@ -169,7 +181,11 @@ func (a *App) createPlayback(w http.ResponseWriter, r *http.Request, id identity
 		problem(w, 422, "invalid_playback_window")
 		return
 	}
-	segments, err := a.segments(r.Context(), tenant, in.Camera, in.Start, in.End)
+	key, ok := a.requestCameraKey(w, r, tenant, in.Camera)
+	if !ok {
+		return
+	}
+	segments, err := a.segments(r.Context(), tenant, key, in.Start, in.End)
 	if err != nil {
 		dbFailure(w)
 		return
@@ -197,7 +213,7 @@ func (a *App) createPlayback(w http.ResponseWriter, r *http.Request, id identity
 		return
 	}
 	sid := newID()
-	if _, err = a.db.Exec(r.Context(), "WITH inserted AS (INSERT INTO playback_sessions(id,tenant_id,camera_id,context_id,session_hash,start_at,end_at,expires) VALUES($1,$2,$3,$4,$5,$6,$7,now()+interval '10 seconds') RETURNING id) INSERT INTO audit_events(actor_id,tenant_id,action,resource_id) SELECT $8,$2,'playback.started',$3 FROM inserted", sid, tenant, in.Camera, r.Header.Get("X-VMS-Context"), id.SessionHash, in.Start, in.End, id.User.ID); err != nil {
+	if _, err = a.db.Exec(r.Context(), "WITH inserted AS (INSERT INTO playback_sessions(id,tenant_id,camera_id,context_id,session_hash,start_at,end_at,expires) VALUES($1,$2,$3,$4,$5,$6,$7,now()+interval '10 seconds') RETURNING id) INSERT INTO audit_events(actor_id,tenant_id,action,resource_id) SELECT $8,$2,'playback.started',$3 FROM inserted", sid, tenant, key, r.Header.Get("X-VMS-Context"), id.SessionHash, in.Start, in.End, id.User.ID); err != nil {
 		dbFailure(w)
 		return
 	}

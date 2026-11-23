@@ -22,7 +22,12 @@ try{
  const edit=async()=>page.getByRole('row',{name:'Editar câmera Portaria'}).click();
  const save=async()=>dialog().getByRole('button',{name:'Salvar',exact:true}).click();
  const mutation=()=>page.evaluate(()=>window.recordingQA.requests.filter(r=>r.method==='PATCH'||r.method==='POST'&&r.path.endsWith('/cameras')).at(-1));
- const discard=async()=>{page.once('dialog',prompt=>prompt.accept());await dialog().getByRole('button',{name:'Cancelar',exact:true}).click();await expect(dialog()).toHaveCount(0);};
+ const discardDialog=()=>page.getByRole('alertdialog',{name:'Descartar alterações?'});
+ const discard=async()=>{
+  await dialog().getByRole('button',{name:'Cancelar',exact:true}).click();
+  await discardDialog().getByRole('button',{name:'Descartar alterações',exact:true}).click();
+  await expect(dialog()).toHaveCount(0);
+ };
 
  await fresh();await expect(page.getByRole('cell',{name:'Gravando',exact:true})).toBeVisible();
  await edit();await tab('Gravação');
@@ -41,6 +46,13 @@ try{
  let request=await mutation();expect(request.body.name).toBe('Portaria atualizada');expect(request.body.recording.profile).toBe('sub1');expect(request.body.recording.schedule[0]).toEqual({day:1,start:1320,end:360});
  checks.push('salvamento conjunto, agenda noturna e preservação entre abas');
 
+ await fresh();await edit();await tab('Geral');
+ await dialog().getByRole('combobox',{name:'Visualizando'}).selectOption('cover');await save();
+ request=await mutation();
+ expect(request.body.displayMode).toBe('cover');
+ expect(request.body.recording).toBeUndefined();
+ checks.push('ajuste de exibição preserva a configuração de gravação');
+
  await fresh();await page.getByRole('button',{name:'+ Nova câmera'}).click();await dialog().getByRole('combobox',{name:/^Site/}).selectOption('site');await tab('Gravação');
  await expect(dialog().getByRole('checkbox',{name:'Habilitar gravação'})).not.toBeChecked();await expect(dialog().getByRole('checkbox',{name:'Gravar todos os dias, 24 horas'})).toBeChecked();
  await expect(dialog().getByLabel('Retenção específica',{exact:false})).toHaveValue('');
@@ -58,7 +70,9 @@ try{
  checks.push('perfil removido exige escolha explícita');
 
  await fresh();await edit();await dialog().getByLabel('Nome',{exact:true}).fill('Rascunho');
- page.once('dialog',prompt=>prompt.dismiss());await dialog().getByRole('button',{name:'Cancelar',exact:true}).click();await expect(dialog()).toBeVisible();await expect(dialog().getByLabel('Nome',{exact:true})).toHaveValue('Rascunho');
+ await dialog().getByRole('button',{name:'Cancelar',exact:true}).click();
+ await discardDialog().getByRole('button',{name:'Cancelar',exact:true}).click();
+ await expect(dialog().getByLabel('Nome',{exact:true})).toHaveValue('Rascunho');
  await discard();checks.push('confirmação de descarte');
 
  await fresh();await edit();await dialog().getByLabel('Nome',{exact:true}).fill('Conflito');await page.evaluate(()=>window.recordingQA.conflict(true));await save();
@@ -66,7 +80,7 @@ try{
  await page.evaluate(()=>window.recordingQA.conflict(false));page.once('dialog',prompt=>prompt.accept());await dialog().getByRole('button',{name:'Reabrir versão atual'}).click();await expect(dialog().getByLabel('Nome',{exact:true})).toHaveValue('Portaria');
  checks.push('conflito mantém rascunho e permite reabrir');
 
- await fresh('recording-only');await edit();await expect(dialog().getByRole('tab',{name:'Gravação',exact:true})).toHaveAttribute('data-state','active');await expect(dialog().getByRole('tab',{name:'Streams',exact:true})).toHaveCount(0);
+ await fresh('recording-only');await edit();await expect(dialog().getByRole('tab',{name:'Gravação',exact:true})).toHaveAttribute('data-state','active');await expect(dialog().getByRole('tab',{name:'Streams',exact:true})).toHaveCount(0);await expect(dialog().getByRole('tab',{name:'Geral',exact:true})).toHaveCount(0);
  await tab('Informações');await expect(dialog().getByRole('textbox')).toHaveCount(0);await tab('Gravação');await dialog().getByRole('checkbox',{name:'Habilitar gravação'}).uncheck();await save();
  request=await mutation();expect(request.body.recordingOnly).toBe(true);expect(request.body.name).toBeUndefined();expect(request.body.source).toBeUndefined();checks.push('gestão de gravação sem permissão de cadastro');
 

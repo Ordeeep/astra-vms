@@ -2,6 +2,7 @@
 
 import {useEffect,useRef,useState,type CSSProperties,type ReactNode} from "react";
 import {LoaderCircle,Minus,Plus,RotateCcw,Search,X} from "lucide-react";
+import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip";
 
 type View={scale:number;x:number;y:number};
 const original:View={scale:1,x:0,y:0};
@@ -12,8 +13,11 @@ function bounded(view:View):View{
 }
 
 // Owns only the local framing: the player stays mounted throughout zoom/pan.
-export function LiveCameraViewport({name,position,onClose,children}:{name:string;position:number;onClose:()=>void;children:ReactNode}){
+export function LiveCameraViewport({name,debugCameraId,position,onClose,children}:{
+ name:string;debugCameraId?:string;position:number;onClose:()=>void;children:ReactNode;
+}){
  const [enabled,setEnabled]=useState(false),[view,setView]=useState<View>(original);
+ const displayId=debugCameraId&&/^[\da-f]{48}$/i.test(debugCameraId)?debugCameraId.slice(0,8):debugCameraId;
  const area=useRef<HTMLDivElement>(null);
  const drag=useRef<{id:number;x:number;y:number;view:View}|null>(null);
  const zoom=(delta:number,anchor={x:0,y:0})=>setView(previous=>{
@@ -44,12 +48,19 @@ export function LiveCameraViewport({name,position,onClose,children}:{name:string
  },[enabled]);
  return <>
   <div className="live-camera-title">
-   <span title={name}>{name}</span>
+   {debugCameraId ? (
+    <Tooltip>
+     <TooltipTrigger asChild>
+      <span className="live-camera-debug-name" tabIndex={0}>[{displayId}] {name}</span>
+     </TooltipTrigger>
+     <TooltipContent side="bottom" className="break-all">{`[${debugCameraId}] ${name}`}</TooltipContent>
+    </Tooltip>
+   ) : <span title={name}>{name}</span>}
    <span className="live-stream-change" role="status" aria-live="polite"><LoaderCircle className="animate-spin" aria-hidden="true"/><span>Alterando stream…</span></span>
    <button type="button" className="live-camera-close live-camera-zoom" aria-label={`Zoom digital de ${name}`} aria-pressed={enabled} title={enabled?"Desativar zoom digital":"Ativar zoom digital"} onClick={event=>{event.stopPropagation();if(enabled)disable();else{setView(original);setEnabled(true);}}}><Search aria-hidden="true"/></button>
    <button type="button" className="live-camera-close" aria-label={`Fechar câmera da posição ${position+1}`} title="Fechar câmera" onClick={event=>{event.stopPropagation();onClose();event.currentTarget.closest<HTMLElement>("[data-live-position]")?.focus();}}><X aria-hidden="true"/></button>
   </div>
-  <div ref={area} className="video-area live-digital-zoom" data-zoom-enabled={enabled} data-zoomed={enabled&&view.scale>1} style={{"--digital-zoom-scale":view.scale,"--digital-zoom-x":`${view.x}%`,"--digital-zoom-y":`${view.y}%`} as CSSProperties}
+  <div ref={area} className="video-area live-digital-zoom" data-zoom-enabled={enabled} data-zoomed={enabled&&view.scale>1} style={{"--digital-zoom-scale":view.scale,"--digital-zoom-x":`${view.x}cqw`,"--digital-zoom-y":`${view.y}cqh`} as CSSProperties}
    tabIndex={enabled?0:undefined} role={enabled?"group":undefined} aria-label={enabled?`Zoom digital de ${name}. Use mais e menos para ampliar, setas para mover e Escape para sair.`:undefined}
    onPointerDown={event=>{
     if(!enabled||(event.target as HTMLElement).closest("button"))return;

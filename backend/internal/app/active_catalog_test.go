@@ -48,6 +48,7 @@ func TestActiveCatalogGrowthIsMonotonicAndScoped(t *testing.T) {
 	site := b.call("POST", base+"/sites", map[string]string{"name": "Catalog test", "timezone": "UTC"}, 201)["id"].(string)
 	camera := b.call("POST", base+"/cameras", map[string]any{"name": "Growing camera", "siteId": site, "profiles": []map[string]string{{"id": "main", "name": "Principal", "url": "rtsp://127.0.0.1/catalog-fixture"}}}, 201)["id"].(string)
 	db := cameraDeletionDB(t, b)
+	key := cameraTestKey(t, db, tenant, camera)
 	events, closeEvents := openEvents(t, b, tenant, "")
 	defer closeEvents()
 	epoch := time.Date(2026, 11, 19, 12, 0, 0, 0, time.UTC)
@@ -56,7 +57,7 @@ func TestActiveCatalogGrowthIsMonotonicAndScoped(t *testing.T) {
 		for i := 0; i < seconds; i++ {
 			parts = append(parts, media.PartIndex{ArchivePart: media.ArchivePart{Start: epoch.Add(time.Duration(i) * time.Second), End: epoch.Add(time.Duration(i+1) * time.Second)}})
 		}
-		index := media.SegmentIndex{Tenant: tenant, Camera: camera, Site: site, Source: "source", Profile: "main", Start: epoch, End: epoch.Add(time.Duration(seconds) * time.Second), Parts: parts}
+		index := media.SegmentIndex{Tenant: tenant, Camera: key, Site: site, Source: "source", Profile: "main", Start: epoch, End: epoch.Add(time.Duration(seconds) * time.Second), Parts: parts}
 		raw, _ := json.Marshal(index)
 		catalog.Store([]storage.Entry{{ID: "growing-object", Tenant: tenant, Kind: storage.Recording, Size: int64(seconds * 100), Charged: 4096, Metadata: raw, Sequence: sequence, Deleted: deleted}})
 	}
@@ -114,12 +115,12 @@ func TestActiveCatalogGrowthIsMonotonicAndScoped(t *testing.T) {
 	lateStart := lateEnd.Add(-8 * time.Second)
 	raw, _ := json.Marshal(map[string]any{"parts": []map[string]time.Time{{"start": lateStart, "end": lateEnd}}})
 	_, err := db.Exec(context.Background(), `INSERT INTO archive_segments(id,tenant_id,camera_id,site_id,source_version,profile_id,start_at,end_at,bytes,charged,metadata)
- VALUES('slow-source',$1,$2,$3,'source','main',$4,$5,100,4096,$6)`, tenant, camera, site, lateStart, lateEnd, raw)
+ VALUES('slow-source',$1,$2,$3,'source','main',$4,$5,100,4096,$6)`, tenant, key, site, lateStart, lateEnd, raw)
 	if err != nil {
 		t.Fatal(err)
 	}
 	_, err = db.Exec(context.Background(), `INSERT INTO recording_status(tenant_id,camera_id,code,last_frame,last_write) VALUES($1,$2,'recording',now(),now())
- ON CONFLICT(tenant_id,camera_id) DO UPDATE SET code='recording',last_frame=now(),last_write=now()`, tenant, camera)
+ ON CONFLICT(tenant_id,camera_id) DO UPDATE SET code='recording',last_frame=now(),last_write=now()`, tenant, key)
 	if err != nil {
 		t.Fatal(err)
 	}

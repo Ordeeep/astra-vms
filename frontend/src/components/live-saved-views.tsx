@@ -10,18 +10,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api";
 import { onEnvironmentChange } from "@/lib/events";
-import { mosaicPositions, mosaicSize, type LiveMosaic, type LivePosition } from "@/lib/live-mosaic";
+import { mosaicPositions, savedMosaicLayout, type LiveMosaic, type LivePosition, type MosaicLayout } from "@/lib/live-mosaic";
 
 const normalize = (text: string) => text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").trim();
 
 export function LiveSavedViews() {
-  const { tenantId, layoutSize, positions, selected, setSelected, loadMosaic } = useLiveView();
+  const { tenantId, layout, positions, selected, setSelected, loadMosaic } = useLiveView();
   const [views, setViews] = useState<LiveMosaic[]>([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);
-  const [draft, setDraft] = useState<{ positions: LivePosition[]; size: number } | null>(null);
+  const [draft, setDraft] = useState<{ positions: LivePosition[]; layout: MosaicLayout } | null>(null);
   const [name, setName] = useState("");
   const [dialogError, setDialogError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -56,15 +56,15 @@ export function LiveSavedViews() {
     return () => { active = false; unsubscribe(); };
   }, [tenantId, retry]);
 
-  const current = mosaicPositions(positions, layoutSize);
-  const matchesSelected = selected && layoutSize === mosaicSize(selected.positions)
-    && JSON.stringify(current) === JSON.stringify(mosaicPositions(selected.positions, layoutSize));
+  const current = mosaicPositions(positions, layout.areas.length);
+  const matchesSelected = selected && layout.id === savedMosaicLayout(selected).id
+    && JSON.stringify(current) === JSON.stringify(mosaicPositions(selected.positions, layout.areas.length));
   const draftCameraCount = draft?.positions.filter(position => position.cameraId).length ?? 0;
   const filteredViews = views.filter(view => normalize(view.name).includes(normalize(query)))
     .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
 
   function openSave() {
-    setDraft({ positions: current, size: layoutSize });
+    setDraft({ positions: current, layout });
     setName("");setDialogError("");setNotice("");
   }
 
@@ -77,7 +77,7 @@ export function LiveSavedViews() {
     saving.current = true;setBusy(true);setDialogError("");
     try {
       const created = await api<LiveMosaic>(`/tenants/${tenantId}/mosaics`, "POST", {
-        name: trimmed, visibility: "personal", positions: draft.positions,
+        name: trimmed, visibility: "personal", layout: draft.layout.id, positions: draft.positions,
       }, true);
       if (!mounted.current) return;
       // Do not let an older list response replace the newly saved item.
@@ -116,7 +116,7 @@ export function LiveSavedViews() {
     {draft && <FormDialog title="Salvar visualização" onClose={() => setDraft(null)} onSubmit={save} busy={busy} returnFocus={trigger.current}>
       {dialogError && <p className="live-view-form-error" role="alert">{dialogError}</p>}
       <Label className="field-label">Nome da visualização<Input autoFocus required maxLength={200} value={name} onChange={event => setName(event.target.value)} placeholder="Ex.: Portaria e estacionamento"/></Label>
-      <p>Layout {draft.size}×{draft.size} · {draftCameraCount} {draftCameraCount === 1 ? "câmera" : "câmeras"}. Disponível para você neste ambiente.</p>
+      <p>Layout {draft.layout.label} · {draftCameraCount} {draftCameraCount === 1 ? "câmera" : "câmeras"}. Disponível para você neste ambiente.</p>
     </FormDialog>}
   </div>;
 }

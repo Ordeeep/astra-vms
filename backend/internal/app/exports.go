@@ -23,7 +23,10 @@ func exportAuthorizedWith(ctx context.Context, db permissionReader, actor, tenan
 		return false
 	}
 	grants, err := queryGrants(ctx, db, actor, tenant)
-	if err != nil || plan.Tenant != tenant || len(plan.Clips) == 0 {
+	return err == nil && exportPermitted(grants, tenant, plan)
+}
+func exportPermitted(grants []Grant, tenant string, plan media.ExportPlan) bool {
+	if plan.Tenant != tenant || len(plan.Clips) == 0 {
 		return false
 	}
 	for _, clip := range plan.Clips {
@@ -113,7 +116,11 @@ func (a *App) exportPreview(w http.ResponseWriter, r *http.Request, id identity)
 		problem(w, 422, "invalid_export_window")
 		return
 	}
-	segments, err := a.segments(r.Context(), tenant, in.Camera, in.Start, in.End)
+	key, ok := a.requestCameraKey(w, r, tenant, in.Camera)
+	if !ok {
+		return
+	}
+	segments, err := a.segments(r.Context(), tenant, key, in.Start, in.End)
 	if err != nil {
 		dbFailure(w)
 		return
@@ -122,7 +129,7 @@ func (a *App) exportPreview(w http.ResponseWriter, r *http.Request, id identity)
 		problem(w, 422, "export_has_no_images")
 		return
 	}
-	plan, err := buildExportPlan(tenant, in.Camera, in.Start, in.End, segments)
+	plan, err := buildExportPlan(tenant, key, in.Start, in.End, segments)
 	if err != nil {
 		problem(w, 422, "archive_requires_review")
 		return
@@ -253,7 +260,13 @@ func (a *App) createExport(w http.ResponseWriter, r *http.Request, id identity) 
 	job.Plan.ID = job.ID
 	job.Plan.CreatedAt = job.Created
 	raw, _ = json.Marshal(job.Plan)
-	if _, err = tx.Exec(r.Context(), "INSERT INTO export_jobs(id,tenant_id,actor_id,preview_id,idempotency_key,plan,status,expires) VALUES($1,$2,$3,$4,$5,$6,'queued',$7)", job.ID, tenant, id.User.ID, in.Preview, in.Key, raw, job.Expires); err != nil {
+	author := id.User.Name
+	if author == "" {
+		author = id.User.Username
+	}
+	if _, err = tx.Exec(r.Context(), `INSERT INTO export_jobs(id,tenant_id,actor_id,preview_id,idempotency_key,plan,status,expires,created_at,camera_name,author_name)
+VALUES($1,$2,$3,$4,$5,$6,'queued',$7,$8,COALESCE((SELECT name FROM cameras WHERE tenant_id=$2 AND id=$9),$9),$10)`,
+		job.ID, tenant, id.User.ID, in.Preview, in.Key, raw, job.Expires, job.Created, plan.Camera, author); err != nil {
 		dbFailure(w)
 		return
 	}
@@ -305,7 +318,7 @@ func (a *App) exports(w http.ResponseWriter, r *http.Request, id identity) {
 	if !ok {
 		return
 	}
-	rows, err := a.db.Query(r.Context(), exportSelect+" WHERE tenant_id=$1 AND id>$2 ORDER BY id LIMIT 201", tenant, r.URL.Query().Get("cursor"))
+	rows, err := a.db.Query(r.Context(), exportSelect+" WHERE tenant_id=$1 AND actor_id=$2 AND id>$3 ORDER BY id LIMIT 201", tenant, id.User.ID, r.URL.Query().Get("cursor"))
 	if err != nil {
 		dbFailure(w)
 		return
@@ -347,33 +360,13 @@ func (a *App) exportResource(w http.ResponseWriter, r *http.Request, id identity
 	if !ok {
 		return
 	}
-	job, err := scanExport(a.db.QueryRow(r.Context(), exportSelect+" WHERE id=$1 AND tenant_id=$2", r.PathValue("export"), tenant))
+	job, err := scanExport(a.db.QueryRow(r.Context(), exportSelect+" WHERE id=$1 AND tenant_id=$2 AND actor_id=$3", r.PathValue("export"), tenant, id.User.ID))
 	if err != nil {
 		problem(w, 404, "export_not_found")
 		return
 	}
 	if !a.exportAuthorized(r.Context(), id.User.ID, tenant, job.Plan) {
 		problem(w, 403, "forbidden")
-		return
-	}
-	if r.Method == "POST" {
-		if job.Actor != id.User.ID && !a.allowed(r.Context(), id, tenant, "recording.manage", "", "") {
-			problem(w, 403, "forbidden")
-			return
-		}
-		changed, e := a.db.Exec(r.Context(), "UPDATE export_jobs SET status='cancelled',code='cancelled_by_operator' WHERE id=$1 AND status IN ('queued','running')", job.ID)
-		err = e
-		if err != nil {
-			dbFailure(w)
-			return
-		}
-		if changed.RowsAffected() == 0 {
-			problem(w, 409, "export_finished")
-			return
-		}
-		a.worker(r.Context(), "DELETE", "/archive/exports/"+job.ID+"?tenant="+url.QueryEscape(tenant), nil, nil)
-		a.db.Exec(r.Context(), "INSERT INTO audit_events(actor_id,tenant_id,action,resource_id) VALUES($1,$2,'export.cancelled',$3)", id.User.ID, tenant, job.ID)
-		w.WriteHeader(204)
 		return
 	}
 	artifact := r.PathValue("artifact")
@@ -519,7 +512,9 @@ func (a *App) cleanExports() {
 			}
 		}
 		if ok {
-			a.db.Exec(ctx, "UPDATE export_jobs SET artifacts_cleaned=true,status=CASE WHEN expires<now() THEN 'expired' ELSE status END WHERE id=$1", job.ID)
+			a.db.Exec(ctx, `UPDATE export_jobs SET artifacts_cleaned=true,
+status=CASE WHEN status IN ('queued','running') THEN 'failed' WHEN status='completed' THEN 'expired' ELSE status END,
+code=CASE WHEN status IN ('queued','running') THEN 'requestor_access_revoked_or_expired' ELSE code END WHERE id=$1`, job.ID)
 		}
 	}
 }
@@ -529,5 +524,7 @@ func (a *App) registerExports(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/tenants/{tenant}/exports", a.protected(a.exports))
 	mux.HandleFunc("GET /api/v1/tenants/{tenant}/exports/{export}", a.protected(a.exportResource))
 	mux.HandleFunc("GET /api/v1/tenants/{tenant}/exports/{export}/{artifact}", a.protected(a.exportResource))
-	mux.HandleFunc("POST /api/v1/tenants/{tenant}/exports/{export}/cancel", a.protected(a.exportResource))
+	mux.HandleFunc("POST /api/v1/tenants/{tenant}/exports/{export}/cancel", a.protected(a.cancelExports))
+	mux.HandleFunc("POST /api/v1/tenants/{tenant}/exports/cancel", a.protected(a.cancelExports))
+	mux.HandleFunc("GET /api/v1/tenants/{tenant}/export-tasks", a.protected(a.exportTasks))
 }

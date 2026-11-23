@@ -85,14 +85,14 @@ export function PermissionGroupEditor({tenantId, sites, grants, onChange, onSumm
     </div>}
     {loading && !installation ? <p role="status">Carregando sites…</p> : error && !installation ? <div role="alert" className="permission-catalog-error"><p>{error}</p><Button type="button" variant="outline" onClick={onRetry}>Tentar novamente</Button></div> : <>
       <Label className="permission-mobile-target" htmlFor={`${id}-target`}>Site
-        <NativeSelect id={`${id}-target`} value={JSON.stringify(selected)} onChange={event => setSelected(JSON.parse(event.target.value) as SiteTarget)}>
+        <NativeSelect id={`${id}-target`} data-form-view-control value={JSON.stringify(selected)} onChange={event => setSelected(JSON.parse(event.target.value) as SiteTarget)}>
           <NativeSelectOption value={JSON.stringify(tenantTarget)}>Todo o tenant</NativeSelectOption>
           {allSites.map(site => <NativeSelectOption key={site.id} value={JSON.stringify({scope: "site", resourceId: site.id})}>{site.name}</NativeSelectOption>)}
         </NativeSelect>
       </Label>
       <div className="permission-workspace">
         <nav className="permission-resources" aria-label="Sites do grupo">
-          <div className="permission-search"><Search aria-hidden="true"/><Input type="search" aria-label="Buscar site" placeholder="Buscar site…" value={query} onChange={event => setQuery(event.target.value)}/></div>
+          <div className="permission-search"><Search aria-hidden="true"/><Input type="search" data-form-view-control aria-label="Buscar site" placeholder="Buscar site…" value={query} onChange={event => setQuery(event.target.value)}/></div>
           <div className="permission-resource-list">
             {resourceButton(tenantTarget, "Todo o tenant")}
             {filteredSites.map(site => <div key={site.id}>{resourceButton({scope: "site", resourceId: site.id}, site.name)}</div>)}

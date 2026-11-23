@@ -8,12 +8,13 @@ import {
   Sidebar, SidebarContent, SidebarFooter, SidebarHeader, useSidebar,
 } from "@/components/ui/sidebar";
 import type { Identity, Tenant } from "@/lib/api";
+import type { WorkspacePage } from "@/lib/workspace-routes";
 
 type AppSidebarProps = ComponentProps<typeof Sidebar> & {
   identity: Identity;
   tenant: Tenant | null;
-  activePage: string;
-  onNavigate: (page: string) => void;
+  activePage: WorkspacePage;
+  onNavigate: (page: WorkspacePage) => void;
   onTenantSelect: (tenant: Tenant) => void;
   onLogout: () => void;
 };
@@ -23,7 +24,7 @@ export function AppSidebar({
   identity, tenant, activePage, onNavigate, onTenantSelect, onLogout, ...props
 }: AppSidebarProps) {
   const { setOpenMobile } = useSidebar();
-  function navigate(page: string) {
+  function navigate(page: WorkspacePage) {
     onNavigate(page);
     setOpenMobile(false);
   }

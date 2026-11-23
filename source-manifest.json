@@ -1260,11 +1260,6 @@
       "sha256": "bc8f520e8232546be6d0573b4367a03b419f86f820ea4a64365399ed08dbcb50"
     },
     {
-      "path": "frontend/src/components/playback.tsx",
-      "bytes": 12110,
-      "sha256": "9e54c0c3ffe21261ae3cdf5c4918083c56a56b93697427ca87fb05f49789ac89"
-    },
-    {
       "path": "frontend/src/components/quota-reduction.tsx",
       "bytes": 5184,
       "sha256": "d264f78d5b41944f88ca20ecb7b37c39135e0de6d6f6bfb5efda0f09d63f9343"

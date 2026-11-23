@@ -76,6 +76,15 @@ test('site-only editing never promotes or deletes legacy camera grants', () => {
   assert.deepEqual(disabled, legacy);
 });
 
+test('camera grants keep the same number in different tenants separate', () => {
+  const alpha = {scope: 'camera', resourceId: '1', tenantId: 'alpha'};
+  const beta = {scope: 'camera', resourceId: '1', tenantId: 'beta'};
+  const grants = setTargetAction([], alpha, 'live', true);
+  assert.equal(targetActionState(grants, beta, 'live', beta.tenantId).checked, false);
+  const both = setTargetAction(grants, beta, 'live', true);
+  assert.deepEqual(setTargetAction(both, beta, 'live', false), grants);
+});
+
 test('installation administration covers every action and future resources without copying grants', () => {
   const original = [{...site, action: 'playback'}, {...camera, action: 'export'}];
   const enabled = setInstallationAdministration(original, true);

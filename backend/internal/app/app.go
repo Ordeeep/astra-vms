@@ -640,6 +640,13 @@ func (a *App) tenantContext(w http.ResponseWriter, r *http.Request, id identity)
 		problem(w, 404, "context_not_found")
 		return "", false
 	}
+	if ref := r.PathValue("camera"); ref != "" {
+		key, ok := a.requestCameraKey(w, r, tenant, ref)
+		if !ok {
+			return "", false
+		}
+		r.SetPathValue("camera", key)
+	}
 	return tenant, true
 }
 func contextValid(ctx context.Context, db permissionReader, r *http.Request, id identity) bool {

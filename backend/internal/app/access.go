@@ -19,6 +19,7 @@ type Grant struct {
 	Action     string `json:"action"`
 	Scope      string `json:"scope"`
 	ResourceID string `json:"resourceId"`
+	TenantID   string `json:"tenantId,omitempty"`
 }
 type Group struct {
 	ID       string  `json:"id"`
@@ -530,7 +531,7 @@ func (a *App) groups(w http.ResponseWriter, r *http.Request, id identity) {
 		return
 	}
 	if r.Method == "GET" {
-		rows, err := a.db.Query(r.Context(), "SELECT id,name,grants,revision FROM permission_groups WHERE tenant_id=$1 AND id>$2 ORDER BY id LIMIT 201", tenant, r.URL.Query().Get("cursor"))
+		rows, err := a.db.Query(r.Context(), "SELECT id,name,public_camera_grants(tenant_id,grants),revision FROM permission_groups WHERE tenant_id=$1 AND id>$2 ORDER BY id LIMIT 201", tenant, r.URL.Query().Get("cursor"))
 		if err != nil {
 			problem(w, 503, "database_unavailable")
 			return
@@ -592,14 +593,23 @@ func (a *App) groups(w http.ResponseWriter, r *http.Request, id identity) {
 			return
 		}
 	}
-	if err = a.validateDelegation(r.Context(), tx, current, tenant, input.Grants); err != nil {
+	stored := append([]Grant{}, input.Grants...)
+	for i, grant := range input.Grants {
+		if grant.Scope != "camera" {
+			continue
+		}
+		_, key, public, err := resolveCameraGrant(r.Context(), tx, tenant, grant)
+		if err != nil {
+			problem(w, 403, "grant_not_allowed")
+			return
+		}
+		stored[i], input.Grants[i] = key, public
+	}
+	if err = a.validateDelegation(r.Context(), tx, current, tenant, stored); err != nil {
 		problem(w, 403, "grant_not_allowed")
 		return
 	}
-	raw, _ := json.Marshal(input.Grants)
-	if input.Grants == nil {
-		raw = []byte("[]")
-	}
+	raw, _ := json.Marshal(stored)
 	gid := r.PathValue("group")
 	status := 200
 	revision := input.Revision + 1

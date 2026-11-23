@@ -20,6 +20,7 @@ func TestRecordingAvailabilityUsesPlayablePartsAndHistoricalAuthorization(t *tes
 	currentSite := b.call("POST", base+"/sites", map[string]string{"name": "Atual", "timezone": "America/New_York"}, 201)["id"].(string)
 	camera := b.call("POST", base+"/cameras", map[string]any{"name": "Histórico", "siteId": currentSite, "profiles": []map[string]string{{"id": "main", "name": "Principal", "url": "rtsp://127.0.0.1/fixture"}}}, 201)["id"].(string)
 	db := cameraDeletionDB(t, b)
+	key := cameraTestKey(t, db, tenant, camera)
 	insert := func(id, site string, ranges ...[2]string) {
 		t.Helper()
 		parts := []map[string]string{}
@@ -27,7 +28,7 @@ func TestRecordingAvailabilityUsesPlayablePartsAndHistoricalAuthorization(t *tes
 			parts = append(parts, map[string]string{"start": part[0], "end": part[1]})
 		}
 		raw, _ := json.Marshal(map[string]any{"parts": parts})
-		_, err := db.Exec(context.Background(), `INSERT INTO archive_segments(id,tenant_id,camera_id,site_id,source_version,profile_id,start_at,end_at,bytes,charged,metadata) SELECT $1,tenant_id,id,$4,source_version,'main',$5,$6,10,4096,$7 FROM cameras WHERE tenant_id=$2 AND id=$3`, id, tenant, camera, site, ranges[0][0], ranges[len(ranges)-1][1], raw)
+		_, err := db.Exec(context.Background(), `INSERT INTO archive_segments(id,tenant_id,camera_id,site_id,source_version,profile_id,start_at,end_at,bytes,charged,metadata) SELECT $1,tenant_id,id,$4,source_version,'main',$5,$6,10,4096,$7 FROM cameras WHERE tenant_id=$2 AND id=$3`, id, tenant, key, site, ranges[0][0], ranges[len(ranges)-1][1], raw)
 		if err != nil {
 			t.Fatal(err)
 		}

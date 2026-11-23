@@ -7,6 +7,7 @@ export class ApiError extends Error {
   }
 }
 const messages: Record<string,string> = {
+  invalid_camera_display_mode: "Escolha um modo de visualização válido.",
   recording_profile_unavailable: "O perfil gravado não está disponível. Escolha outro perfil ou desabilite a gravação.",
   recording_profile_change_required: "Esta alteração remove o perfil de uma gravação habilitada. Um operador com permissão para editar a câmera e a gravação deve selecionar outro perfil ou desabilitar a gravação.",
   invalid_recording_config: "Confira o perfil, os horários da agenda e a retenção de gravação.",

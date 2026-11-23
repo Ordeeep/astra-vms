@@ -11,7 +11,7 @@ Astra é um sistema de gestão de vídeo (VMS) com interface em português no na
 - Cadastro de fontes RTSP e teste de conexão sem salvar a câmera.
 - Visualização ao vivo por WebRTC, mosaicos, seleção de perfis e maximização de câmera.
 - Agenda de gravação, retenção e cotas de armazenamento.
-- Linha do tempo, reprodução e exportação MP4 acompanhada de relatório JSON; períodos sem gravação aparecem como lacunas.
+- Em **Ao vivo**, abra **Gravação** no menu do quadro para consultar a linha do tempo e reproduzir trechos. Para baixar um vídeo, selecione o quadro, informe o intervalo no painel **Exportação** e acompanhe o preparo na **Janela de tarefas**.
 - Auditoria, diagnóstico e atualizações de estado por eventos SSE.
 
 Administrar a instalação não concede acesso automático ao vídeo de todos os tenants. A API verifica as permissões de cada recurso.
@@ -102,4 +102,4 @@ O vocabulário está em [GLOSSARY.md](GLOSSARY.md). As regras de autorização d
 
 Licença MIT para o código próprio: consulte [LICENSE](LICENSE).
 
-As dependências conservam suas próprias licenças. O login usa o Topography do React Bits sob [MIT + Commons Clause](frontend/public/licenses/react-bits.txt). A exportação pública usa a cena CSS original OrbitalDawn. Consulte [THIRD-PARTY.md](backend/deploy/windows/THIRD-PARTY.md) antes de distribuir binários.
+As dependências conservam suas próprias licenças. Consulte [THIRD-PARTY.md](backend/deploy/windows/THIRD-PARTY.md) antes de distribuir binários.

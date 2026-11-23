@@ -104,7 +104,7 @@ func (a *App) installationGroups(w http.ResponseWriter, r *http.Request, id iden
 		return
 	}
 	if r.Method == "GET" {
-		rows, err := a.db.Query(r.Context(), "SELECT id,name,grants,revision FROM installation_groups WHERE id>$1 ORDER BY id LIMIT 201", r.URL.Query().Get("cursor"))
+		rows, err := a.db.Query(r.Context(), "SELECT id,name,public_camera_grants(NULL,grants),revision FROM installation_groups WHERE id>$1 ORDER BY id LIMIT 201", r.URL.Query().Get("cursor"))
 		if err != nil {
 			dbFailure(w)
 			return
@@ -160,7 +160,8 @@ func (a *App) installationGroups(w http.ResponseWriter, r *http.Request, id iden
 	}
 	// Existing installation groups use the same editor and retain any granular
 	// environment grants when their administration option is turned off.
-	for _, grant := range input.Grants {
+	stored := append([]Grant{}, input.Grants...)
+	for i, grant := range input.Grants {
 		if installationAdministration(grant) {
 			continue
 		}
@@ -171,7 +172,8 @@ func (a *App) installationGroups(w http.ResponseWriter, r *http.Request, id iden
 		case "site":
 			err = tx.QueryRow(r.Context(), "SELECT tenant_id FROM sites WHERE id=$1", grant.ResourceID).Scan(&tenant)
 		case "camera":
-			err = tx.QueryRow(r.Context(), "SELECT tenant_id FROM cameras WHERE id=$1", grant.ResourceID).Scan(&tenant)
+			tenant, grant, input.Grants[i], err = resolveCameraGrant(r.Context(), tx, "", grant)
+			stored[i] = grant
 		default:
 			problem(w, 422, "invalid_installation_group")
 			return
@@ -182,7 +184,7 @@ func (a *App) installationGroups(w http.ResponseWriter, r *http.Request, id iden
 		}
 	}
 	g := Group{ID: r.PathValue("group"), Name: input.Name, Grants: input.Grants, Revision: input.Revision + 1}
-	raw, _ := json.Marshal(input.Grants)
+	raw, _ := json.Marshal(stored)
 	if r.Method == "POST" {
 		g.ID = newID()
 		g.Revision = 1

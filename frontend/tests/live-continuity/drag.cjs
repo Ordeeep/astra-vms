@@ -42,7 +42,7 @@ async page => {
  assert(await page.locator('.live-grid').getAttribute('data-maximized')==='false','Duplo clique deixou de restaurar');
  assert(await preserved(),'Maximizar após troca recriou transmissões');
  await page.waitForFunction(frames=>window.savedVideos.every((v,i)=>v.getVideoPlaybackQuality().totalVideoFrames>frames[i]),frames);
- await page.getByRole('button',{name:'Arrastar Câmera 1',exact:true}).click();await cell(0).press('Enter');await ready(4);
+ await page.getByRole('button',{name:'Arrastar Câmera 1',exact:true}).press('Enter');await cell(0).press('Enter');await ready(4);
  await save();await drag(0,1);
  assert(await title(0)==='Câmera 1'&&await title(1)==='Câmera 1'&&await preserved(),'Câmeras duplicadas perderam identidade');
  await page.getByRole('button',{name:'Fechar câmera da posição 1',exact:true}).click();await ready(3);

@@ -6,6 +6,10 @@ import (
 	"vms.local/backend/internal/camera"
 )
 
+func validCameraDisplayMode(mode *string) bool {
+	return mode == nil || *mode == "cover" || *mode == "4:3" || *mode == "contain"
+}
+
 // Save the shared camera form atomically while retaining the distinct source
 // maintenance, equipment replacement and location histories.
 func (a *App) cameraConfiguration(w http.ResponseWriter, r *http.Request, id identity) {
@@ -17,6 +21,7 @@ func (a *App) cameraConfiguration(w http.ResponseWriter, r *http.Request, id ide
 		Name          string           `json:"name"`
 		SiteID        string           `json:"siteId"`
 		Active        bool             `json:"active"`
+		DisplayMode   *string          `json:"displayMode"`
 		Revision      int64            `json:"revision"`
 		Source        *camera.Source   `json:"source"`
 		Recording     *RecordingUpdate `json:"recording"`
@@ -29,10 +34,14 @@ func (a *App) cameraConfiguration(w http.ResponseWriter, r *http.Request, id ide
 		problem(w, 422, "invalid_camera")
 		return
 	}
+	if !validCameraDisplayMode(in.DisplayMode) {
+		problem(w, 422, "invalid_camera_display_mode")
+		return
+	}
 	cid := r.PathValue("camera")
 	var existing Camera
 	if in.RecordingOnly {
-		if in.Recording == nil || in.Source != nil || in.Name != "" || in.SiteID != "" || in.Active {
+		if in.Recording == nil || in.Source != nil || in.Name != "" || in.SiteID != "" || in.Active || in.DisplayMode != nil {
 			problem(w, 422, "invalid_camera")
 			return
 		}
@@ -137,7 +146,7 @@ func (a *App) cameraConfiguration(w http.ResponseWriter, r *http.Request, id ide
 			return
 		}
 	}
-	_, err = tx.Exec(r.Context(), "UPDATE cameras SET name=$1,active=$2,site_id=$3,source_version=$4,revision=revision+1 WHERE tenant_id=$5 AND id=$6", in.Name, in.Active, in.SiteID, source, tenant, cid)
+	_, err = tx.Exec(r.Context(), "UPDATE cameras SET name=$1,active=$2,site_id=$3,source_version=$4,display_mode=COALESCE($7,display_mode),revision=revision+1 WHERE tenant_id=$5 AND id=$6", in.Name, in.Active, in.SiteID, source, tenant, cid, in.DisplayMode)
 	if err != nil {
 		dbFailure(w)
 		return

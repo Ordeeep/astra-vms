@@ -7,3 +7,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+## Componentes de interface
+
+Ao criar ou alterar a interface, use sempre o componente shadcn/ui de `src/components/ui` quando houver um equivalente para o elemento. Use `Button` para botões, `Input` para campos e `Table` para tabelas. Use HTML semântico para a estrutura da página, como `main`, `section` e títulos.

@@ -37,7 +37,7 @@ export function StorageWorkspace({tenant,identity}:{tenant:Tenant|null;identity:
  const dialogError=error&&<Alert role="alert" variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>;
  const impactNotice=impact!==null&&<Alert role="note"><AlertDescription><p>A nova retenção torna {(impact/1024**2).toFixed(1)} MiB do acervo elegíveis para descarte.</p><Label className="check"><Checkbox name="confirmImpact" required/>Confirmo a aplicação ao histórico existente.</Label></AlertDescription></Alert>;
  return <>
- <div className="page-heading"><div><span className="eyebrow">SISTEMA</span><h1>Armazenamento</h1><p>Política do ambiente e destino das gravações no servidor.</p></div></div>
+ <div className="page-heading"><div><h1>Armazenamento</h1><p>Política do ambiente e destino das gravações no servidor.</p></div></div>
  {!policyOpen&&!storageOpen&&dialogError}{notice&&<Alert role="status"><AlertDescription>{notice}</AlertDescription></Alert>}
  <section className="storage-section" aria-labelledby="tenant-storage-title">
   <div className="section-title"><h2 id="tenant-storage-title">Política do ambiente atual{tenant?` · ${tenant.name}`:""}</h2>{policy&&caps["recording.manage"]&&<Button variant="outline" onClick={()=>{editorTrigger.current=document.activeElement as HTMLElement;setImpact(null);setError("");setPolicyOpen(true);}}>Cota e retenção</Button>}</div>

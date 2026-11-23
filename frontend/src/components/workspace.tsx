@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
-import LoginBackground from "@/components/login-background";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Separator } from "@/components/ui/separator";
@@ -15,20 +15,21 @@ import { Account } from "@/components/account";
 import { AstraBrand } from "@/components/astra-brand";
 import { navigation } from "@/components/nav-main";
 import { ArrowRight, Grid2X2 } from "lucide-react";
+import { usePathname } from "next/navigation";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { api, ApiError, setContext, setCSRF, type Identity, type Tenant } from "@/lib/api";
 import {Administration} from "@/components/management";
 import {SitesWorkspace} from "@/components/sites";
 import {CamerasWorkspace} from "@/components/cameras";
-import {LiveHeaderControls} from "@/components/live-header-controls";
+import {LiveHeaderActions, LiveHeaderControls} from "@/components/live-header-controls";
 import {LiveWorkspace} from "@/components/live";
 import {LiveViewProvider} from "@/components/live-view-context";
 import {StorageWorkspace} from "@/components/storage";
-import {PlaybackWorkspace} from "@/components/playback";
-import {ExportsWorkspace} from "@/components/exports";
+import {RecordingExportProvider} from "@/components/exports";
 import {OperationsWorkspace} from "@/components/operations";
 import {type Notification} from "@/lib/events";
+import { workspacePageAt, workspacePaths, type WorkspacePage } from "@/lib/workspace-routes";
 
 export default function Workspace() {
   const [identity, setIdentity] = useState<Identity | null>(null);
@@ -36,11 +37,34 @@ export default function Workspace() {
   const [contextID, setContextID] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [page, setPage] = useState("overview");
+  const pathname = usePathname();
+  const page = workspacePageAt(pathname);
+  const currentPath = useRef(pathname);
   const generation = useRef(0);
   const contextRef = useRef("");
   const navigationGuard=useRef<(()=>boolean)|null>(null);
-  function navigate(page:string){if(!navigationGuard.current||navigationGuard.current())setPage(page); }
+  function navigate(nextPage: WorkspacePage) {
+    const nextPath = workspacePaths[nextPage];
+    if (nextPath === window.location.pathname) return;
+    if (nextPage !== page && navigationGuard.current && !navigationGuard.current()) return;
+    window.history.pushState(null, "", nextPath);
+  }
+
+  useEffect(() => {
+    currentPath.current = pathname;
+  }, [pathname]);
+
+  useEffect(() => {
+    function guardHistoryNavigation(event: PopStateEvent) {
+      const previousPath = currentPath.current;
+      if (!navigationGuard.current || workspacePageAt(window.location.pathname) === workspacePageAt(previousPath) || navigationGuard.current()) return;
+      // A popstate arrives after the address changes. Restore the editor's URL before Next handles it.
+      event.stopImmediatePropagation();
+      window.history.pushState(null, "", previousPath);
+    }
+    window.addEventListener("popstate", guardHistoryNavigation, true);
+    return () => window.removeEventListener("popstate", guardHistoryNavigation, true);
+  }, []);
 
   async function selectTenant(next: Tenant) {
     if(navigationGuard.current&&!navigationGuard.current())return;
@@ -107,37 +131,44 @@ export default function Workspace() {
     try {
       await api("/auth/logout", "POST");
       generation.current++; setContext(""); contextRef.current = ""; setContextID(""); setCSRF("");
-      setIdentity(null); setTenant(null); setError(""); setPage("overview");
+      setIdentity(null); setTenant(null); setError("");
+      window.history.replaceState(null, "", "/");
     } catch(e) { setError((e as Error).message); }
   }
   if (loading) return <main className="loading"><AstraBrand/><Spinner className="size-6" aria-label="Conectando à instalação"/><p>Conectando à sua instalação…</p></main>;
   if (!identity) return <Login error={error} onSuccess={refreshIdentity}/>;
-  return <SidebarProvider className="workspace" open={true}>
+  const showLiveControls = page === "live" && !!tenant;
+  return <SidebarProvider className="workspace">
     <LiveViewProvider key={contextID||"no-context"} tenantId={tenant?.id} enabled={page==="live"&&!!contextID}>
-    <AppSidebar identity={identity} tenant={tenant} activePage={page}
+    <RecordingExportProvider tenantId={tenant?.id}>
+    <AppSidebar collapsible="icon" identity={identity} tenant={tenant} activePage={page}
       onNavigate={navigate} onTenantSelect={next=>void selectTenant(next)} onLogout={()=>void logout()} />
     <SidebarInset className="min-w-0">
-      <header className="flex h-10 shrink-0 items-center gap-2 border-b">
-        <div className="flex min-w-0 items-center gap-2 px-4">
-          <SidebarTrigger className="-ml-1 md:hidden" aria-label="Alternar menu lateral" />
-          <Separator orientation="vertical" className="mr-2 md:hidden data-vertical:h-4 data-vertical:self-auto" />
+      <header className="workspace-header" data-live={showLiveControls || undefined}>
+        <div className="workspace-path">
+          <SidebarTrigger />
+          <Separator orientation="vertical" className="data-vertical:h-4 data-vertical:self-auto" />
           <Breadcrumb><BreadcrumbList>
             <BreadcrumbItem className="hidden md:block">Astra</BreadcrumbItem>
             <BreadcrumbSeparator className="hidden md:block" />
             <BreadcrumbItem><BreadcrumbPage>{navigation.find(item=>item.id===page)?.label}</BreadcrumbPage></BreadcrumbItem>
           </BreadcrumbList></Breadcrumb>
         </div>
-        {page==="live"&&tenant&&<LiveHeaderControls/>}
+        {showLiveControls&&<LiveHeaderControls/>}
+        <div className="workspace-actions">
+          {showLiveControls ? <LiveHeaderActions/> : <ThemeToggle/>}
+        </div>
       </header>
       <div className={`content${page==="live"&&tenant?" live-content":""}`} key={contextID||"no-context"}>
         {error && <Alert role="alert" className="alert" variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
         {!contextID&&<Button onClick={()=>void refreshIdentity().catch(e=>{if(e instanceof ApiError&&e.status===401)setIdentity(null);else setError((e as Error).message);})} variant="outline">Atualizar meus acessos</Button>}
-        {page==="operations"&&tenant?<OperationsWorkspace tenant={tenant} identity={identity}/>:page==="account" ? <Account user={identity.user} onUpdate={user=>setIdentity(current=>current ? {...current,user} : current)}/> :page==="exports"&&tenant?<ExportsWorkspace tenant={tenant}/>:page==="storage"?<StorageWorkspace tenant={tenant} identity={identity}/>:page==="playback"&&tenant?<PlaybackWorkspace tenant={tenant}/>:page==="live"&&tenant?<LiveWorkspace tenant={tenant} globalAdmin={identity.user.globalAdmin}/>: page==="sites"&&tenant?<SitesWorkspace tenant={tenant}/>:page==="cameras"&&tenant?<CamerasWorkspace tenant={tenant} registerCloseGuard={guard=>{navigationGuard.current=guard;}} onStorage={()=>{navigationGuard.current=null;setPage("storage");}}/>:(page==="operators"||page==="groups"||page==="tenants")?<Administration key={page} section={page} identity={identity} tenant={tenant} onRefresh={refreshIdentity}/>:<>
-          <div className="page-heading"><div><span className="eyebrow">CENTRAL DE OPERAÇÃO</span><h1>Visão geral</h1><p>Seu ambiente de monitoramento, em um só lugar.</p></div><Badge className="badge" variant="outline"><span className="status-dot"/>Conectado</Badge></div>
-          <Card className="panel welcome gap-0 p-6"><div className="welcome-icon"><Grid2X2 className="size-8" aria-hidden="true"/></div><h2>{tenant ? `Bem-vindo a ${tenant.name}` : "Acesso à instalação"}</h2><p>{tenant ? "Este ambiente mantém seus sites, câmeras e gravações separados dos demais." : "Sua conta ainda não possui um ambiente ativo disponível."}</p></Card>
+        {page==="operations"&&tenant?<OperationsWorkspace tenant={tenant} identity={identity}/>:page==="account" ? <Account user={identity.user} onUpdate={user=>setIdentity(current=>current ? {...current,user} : current)}/> :page==="storage"?<StorageWorkspace tenant={tenant} identity={identity}/>:page==="live"&&tenant?<LiveWorkspace tenant={tenant} globalAdmin={identity.user.globalAdmin}/>: page==="sites"&&tenant?<SitesWorkspace tenant={tenant}/>:page==="cameras"&&tenant?<CamerasWorkspace tenant={tenant} registerCloseGuard={guard=>{navigationGuard.current=guard;}} onStorage={()=>{navigationGuard.current=null;navigate("storage");}}/>:(page==="operators"||page==="groups"||page==="tenants")?<Administration key={page} section={page} identity={identity} tenant={tenant} onRefresh={refreshIdentity}/>:<>
+          <div className="page-heading"><div><h1>Visão geral</h1><p>Seu ambiente de monitoramento, em um só lugar.</p></div><Badge variant="outline"><span className="status-dot" aria-hidden="true"/>Conectado</Badge></div>
+          <Card asChild className="panel welcome gap-0 p-6"><section><div className="welcome-icon"><Grid2X2 className="size-5" aria-hidden="true"/></div><h2>{tenant ? `Bem-vindo a ${tenant.name}` : "Acesso à instalação"}</h2><p>{tenant ? "Este ambiente mantém seus sites, câmeras e gravações separados dos demais." : "Sua conta ainda não possui um ambiente ativo disponível."}</p></section></Card>
         </>}
       </div>
     </SidebarInset>
+    </RecordingExportProvider>
     </LiveViewProvider>
   </SidebarProvider>;
 }
@@ -152,15 +183,14 @@ function Login({error:initialError,onSuccess}:{error:string;onSuccess:()=>Promis
     } catch(e) {setError((e as Error).message);} finally {setBusy(false);}
   }
   return <main className="login-page">
-    <div className="login-background" aria-hidden="true">
-      <LoginBackground/>
-    </div>
-    <div className="login-story"><AstraBrand/><div><span className="eyebrow">MONITORAMENTO E GRAVAÇÕES</span><h1>Monitore ao vivo.<br/><em>Consulte gravações.</em></h1><p>Acompanhe as câmeras dos seus locais e encontre gravações por câmera, data e horário.</p></div><small>Astra · Gestão de vídeo na sua infraestrutura</small></div>
-    <section className="login-panel"><form onSubmit={submit}><span className="eyebrow">ACESSO À CENTRAL</span><h2>Bem-vindo de volta</h2><p>Entre com sua conta da instalação.</p>
+    <header className="login-header"><AstraBrand/><ThemeToggle /></header>
+    <Card asChild className="login-panel">
+      <section aria-labelledby="login-title"><form onSubmit={submit} aria-busy={busy}>
+      <h1 id="login-title">Entrar no Astra</h1><p>Use sua conta da instalação para acessar a central de vídeo.</p>
       {error&&<Alert className="alert" role="alert" variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
       <Label className="field-label">Usuário ou e-mail<Input className="h-11" name="username" autoComplete="username" autoCapitalize="none" spellCheck={false} maxLength={254} required autoFocus placeholder="Seu usuário ou e-mail"/></Label>
       <Label className="field-label">Senha<Input className="h-11" name="password" type="password" autoComplete="current-password" required placeholder="Sua senha"/></Label>
       <Button className="full" disabled={busy} variant="default">{busy?"Entrando…":"Entrar"}{busy?<Spinner aria-hidden="true"/>:<ArrowRight aria-hidden="true"/>}</Button>
-    </form></section>
+    </form></section></Card>
   </main>;
 }

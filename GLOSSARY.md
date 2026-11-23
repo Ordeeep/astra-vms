@@ -23,6 +23,9 @@ _Evitar_: tenant, empresa
 Cadastro do ponto monitorado, pertencente a um tenant e alocado a um site, cuja identidade e histórico permanecem quando o equipamento é substituído.
 _Evitar_: endereço RTSP, equipamento físico
 
+**ID da câmera**:
+Número permanente que identifica o cadastro de uma câmera dentro de seu tenant. Câmeras de tenants diferentes podem ter o mesmo número.
+
 **Exclusão de câmera**:
 Retirada definitiva de uma câmera e de suas gravações do VMS, com encerramento de suas transmissões e captura. Exportações já geradas conservam sua própria expiração.
 _Evitar_: desativação de câmera, substituição da fonte
@@ -63,6 +66,9 @@ _Evitar_: conta do operador, instalação
 Composição de visualização simultânea de imagens de várias câmeras.
 _Evitar_: site, tenant
 
+**Debug do mosaico**:
+Modo de diagnóstico da visualização ao vivo que identifica as câmeras e mostra FPS, resolução, codec e bitrate de vídeo recebido pelo navegador.
+
 **Grupo de permissões**:
 Conjunto de permissões pertencente a um tenant e atribuível a operadores, que determina quais áreas, recursos e ações do VMS eles podem acessar nesse tenant.
 _Evitar_: tenant, grupo de câmeras
@@ -98,6 +104,12 @@ _Evitar_: retenção, reserva de capacidade
 **Exportação**:
 Arquivo de vídeo de um intervalo de uma câmera para obtenção por um operador autorizado, que preserva a duração original com tela preta nos períodos sem gravação.
 _Evitar_: gravação, reprodução
+
+**Tarefa de exportação**:
+Solicitação de um operador para gerar uma exportação de um intervalo de gravação de uma câmera, com progresso e resultado próprios.
+
+**Janela de tarefas**:
+Visão pessoal das tarefas que um operador solicitou no tenant ativo, incluindo o progresso e o resultado de cada uma.
 
 **Orçamento de exportações**:
 Limite de armazenamento de exportações de um tenant, separado de sua cota de gravações e sujeito também ao limite físico global.

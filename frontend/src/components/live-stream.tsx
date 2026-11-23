@@ -5,17 +5,20 @@ import type {Camera} from "@/components/management";
 import {api, ApiError, signalMedia} from "@/lib/api";
 import {compatibleReceiverCodecs, liveVideoCodecs} from "@/lib/video-compatibility";
 import type {LiveTransitionQueue} from "@/lib/live-transition-queue";
+import {LiveDebugMetrics} from "@/components/live-debug-metrics";
 
 type Session = {id:string;profile:string;fallback:boolean;signaling:string;delivery?:"native"|"compatible"};
 export type LiveStreamRequest = {key:string;profile:string;fallback:string[]};
 
 // One mounted instance owns a requested profile and its authorized fallback
 // chain. A quality transition creates a sibling without interrupting this one.
-export function LiveStream({tenant,camera,request,presented,visible,queue,onReady,onWaiting,onFailure}:{
+export function LiveStream({tenant,camera,request,presented,visible,debugEnabled,queue,onReady,onWaiting,onFailure}:{
  tenant:string;camera:Camera;request:LiveStreamRequest;presented:boolean;visible:boolean;queue?:LiveTransitionQueue;
+ debugEnabled:boolean;
  onReady:(profile:string)=>void;onWaiting:(message:string)=>void;onFailure:(message:string,denied:boolean)=>void;
 }) {
  const video=useRef<HTMLVideoElement>(null);
+ const peer=useRef<RTCPeerConnection>(undefined);
  const releasePreparation=useRef<(()=>void)|undefined>(undefined);
  const handlers=useRef({onReady,onWaiting,onFailure,visible});
  handlers.current={onReady,onWaiting,onFailure,visible};
@@ -24,7 +27,7 @@ export function LiveStream({tenant,camera,request,presented,visible,queue,onRead
   // React clears the ref before passive unmount cleanup. Keep the owned video
   // so disposal can still detach its media and stop its tracks.
   const element=video.current;
-  let active=true,run=0,retried=false,pc:RTCPeerConnection|undefined,session:Session|undefined,abort:AbortController|undefined;
+  let active=true,run=0,retried=false,session:Session|undefined,abort:AbortController|undefined;
   const candidates=[...new Set<string>([profile,...JSON.parse(fallbackKey)])];
   let candidate=0;
   let timer:ReturnType<typeof setInterval>|undefined,watchdog:ReturnType<typeof setInterval>|undefined,startup:ReturnType<typeof setTimeout>|undefined;
@@ -34,7 +37,8 @@ export function LiveStream({tenant,camera,request,presented,visible,queue,onRead
    if(timer)clearInterval(timer);if(watchdog)clearInterval(watchdog);if(startup)clearTimeout(startup);
    timer=undefined;watchdog=undefined;startup=undefined;
    abort?.abort();release?.();release=undefined;releasePreparation.current=undefined;
-   if(pc){pc.onconnectionstatechange=null;pc.ontrack=null;pc.close();pc=undefined;}
+   const connection=peer.current;
+   if(connection){connection.onconnectionstatechange=null;connection.ontrack=null;connection.close();peer.current=undefined;}
    if(element){if(frameCallback!==undefined)element.cancelVideoFrameCallback?.(frameCallback);element.onerror=null;element.pause();if(element.srcObject instanceof MediaStream)element.srcObject.getTracks().forEach(track=>track.stop());element.srcObject=null;}
    frameCallback=undefined;
    const previous=session;session=undefined;
@@ -60,7 +64,7 @@ export function LiveStream({tenant,camera,request,presented,visible,queue,onRead
      releasePreparation.current=()=>{release?.();release=undefined;};
     }
     startup=setTimeout(()=>{if(current())fail("Não foi possível preparar o vídeo no prazo esperado.",false);},18000);
-    const connection=new RTCPeerConnection({iceServers:[]});pc=connection;
+    const connection=new RTCPeerConnection({iceServers:[]});peer.current=connection;
     currentSession=await api<Session>(`/tenants/${tenant}/live-sessions`,"POST",{cameraId:camera.id,profile:candidates[candidate],fallback:candidates.slice(candidate+1),codecs:liveVideoCodecs(),forceCompatibility},true);
     if(!current()){void api(`/tenants/${tenant}/live-sessions/${currentSession.id}`,"DELETE",undefined,true).catch(()=>{});return;}
     session=currentSession;
@@ -143,5 +147,8 @@ export function LiveStream({tenant,camera,request,presented,visible,queue,onRead
  // Wait for promotion to commit and the old stream's cleanup before allowing
  // another preparation to consume capacity.
  useEffect(()=>{if(presented){releasePreparation.current?.();releasePreparation.current=undefined;}},[presented]);
- return <video ref={video} className="live-stream-video" data-presented={presented} autoPlay muted playsInline aria-hidden={!presented} aria-label={`Ao vivo: ${camera.name}`}/>;
+ return <>
+  <video ref={video} className="live-stream-video" data-presented={presented} autoPlay muted playsInline aria-hidden={!presented} aria-label={`Ao vivo: ${camera.name}`}/>
+  {debugEnabled&&presented&&visible&&<LiveDebugMetrics peer={peer} video={video}/>}
+ </>;
 }

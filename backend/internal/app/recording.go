@@ -587,7 +587,11 @@ func (a *App) recordingStatuses(w http.ResponseWriter, r *http.Request, id ident
 		dbFailure(w)
 		return
 	}
-	rows, err := a.db.Query(r.Context(), `SELECT c.id,c.site_id,coalesce(s.code,'not_configured'),s.last_frame,s.last_write,s.updated_at,r.enabled,cs.timezone FROM cameras c JOIN sites cs ON cs.tenant_id=c.tenant_id AND cs.id=c.site_id LEFT JOIN recording_status s ON s.tenant_id=c.tenant_id AND s.camera_id=c.id LEFT JOIN recording_configs r ON r.tenant_id=c.tenant_id AND r.camera_id=c.id WHERE c.tenant_id=$1 AND c.deleted_at IS NULL AND c.id>$2 ORDER BY c.id LIMIT 201`, tenant, r.URL.Query().Get("cursor"))
+	after, ok := a.cameraCursor(w, r, tenant)
+	if !ok {
+		return
+	}
+	rows, err := a.db.Query(r.Context(), `SELECT c.id,c.camera_number::text,c.site_id,coalesce(s.code,'not_configured'),s.last_frame,s.last_write,s.updated_at,r.enabled,cs.timezone FROM cameras c JOIN sites cs ON cs.tenant_id=c.tenant_id AND cs.id=c.site_id LEFT JOIN recording_status s ON s.tenant_id=c.tenant_id AND s.camera_id=c.id LEFT JOIN recording_configs r ON r.tenant_id=c.tenant_id AND r.camera_id=c.id WHERE c.tenant_id=$1 AND c.deleted_at IS NULL AND c.camera_number>$2 ORDER BY c.camera_number LIMIT 201`, tenant, after)
 	if err != nil {
 		dbFailure(w)
 		return
@@ -601,10 +605,10 @@ func (a *App) recordingStatuses(w http.ResponseWriter, r *http.Request, id ident
 	items := []map[string]any{}
 	cursor, count := "", 0
 	for rows.Next() {
-		var camera, site, code, timezone string
+		var camera, number, site, code, timezone string
 		var frame, write, updated *time.Time
 		var enabled *bool
-		if rows.Scan(&camera, &site, &code, &frame, &write, &updated, &enabled, &timezone) != nil {
+		if rows.Scan(&camera, &number, &site, &code, &frame, &write, &updated, &enabled, &timezone) != nil {
 			dbFailure(w)
 			return
 		}
@@ -612,7 +616,7 @@ func (a *App) recordingStatuses(w http.ResponseWriter, r *http.Request, id ident
 		if count > 200 {
 			break
 		}
-		cursor = camera
+		cursor = number
 		if !id.User.GlobalAdmin && !permits(grants, tenant, "recording.manage", site, camera) && !permits(grants, tenant, "playback", site, camera) {
 			continue
 		}
@@ -625,7 +629,7 @@ func (a *App) recordingStatuses(w http.ResponseWriter, r *http.Request, id ident
 		} else if updated != nil && time.Since(*updated) > 5*time.Second {
 			code = "worker_unavailable"
 		}
-		items = append(items, map[string]any{"cameraId": camera, "code": code, "lastFrame": frame, "lastWrite": write, "updatedAt": updated, "timezone": timezone})
+		items = append(items, map[string]any{"cameraId": number, "code": code, "lastFrame": frame, "lastWrite": write, "updatedAt": updated, "timezone": timezone})
 	}
 	if rows.Err() != nil {
 		dbFailure(w)

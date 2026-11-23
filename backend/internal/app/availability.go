@@ -63,7 +63,7 @@ func (m *availabilityMonitor) reconcile(targets []availabilityTarget, now time.T
 	defer m.mu.Unlock()
 	present := map[string]bool{}
 	for _, target := range targets {
-		key := availabilityKey(target.tenant, target.camera.ID)
+		key := availabilityKey(target.tenant, target.camera.key)
 		present[key] = true
 		signature := availabilitySignature(target.camera)
 		e := m.entries[key]
@@ -99,7 +99,7 @@ func (m *availabilityMonitor) snapshot(tenant string, c Camera, now time.Time) C
 	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	e := m.entries[availabilityKey(tenant, c.ID)]
+	e := m.entries[availabilityKey(tenant, c.key)]
 	if e == nil || e.signature != availabilitySignature(c) || !e.target.camera.EffectiveActive {
 		return unknownAvailability("awaiting_check")
 	}
@@ -124,7 +124,7 @@ func (m *availabilityMonitor) snapshot(tenant string, c Camera, now time.Time) C
 func (m *availabilityMonitor) apply(e *availabilityEntry, result media.AvailabilityResult, code string, now time.Time) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if m.entries[availabilityKey(e.target.tenant, e.target.camera.ID)] != e {
+	if m.entries[availabilityKey(e.target.tenant, e.target.camera.key)] != e {
 		return
 	}
 	status := e.status
@@ -219,7 +219,7 @@ func (a *App) invalidateAvailability(tenant, cid, site string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	for key, e := range m.entries {
-		if e.target.tenant == tenant && (cid == "" || e.target.camera.ID == cid) && (site == "" || e.target.camera.SiteID == site) {
+		if e.target.tenant == tenant && (cid == "" || e.target.camera.key == cid) && (site == "" || e.target.camera.SiteID == site) {
 			if e.cancel != nil {
 				e.cancel()
 			}
@@ -312,13 +312,13 @@ func (a *App) availabilityLoop() {
 }
 func (a *App) checkAvailability(ctx context.Context, e *availabilityEntry, target availabilityTarget) {
 	c := target.camera
-	configured, err := a.loadCameraSource(ctx, target.tenant, c.ID, c.SourceVersion)
+	configured, err := a.loadCameraSource(ctx, target.tenant, c.key, c.SourceVersion)
 	result := media.AvailabilityResult{}
 	code := ""
 	if err != nil {
 		code = "vault_unavailable"
 	} else {
-		request := media.AvailabilityRequest{Tenant: target.tenant, Camera: c.ID, Source: c.SourceVersion, ConnectionRevision: c.ConnectionRevision}
+		request := media.AvailabilityRequest{Tenant: target.tenant, Camera: c.key, Source: c.SourceVersion, ConnectionRevision: c.ConnectionRevision}
 		for _, p := range c.Profiles {
 			if p.Enabled != nil && !*p.Enabled {
 				continue
@@ -328,7 +328,7 @@ func (a *App) checkAvailability(ctx context.Context, e *availabilityEntry, targe
 				code = "invalid_configuration"
 				break
 			}
-			path := "c_" + c.ID + "_" + c.SourceVersion + "_" + p.ID + "_r" + strconv.FormatInt(c.ConnectionRevision, 10)
+			path := "c_" + c.key + "_" + c.SourceVersion + "_" + p.ID + "_r" + strconv.FormatInt(c.ConnectionRevision, 10)
 			request.Profiles = append(request.Profiles, media.AvailabilityProfile{ID: p.ID, URL: address, Paths: []string{path + "_native", path + "_compatible", path + "_converted"}})
 		}
 		if len(request.Profiles) == 0 {
@@ -342,7 +342,7 @@ func (a *App) checkAvailability(ctx context.Context, e *availabilityEntry, targe
 		return
 	}
 	// Revalidate after I/O; an old connection's success must never update a new one.
-	current, err := scanCamera(a.db.QueryRow(ctx, cameraSelect+" WHERE c.tenant_id=$1 AND c.id=$2", target.tenant, c.ID))
+	current, err := scanCamera(a.db.QueryRow(ctx, cameraSelect+" WHERE c.tenant_id=$1 AND c.id=$2", target.tenant, c.key))
 	if err != nil || !current.EffectiveActive || availabilitySignature(current) != e.signature {
 		return
 	}

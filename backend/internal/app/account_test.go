@@ -86,6 +86,7 @@ func TestProfileMigrationPreservesExistingCredentials(t *testing.T) {
 	}
 	defer db.Close(ctx)
 	// Recreate the version-one shape only in this test's temporary namespace.
+	rewindCameraNumbers(t, cameraDeletionDB(t, b))
 	legacySchema := pgx.Identifier{b.options.Schema}.Sanitize()
 	if _, err = db.Exec(ctx, "DROP FUNCTION "+legacySchema+".is_installation_admin(text); DROP TABLE "+legacySchema+".installation_group_members; DROP TABLE "+legacySchema+".installation_groups; ALTER TABLE "+legacySchema+".operators DROP COLUMN deleted_at, ADD COLUMN global_admin boolean NOT NULL DEFAULT true"); err != nil {
 		t.Fatal(err)
@@ -94,7 +95,7 @@ func TestProfileMigrationPreservesExistingCredentials(t *testing.T) {
 	if _, err = db.Exec(ctx, "DROP TABLE "+schema+".camera_deletions; DROP FUNCTION "+schema+".require_operational_camera() CASCADE; ALTER TABLE "+schema+".cameras DROP COLUMN deleted_at"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err = db.Exec(ctx, "ALTER TABLE "+schema+".operators DROP COLUMN name,DROP COLUMN email; ALTER TABLE "+schema+".camera_sources DROP COLUMN connection_type,DROP COLUMN connection,DROP COLUMN connection_revision; DELETE FROM "+schema+".schema_migrations WHERE version>=2"); err != nil {
+	if _, err = db.Exec(ctx, "ALTER TABLE "+schema+".operators DROP COLUMN name,DROP COLUMN email; ALTER TABLE "+schema+".camera_sources DROP COLUMN connection_type,DROP COLUMN connection,DROP COLUMN connection_revision; ALTER TABLE "+schema+".mosaics DROP COLUMN layout; DELETE FROM "+schema+".schema_migrations WHERE version>=2"); err != nil {
 		t.Fatal(err)
 	}
 	restarted := newTestAPI(t, func(o *app.Options) { *o = b.options })

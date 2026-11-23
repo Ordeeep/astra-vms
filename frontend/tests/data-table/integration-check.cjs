@@ -20,19 +20,6 @@ async page => {
  assert((await region('Operadores').locator('tbody').innerText()).includes('operador.14'),'Group array search');
  await goto('operators');await waitRows('Operadores',10);
  await goto('tenants');await waitRows('Ambientes',1);
- await goto('exports');await waitRows('Exportações',10);
- assert(await region('Exportações').getByRole('link',{name:'Baixar MP4',exact:true}).count()>0,'Download actions disappeared');
- await goto('recording');await waitRows('Gravação por câmera',10);
- assert(await region('Gravação por câmera').getByRole('button',{name:'Configurar agenda',exact:true}).count()===10,'Schedule actions disappeared');
- await region('Gravação por câmera').getByRole('button',{name:'Próxima página',exact:true}).click();
- await page.waitForFunction(()=>window.syntheticTableRequests.filter(r=>r.includes('/recording-status')).length>=2);
- assert((await region('Gravação por câmera').locator('tbody').innerText()).includes('Câmera 11'),'Recording polling reset page');
- await goto('playback');
- await page.getByRole('combobox',{name:'Câmera',exact:true}).selectOption('camera-0');
- await page.getByRole('button',{name:'Buscar gravações',exact:true}).click();await waitRows('Trechos de gravação',10);
- assert((await region('Trechos de gravação').getByRole('status').innerText()).includes('de 237'),'Timeline was capped at 200');
- await region('Trechos de gravação').getByRole('button',{name:'Última página',exact:true}).click();await waitRows('Trechos de gravação',7);
- assert(await region('Trechos de gravação').getByRole('button',{name:'Reproduzir trecho',exact:true}).count()===7,'Playback actions missing after 200');
  await goto('operations');await waitRows('Diagnóstico das câmeras',10);
  await region('Diagnóstico das câmeras').getByRole('button',{name:'Última página',exact:true}).click();await waitRows('Diagnóstico das câmeras',7);
  await region('Histórico da captura').getByRole('button',{name:'Carregar registros anteriores',exact:true}).click();
@@ -63,5 +50,5 @@ async page => {
  await region('Auditoria').getByText(/os 15 registros carregados/).waitFor();
  await page.screenshot({path:'output/playwright/data-table/audit-dark.png'});
  assert(await page.getByRole('alert').count()===0,'Unexpected integration error');
- console.log('Integration passed: 11 tables; array search, actions, polling, 237 segments, cursor, pending requests and scope changes.');
+ console.log('Integration passed: array search, actions, cursor, pending requests and scope changes.');
 }

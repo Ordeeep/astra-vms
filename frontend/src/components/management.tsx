@@ -1,6 +1,6 @@
 "use client";
 import "./operator-dialog.css";
-import {FormDialog} from "@/components/form-dialog";
+import {ConfirmationDialog,FormDialog} from "@/components/form-dialog";
 import {PermissionGroupEditor,PermissionGroupSummary} from "@/components/permission-group-editor";
 import {administersInstallation,permissionActions,type Grant} from "@/lib/permission-grants";
 import {DataTable,type DataTableColumn} from "@/components/data-table";
@@ -20,7 +20,8 @@ import {type CameraAvailability} from "@/lib/camera-availability";
 
 export type Site={id:string;name:string;address:string;timezone:string;active:boolean;revision:number;capabilities?:Record<string,boolean>};
 export type Profile={id:string;name:string;url?:string;codec?:string;width?:number;height?:number;fps?:number;enabled?:boolean};
-export type Camera={id:string;name:string;siteId:string;active:boolean;effectiveActive:boolean;revision:number;sourceVersion:string;connectionType?:ConnectionType;connection?:CameraConnection;connectionRevision?:number;profiles:Profile[];capabilities:Record<string,boolean>;availability?:CameraAvailability};
+export type CameraDisplayMode="cover"|"4:3"|"contain";
+export type Camera={id:string;name:string;siteId:string;active:boolean;displayMode?:CameraDisplayMode;effectiveActive:boolean;revision:number;sourceVersion:string;connectionType?:ConnectionType;connection?:CameraConnection;connectionRevision?:number;profiles:Profile[];capabilities:Record<string,boolean>;availability?:CameraAvailability};
 type Group={id:string;name:string;grants:Grant[];revision:number};
 type ScopedGroup=Group&{scope:"installation"|"tenant"};
 type Member=Operator&{groups:string[];membershipRevision:number};
@@ -47,7 +48,9 @@ export function Administration({identity,tenant,onRefresh,section="operators"}:{
  const globalSection=section==="tenants";
  const available=globalSection?admin:admin||!!tenant;
  const [error,setError]=useState(""),[busy,setBusy]=useState(false),[editor,setEditor]=useState<{type:string;value?:Tenant|Operator|Group|Member}|null>(null);
+ const [operatorToDelete,setOperatorToDelete]=useState<Operator|null>(null);
  const editorTrigger=useRef<HTMLElement|null>(null);
+ const heading=useRef<HTMLHeadingElement>(null);
  const [permissionSummary,setPermissionSummary]=useState("");
  const [catalogLoading,setCatalogLoading]=useState(true),[catalogError,setCatalogError]=useState("");
  async function loadCatalog(){
@@ -88,12 +91,10 @@ export function Administration({identity,tenant,onRefresh,section="operators"}:{
    await load();setEditor(null);if(editor.type==="group"||editor.type==="tenant"||(editor.type==="operator"&&v?.id===identity.user.id))await onRefresh();
   }catch(e){setError((e as Error).message);}finally{setBusy(false);}
  }
- async function deleteOperator(){
-  if(busy||!admin||editor?.type!=="operator"||!editor.value||editor.value.id===identity.user.id)return;
-  const operator=editor.value as Operator;
-  if(!window.confirm(`Excluir o operador "${operator.username}"? As sessões e os vínculos em todos os ambientes serão removidos. O histórico será preservado.`))return;
+ async function deleteOperator(operator:Operator){
+  if(busy||!admin||operator.id===identity.user.id)return;
   setBusy(true);setError("");
-  try{await api(`/admin/operators/${operator.id}`,"DELETE",{revision:operator.revision});setEditor(null);await load();}
+  try{await api(`/admin/operators/${operator.id}`,"DELETE",{revision:operator.revision});setOperatorToDelete(null);setEditor(null);await load();}
   catch(e){setError((e as Error).message);}finally{setBusy(false);}
  }
  const listedGroups:ScopedGroup[]=[...groups.map(g=>({...g,scope:"tenant" as const})),...(admin?installationGroups.map(g=>({...g,scope:"installation" as const})):[])];
@@ -124,8 +125,8 @@ export function Administration({identity,tenant,onRefresh,section="operators"}:{
  const description=section==="operators"?"Gerencie os operadores e seus grupos de permissões em cada ambiente.":section==="groups"?(admin?"Gerencie os grupos da instalação e do ambiente selecionado. Vincule os grupos no cadastro do operador.":"Gerencie os grupos do ambiente selecionado. Vincule os grupos no cadastro do operador."):"Crie ambientes e gerencie seus nomes e estados de ativação.";
  const content=<>
  {error&&!editor&&<Alert className="alert" role="alert" variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
- {editor&&<FormDialog showClose={editor.type!=="operator"} footerActions={editor.type==="operator"&&admin&&editor.value&&editor.value.id!==identity.user.id?<Button type="button" variant="destructive" disabled={busy} onClick={()=>void deleteOperator()}>Excluir</Button>:undefined} actionsAtEnd={editor.type==="operator"} returnFocus={editorTrigger.current} fallbackFocus={editor.type==="group"?()=>document.querySelector<HTMLElement>(editor.value?`[data-group-edit="${CSS.escape(groupKey({...editor.value,scope:groupScope} as ScopedGroup))}"]`:"[data-group-create]"):undefined} wide={editor.type==="group"||editor.type==="operator"&&admin} className={editor.type==="group"?"permission-group-dialog":editor.type==="operator"?"operator-dialog":""} saveLabel={editor.type==="group"?"Salvar grupo":"Salvar"} saveDisabled={editor.type==="group"?(!installationScope&&!administersInstallation(grants)&&(catalogLoading||!!catalogError)):editor.type==="operator"&&!accessReady} footerNote={editor.type==="group"?<PermissionGroupSummary text={permissionSummary}/>:undefined} title={editor.type==="group"?(editor.value?"Editar grupo de permissões":"Novo grupo de permissões"):editor.type==="tenant"?"Ambiente":"Operador"} onClose={()=>{setEditor(null);setError("");}} onSubmit={save} busy={busy}>
-  {error&&<Alert className="alert" role="alert" variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
+ {editor&&<FormDialog footerActions={editor.type==="operator"&&admin&&editor.value&&editor.value.id!==identity.user.id?<Button type="button" variant="destructive" disabled={busy} onClick={()=>{setError("");setOperatorToDelete(editor.value as Operator);}}>Excluir</Button>:undefined} returnFocus={editorTrigger.current} fallbackFocus={editor.type==="group"?()=>document.querySelector<HTMLElement>(editor.value?`[data-group-edit="${CSS.escape(groupKey({...editor.value,scope:groupScope} as ScopedGroup))}"]`:"[data-group-create]"):()=>heading.current} wide={editor.type==="group"||editor.type==="operator"&&admin} className={editor.type==="group"?"permission-group-dialog":editor.type==="operator"?"operator-dialog":""} saveLabel={editor.type==="group"?"Salvar grupo":"Salvar"} saveDisabled={editor.type==="group"?(!installationScope&&!administersInstallation(grants)&&(catalogLoading||!!catalogError)):editor.type==="operator"&&!accessReady} footerNote={editor.type==="group"?<PermissionGroupSummary text={permissionSummary}/>:undefined} title={editor.type==="group"?(editor.value?"Editar grupo de permissões":"Novo grupo de permissões"):editor.type==="tenant"?"Ambiente":"Operador"} onClose={()=>{setEditor(null);setError("");}} onSubmit={save} busy={busy}>
+  {error&&!operatorToDelete&&<Alert className="alert" role="alert" variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
   {["group","tenant"].includes(editor.type)&&<Label className="field-label">Nome<Input name="name" required defaultValue={(editor.value as Tenant|Group)?.name??""}/></Label>}
   {editor.type==="tenant"&&editor.value&&<Label className="check"><Checkbox name="active" defaultChecked={(editor.value as Tenant).active}/>Ativo</Label>}
   {editor.type==="group"&&<Label className="field-label">Escopo<NativeSelect aria-label="Escopo" value={groupScope} disabled>
@@ -161,10 +162,15 @@ export function Administration({identity,tenant,onRefresh,section="operators"}:{
   </div>
   </div>}
  </FormDialog>}
+ {operatorToDelete&&<ConfirmationDialog title="Excluir operador" fallbackFocus={()=>heading.current}
+  description={`As sessões e os vínculos de “${operatorToDelete.username}” serão removidos de todos os ambientes. O histórico será preservado.`}
+  busy={busy} confirmLabel={busy?"Excluindo…":"Excluir operador"} onCancel={()=>{setOperatorToDelete(null);setError("");}} onConfirm={()=>void deleteOperator(operatorToDelete)}>
+  {error&&<Alert className="alert" role="alert" variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
+ </ConfirmationDialog>}
  {tab==="groups"&&<DataTable key={`${tenantID}:groups`} data={listedGroups} columns={groupColumns} getRowId={groupKey} label="Grupos de permissões" searchPlaceholder="Buscar grupos…" emptyMessage="Nenhum grupo de permissões cadastrado."/>}
  {tab==="operators"&&<DataTable key={`${tenantID}:operators`} data={operators} columns={operatorColumns} getRowId={u=>u.id} onRowClick={u=>edit("operator",u)} rowLabel={u=>`Editar operador ${u.username}`} label="Operadores" searchPlaceholder="Buscar operadores…" emptyMessage="Nenhum operador cadastrado."/>}
  {tab==="tenants"&&<DataTable key={`${tenantID}:tenants`} data={identity.tenants} columns={tenantColumns} getRowId={t=>t.id} label="Ambientes" searchPlaceholder="Buscar ambientes…" emptyMessage="Nenhum ambiente disponível."/>}
  </>;
- return <><div className="page-heading"><div><span className="eyebrow">ADMINISTRAÇÃO</span><h1>{title}</h1><p>{description}</p></div>{available&&(section!=="operators"||admin)&&<Button data-group-create={section==="groups"?"":undefined} onClick={()=>edit(({groups:"group",operators:"operator",tenants:"tenant"} as Record<string,string>)[tab])} variant="default">+ {({groups:"Novo grupo",operators:"Novo operador",tenants:"Novo ambiente"} as Record<string,string>)[tab]}</Button>}</div>
+ return <><div className="page-heading"><div><h1 ref={heading} tabIndex={-1}>{title}</h1><p>{description}</p></div>{available&&(section!=="operators"||admin)&&<Button data-group-create={section==="groups"?"":undefined} onClick={()=>edit(({groups:"group",operators:"operator",tenants:"tenant"} as Record<string,string>)[tab])} variant="default">+ {({groups:"Novo grupo",operators:"Novo operador",tenants:"Novo ambiente"} as Record<string,string>)[tab]}</Button>}</div>
  {!available?<p role="status">{globalSection?"Somente administradores da instalação podem gerenciar ambientes.":"Selecione um ambiente ativo para continuar."}</p>:content}</>;
 }

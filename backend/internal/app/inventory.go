@@ -27,6 +27,7 @@ type Camera struct {
 	SiteID             string              `json:"siteId"`
 	Name               string              `json:"name"`
 	Active             bool                `json:"active"`
+	DisplayMode        string              `json:"displayMode"`
 	EffectiveActive    bool                `json:"effectiveActive"`
 	Revision           int64               `json:"revision"`
 	SourceVersion      string              `json:"sourceVersion"`
@@ -35,6 +36,8 @@ type Camera struct {
 	ConnectionRevision int64               `json:"connectionRevision"`
 	Profiles           []Profile           `json:"profiles"`
 	Capabilities       map[string]bool     `json:"capabilities"`
+
+	key string
 }
 
 var profileID = regexp.MustCompile(`^[a-z][a-z0-9_-]{0,31}$`)
@@ -163,12 +166,12 @@ func (a *App) sites(w http.ResponseWriter, r *http.Request, id identity) {
 	response(w, status, in)
 }
 
-const cameraSelect = `SELECT c.id,c.site_id,c.name,c.active,(c.active AND s.active AND t.active),c.revision,c.source_version,v.profiles,v.connection_type,v.connection,v.connection_revision FROM cameras c JOIN sites s ON s.id=c.site_id AND s.tenant_id=c.tenant_id JOIN tenants t ON t.id=c.tenant_id JOIN camera_sources v ON v.id=c.source_version AND v.camera_id=c.id AND v.tenant_id=c.tenant_id AND c.deleted_at IS NULL`
+const cameraSelect = `SELECT c.id,c.camera_number::text,c.site_id,c.name,c.active,(c.active AND s.active AND t.active),c.revision,c.source_version,v.profiles,v.connection_type,v.connection,v.connection_revision,c.display_mode FROM cameras c JOIN sites s ON s.id=c.site_id AND s.tenant_id=c.tenant_id JOIN tenants t ON t.id=c.tenant_id JOIN camera_sources v ON v.id=c.source_version AND v.camera_id=c.id AND v.tenant_id=c.tenant_id AND c.deleted_at IS NULL`
 
 func scanCamera(row interface{ Scan(...any) error }) (Camera, error) {
 	var c Camera
 	var raw, connection []byte
-	err := row.Scan(&c.ID, &c.SiteID, &c.Name, &c.Active, &c.EffectiveActive, &c.Revision, &c.SourceVersion, &raw, &c.ConnectionType, &connection, &c.ConnectionRevision)
+	err := row.Scan(&c.key, &c.ID, &c.SiteID, &c.Name, &c.Active, &c.EffectiveActive, &c.Revision, &c.SourceVersion, &raw, &c.ConnectionType, &connection, &c.ConnectionRevision, &c.DisplayMode)
 	if err == nil {
 		err = json.Unmarshal(raw, &c.Profiles)
 		if err == nil && string(connection) != "null" {
@@ -181,12 +184,12 @@ func cameraCapabilities(c *Camera, grants []Grant, tenant string, admin bool) bo
 	c.Capabilities = map[string]bool{}
 	visible := false
 	for _, action := range actions {
-		allowed := permits(grants, tenant, action, c.SiteID, c.ID)
+		allowed := permits(grants, tenant, action, c.SiteID, c.key)
 		if action == "ptz.control" {
-			allowed = allowed && permits(grants, tenant, "live", c.SiteID, c.ID)
+			allowed = allowed && permits(grants, tenant, "live", c.SiteID, c.key)
 		}
 		if action == "export" {
-			allowed = allowed && permits(grants, tenant, "playback", c.SiteID, c.ID)
+			allowed = allowed && permits(grants, tenant, "playback", c.SiteID, c.key)
 		}
 		if admin && (action == "inventory.manage" || action == "camera.delete" || action == "recording.manage" || action == "permissions.manage" || action == "audit.view") {
 			allowed = true
@@ -232,7 +235,11 @@ func (a *App) cameras(w http.ResponseWriter, r *http.Request, id identity) {
 			dbFailure(w)
 			return
 		}
-		rows, err := a.db.Query(r.Context(), cameraSelect+" WHERE c.tenant_id=$1 AND c.id>$2 ORDER BY c.id LIMIT 201", tenant, r.URL.Query().Get("cursor"))
+		after, ok := a.cameraCursor(w, r, tenant)
+		if !ok {
+			return
+		}
+		rows, err := a.db.Query(r.Context(), cameraSelect+" WHERE c.tenant_id=$1 AND c.camera_number>$2 ORDER BY c.camera_number LIMIT 201", tenant, after)
 		if err != nil {
 			dbFailure(w)
 			return
@@ -271,15 +278,20 @@ func (a *App) cameras(w http.ResponseWriter, r *http.Request, id identity) {
 		Name   string `json:"name"`
 		SiteID string `json:"siteId"`
 		camera.Source
-		Active    bool             `json:"active"`
-		Revision  int64            `json:"revision"`
-		Recording *RecordingUpdate `json:"recording"`
+		Active      bool             `json:"active"`
+		Revision    int64            `json:"revision"`
+		Recording   *RecordingUpdate `json:"recording"`
+		DisplayMode *string          `json:"displayMode"`
 	}
 	if !body(w, r, &in) {
 		return
 	}
 	if !validName(in.Name) {
 		problem(w, 422, "invalid_camera")
+		return
+	}
+	if !validCameraDisplayMode(in.DisplayMode) {
+		problem(w, 422, "invalid_camera_display_mode")
 		return
 	}
 	var configured camera.Source
@@ -332,7 +344,7 @@ func (a *App) cameras(w http.ResponseWriter, r *http.Request, id identity) {
 		safe := camera.Public(configured)
 		rawPublic, _ := json.Marshal(safe.Profiles)
 		rawConnection, _ := json.Marshal(safe.Connection)
-		_, err = tx.Exec(r.Context(), "INSERT INTO cameras(id,tenant_id,site_id,name,source_version) VALUES($1,$2,$3,$4,$5)", cid, tenant, site, in.Name, source)
+		_, err = tx.Exec(r.Context(), "INSERT INTO cameras(id,tenant_id,site_id,name,source_version,display_mode) VALUES($1,$2,$3,$4,$5,COALESCE($6,'contain'))", cid, tenant, site, in.Name, source, in.DisplayMode)
 		if err == nil {
 			_, err = tx.Exec(r.Context(), "INSERT INTO camera_sources(id,tenant_id,camera_id,profiles,secrets,connection_type,connection) VALUES($1,$2,$3,$4,$5,$6,$7)", source, tenant, cid, rawPublic, secret, configured.Type, rawConnection)
 		}
@@ -344,7 +356,7 @@ func (a *App) cameras(w http.ResponseWriter, r *http.Request, id identity) {
 			problem(w, 422, "use_explicit_camera_change")
 			return
 		}
-		result, e := tx.Exec(r.Context(), "UPDATE cameras SET name=$1,active=$2,revision=revision+1 WHERE tenant_id=$3 AND id=$4 AND revision=$5 AND deleted_at IS NULL", in.Name, in.Active, tenant, cid, in.Revision)
+		result, e := tx.Exec(r.Context(), "UPDATE cameras SET name=$1,active=$2,display_mode=COALESCE($6,display_mode),revision=revision+1 WHERE tenant_id=$3 AND id=$4 AND revision=$5 AND deleted_at IS NULL", in.Name, in.Active, tenant, cid, in.Revision, in.DisplayMode)
 		err = e
 		if err == nil && result.RowsAffected() != 1 {
 			problem(w, 412, "revision_conflict")

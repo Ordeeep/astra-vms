@@ -38,6 +38,7 @@ type SidebarContextProps = {
   openMobile: boolean
   setOpenMobile: (open: boolean) => void
   isMobile: boolean
+  triggerRef: React.RefObject<HTMLButtonElement | null>
   toggleSidebar: () => void
 }
 
@@ -66,6 +67,7 @@ function SidebarProvider({
   onOpenChange?: (open: boolean) => void
 }) {
   const isMobile = useIsMobile()
+  const triggerRef = React.useRef<HTMLButtonElement>(null)
   const [openMobile, setOpenMobile] = React.useState(false)
 
   // This is the internal state of the sidebar.
@@ -118,6 +120,7 @@ function SidebarProvider({
       open,
       setOpen,
       isMobile,
+      triggerRef,
       openMobile,
       setOpenMobile,
       toggleSidebar,
@@ -161,7 +164,7 @@ function Sidebar({
   variant?: "sidebar" | "floating" | "inset"
   collapsible?: "offcanvas" | "icon" | "none"
 }) {
-  const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+  const { isMobile, state, openMobile, setOpenMobile, triggerRef } = useSidebar()
 
   if (collapsible === "none") {
     return (
@@ -186,13 +189,18 @@ function Sidebar({
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
-          className="w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
+          className="w-[min(var(--sidebar-width),calc(100vw-24px))] bg-sidebar p-0 text-sidebar-foreground"
           style={
             {
               "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
             } as React.CSSProperties
           }
           side={side}
+          onCloseAutoFocus={event => {
+            if (!triggerRef.current?.isConnected) return
+            event.preventDefault()
+            triggerRef.current.focus()
+          }}
         >
           <SheetHeader className="sr-only">
             <SheetTitle>Menu lateral</SheetTitle>
@@ -255,7 +263,7 @@ function SidebarTrigger({
   onClick,
   ...props
 }: React.ComponentProps<typeof Button>) {
-  const { toggleSidebar } = useSidebar()
+  const { toggleSidebar, triggerRef, isMobile, open, openMobile } = useSidebar()
 
   return (
     <Button
@@ -263,6 +271,9 @@ function SidebarTrigger({
       data-slot="sidebar-trigger"
       variant="ghost"
       size="icon-sm"
+      ref={triggerRef}
+      aria-label="Alternar menu lateral"
+      aria-expanded={isMobile ? openMobile : open}
       className={cn(className)}
       onClick={(event) => {
         onClick?.(event)

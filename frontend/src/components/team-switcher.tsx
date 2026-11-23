@@ -28,7 +28,7 @@ export function TeamSwitcher({ tenants, activeTenant, onSelect, onHome }: {
       <SidebarMenuItem>
         {tenants.length > 1 ? <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <SidebarMenuButton size="lg" aria-label={`Astra · Ambiente ativo: ${label}`} className="astra-sidebar-brand data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
+            <SidebarMenuButton size="lg" tooltip={`Ambiente ativo: ${label}`} aria-label={`Astra · Ambiente ativo: ${label}`} className="astra-sidebar-brand data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
               {content}<ChevronsUpDown className="ml-auto group-data-[collapsible=icon]:hidden" aria-hidden="true" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>

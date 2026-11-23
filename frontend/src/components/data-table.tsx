@@ -11,6 +11,7 @@ import {NativeSelect,NativeSelectOption} from "@/components/ui/native-select";
 import {Popover,PopoverContent,PopoverTrigger} from "@/components/ui/popover";
 import {DropdownMenu,DropdownMenuCheckboxItem,DropdownMenuContent,DropdownMenuLabel,DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
 import {Table,TableBody,TableCell,TableHead,TableHeader,TableRow} from "@/components/ui/table";
+import {Skeleton} from "@/components/ui/skeleton";
 import "./data-table.css";
 
 type Value=string|number|null|undefined|string[];
@@ -112,22 +113,23 @@ export function DataTable<T>({data,columns,label,getRowId,searchPlaceholder="Bus
   </div>
   {filters.length>0&&<div className="data-table-active-filters" aria-label="Filtros aplicados">{filters.map(filter=>{const definition=columns.find(c=>c.id===filter.id)!;const values=Array.isArray(filter.value)?filter.value.map(v=>definition.options?.find(o=>o.value===v)?.label??v).filter(Boolean).join(" · "):String(filter.value);return <Button type="button" size="sm" variant="secondary" key={filter.id} onClick={()=>changeFilter(table.getColumn(filter.id)!,undefined)} aria-label={`Remover filtro ${definition.header}`}><span>{definition.header}: {values}</span><X aria-hidden="true"/></Button>;})}</div>}
   {partial&&<p className="data-table-scope">Busca, filtros e ordenação abrangem os {data.length} registros carregados.{hasMore?" Carregue os anteriores para ampliar a consulta.":""}</p>}
-  <div className="data-table-frame"><Table aria-label={label}>
+  <div className="data-table-frame"><Table aria-label={label} containerProps={{role:"region","aria-label":`Rolagem da tabela ${label}`,tabIndex:0}}>
    <TableHeader>{table.getHeaderGroups().map(group=><TableRow key={group.id}>{group.headers.map(header=>{
     const column=header.column,definition=columns.find(c=>c.id===column.id)!;const sorted=column.getIsSorted();
-    return <TableHead key={header.id} scope="col" aria-sort={sorted==="asc"?"ascending":sorted==="desc"?"descending":"none"}>
+    return <TableHead key={header.id} scope="col" className={definition.filter==="number"||definition.id==="actions"?"data-table-align-end":undefined} aria-sort={sorted==="asc"?"ascending":sorted==="desc"?"descending":undefined}>
      {column.getCanSort()||column.getCanFilter()?<Popover><PopoverTrigger asChild><Button type="button" variant="ghost" size="sm" className="data-table-heading" aria-label={`Opções da coluna ${definition.header}`}>{definition.header}{sorted==="asc"?<ArrowUp aria-hidden="true"/>:sorted==="desc"?<ArrowDown aria-hidden="true"/>:<ArrowUpDown aria-hidden="true"/>}{column.getIsFiltered()&&<Filter className="data-table-filtered" aria-hidden="true"/>}</Button></PopoverTrigger><PopoverContent className="data-table-popover" align="start" aria-label={`Opções de ${definition.header}`}><strong>{definition.header}</strong>{column.getCanSort()&&<div className="data-table-sort-actions"><Button type="button" variant={sorted==="asc"?"secondary":"ghost"} size="sm" onClick={()=>{column.toggleSorting(false);resetPage();}}><ArrowUp/>Ordem crescente</Button><Button type="button" variant={sorted==="desc"?"secondary":"ghost"} size="sm" onClick={()=>{column.toggleSorting(true);resetPage();}}><ArrowDown/>Ordem decrescente</Button>{sorted&&<Button type="button" variant="ghost" size="sm" onClick={()=>{column.clearSorting();resetPage();}}>Remover ordenação</Button>}</div>}{column.getCanFilter()&&<ColumnFilter column={column} definition={definition} options={optionsFor(definition)} onChange={value=>changeFilter(column,value)}/>}</PopoverContent></Popover>:definition.header}
     </TableHead>;
    })}</TableRow>)}</TableHeader>
-   <TableBody>{loading?<TableRow><TableCell colSpan={visible.length} className="data-table-empty" role="status">Carregando registros…</TableCell></TableRow>:table.getRowModel().rows.length?table.getRowModel().rows.map(row=>{
+   <TableBody>{loading?Array.from({length:5},(_,index)=><TableRow key={index} aria-hidden="true">{visible.map(column=><TableCell key={column.id}><Skeleton className="h-3 w-3/4 min-w-10"/></TableCell>)}</TableRow>):table.getRowModel().rows.length?table.getRowModel().rows.map(row=>{
     const clickable=!!onRowClick&&(!canActivateRow||canActivateRow(row.original));
     return <TableRow key={row.id} tabIndex={clickable?0:undefined} aria-label={clickable?rowLabel?.(row.original):undefined} className={clickable?"cursor-pointer focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2":undefined}
      onClick={clickable?event=>{if((event.target as HTMLElement).closest('button,a,input,select,textarea,[role="button"],[role="checkbox"],[role="dialog"]'))return;event.currentTarget.focus();onRowClick?.(row.original);}:undefined}
      onKeyDown={clickable?event=>{if(event.target===event.currentTarget&&(event.key==="Enter"||event.key===" ")){event.preventDefault();onRowClick?.(row.original);}}:undefined}>
-     {row.getVisibleCells().map(cell=><TableCell key={cell.id}>{renderCell(row.original,cell.column.id,cell.getValue())}</TableCell>)}
+     {row.getVisibleCells().map(cell=><TableCell key={cell.id} className={columns.find(column=>column.id===cell.column.id)?.filter==="number"||cell.column.id==="actions"?"data-table-align-end":undefined}>{renderCell(row.original,cell.column.id,cell.getValue())}</TableCell>)}
     </TableRow>;
    }):<TableRow><TableCell colSpan={visible.length} className="data-table-empty">{active?<><p>Nenhum resultado para os filtros aplicados.</p><Button type="button" variant="ghost" onClick={clear}>Limpar filtros</Button></>:emptyMessage}</TableCell></TableRow>}</TableBody>
   </Table></div>
+  {loading&&<span className="sr-only" role="status">Carregando registros…</span>}
   <div className="data-table-footer">
    <p role="status" aria-live="polite">{count?`${pagination.pageIndex*pagination.pageSize+1}–${Math.min((pagination.pageIndex+1)*pagination.pageSize,count)} de ${count}`:"0"} {partial?"registros carregados":"registros"}{active?` (de ${data.length})`:""}</p>
    <div className="data-table-page-size"><Label htmlFor={sizeId}>Linhas por página</Label><NativeSelect id={sizeId} value={pagination.pageSize} onChange={event=>setPagination({pageIndex:0,pageSize:Number(event.target.value)})}>{[10,20,30,50,100].map(size=><NativeSelectOption key={size} value={size}>{size}</NativeSelectOption>)}</NativeSelect></div>

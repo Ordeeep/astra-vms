@@ -14,5 +14,5 @@ export function RTSPConnectionTest({tenant,siteId,cameraId,url}:{tenant:string;s
   catch(e){if(request===generation.current)setError((e as Error).message);}
   finally{if(request===generation.current)setBusy(false);}
  }
- return <div className="rtsp-connection-test"><Button type="button" variant="outline" disabled={busy||!url.trim()||(!cameraId&&!siteId)} onClick={()=>void test()}>{busy?"Testando conexão…":"Testar conexão"}</Button>{!cameraId&&!siteId&&<small>Selecione um site para testar a conexão.</small>}{video&&<small role="status" className="text-emerald-400">Conexão estabelecida · {video.codec.toUpperCase()} · {video.width} × {video.height} · {video.fps.toFixed(2)} quadros/s</small>}{error&&<small role="alert" className="text-destructive">{error}</small>}</div>;
+ return <div className="rtsp-connection-test"><Button type="button" variant="outline" disabled={busy||!url.trim()||(!cameraId&&!siteId)} onClick={()=>void test()}>{busy?"Testando conexão…":"Testar conexão"}</Button>{!cameraId&&!siteId&&<small>Selecione um site para testar a conexão.</small>}{video&&<small role="status" className="text-success">Conexão estabelecida · {video.codec.toUpperCase()} · {video.width} × {video.height} · {video.fps.toFixed(2)} quadros/s</small>}{error&&<small role="alert" className="text-destructive">{error}</small>}</div>;
 }

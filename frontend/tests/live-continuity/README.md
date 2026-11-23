@@ -30,6 +30,8 @@ node tests/live-continuity/run.mjs --native
 node tests/live-continuity/run.mjs check.cjs --native
 ```
 
+Execute `node tests/live-continuity/run.mjs debug.cjs` para verificar o ID, a faixa de métricas, a troca de perfil e a permanência do debug no Vídeo Wall. Acrescente `--native` para verificar a leitura das estatísticas de um peer WebRTC do Chromium.
+
 O ensaio padrão (`stream-release.cjs`) reproduz a conexão duplicada após maximizar: mantém a transmissão antiga enquanto a nova aguarda imagem e, após a promoção, exige uma única sessão e vídeo para a câmera, fechamento do peer anterior e remoção da mídia do elemento antigo. Confirma também o retorno ao perfil do mosaico. A API permanece simulada, inclusive no modo de transporte nativo.
 
 Para repetir com transporte WebRTC nativo, execute `goto http://127.0.0.1:13110/#native` na mesma sessão antes de `run-code`. O ensaio preserva esse modo ao recarregar a página.

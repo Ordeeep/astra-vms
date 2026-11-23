@@ -33,7 +33,7 @@
   width: 16px;
   height: 90px;
   margin: 0;
-  accent-color: var(--brand);
+  accent-color: var(--primary);
 }
 .live-ptz-value { color: var(--foreground); font-size: 10px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .live-ptz-wheel {
@@ -111,15 +111,12 @@
 }
 .live-ptz-zoom button > svg { width: 14px; height: 14px; }
 .live-ptz-direction:hover, .live-ptz-direction:active, .live-ptz-zoom button:hover {
-  background: var(--brand-selection);
-  color: var(--brand);
+  background: var(--accent);
+  color: var(--primary);
 }
 .live-ptz-direction:focus-visible, .live-ptz-zoom button:focus-visible, .live-ptz-speed input:focus-visible { outline: 1px solid var(--ring); outline-offset: 1px; }
-@media (max-width: 640px) {
-  .live-camera-panel:has(.live-ptz-panel[data-state="open"]) { flex-basis: clamp(210px,58vw,230px); width: clamp(210px,58vw,230px); }
-}
 @media (prefers-reduced-motion: reduce) { .live-ptz-direction { transition: none; } }
 
-.live-ptz-retry { font-size:11px; color:var(--brand); cursor:pointer; }
+.live-ptz-retry { font-size:11px; color:var(--primary); cursor:pointer; }
 .live-ptz-direction:disabled,.live-ptz-zoom button:disabled { opacity:.35; cursor:not-allowed; background:transparent; color:var(--muted-foreground); }
 .live-ptz-direction:not(:disabled),.live-ptz-zoom button:not(:disabled) { touch-action:none; user-select:none; -webkit-user-select:none; }

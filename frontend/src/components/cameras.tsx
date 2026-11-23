@@ -1,7 +1,7 @@
 "use client";
 
 import {useEffect,useState,useRef,useMemo,type FormEvent} from "react";
-import {EditorDialog,FormDialog} from "@/components/form-dialog";
+import {ConfirmationDialog,FormDialog} from "@/components/form-dialog";
 import {Spinner} from "@/components/ui/spinner";
 import {DataTable,type DataTableColumn} from "@/components/data-table";
 import {Button} from "@/components/ui/button";
@@ -12,19 +12,21 @@ import {NativeSelectOption,NativeSelect} from "@/components/ui/native-select";
 import {Checkbox} from "@/components/ui/checkbox";
 import {Badge} from "@/components/ui/badge";
 import {Tabs,TabsList,TabsTrigger,TabsContent} from "@/components/ui/tabs";
-import {Activity,Layers,SlidersHorizontal,CalendarClock} from "lucide-react";
+import {Activity,Layers,Settings,SlidersHorizontal,CalendarClock} from "lucide-react";
 import {api,ApiError,type Tenant} from "@/lib/api";
-import {allPages,type Site,type Camera,type Profile} from "@/components/management";
+import {allPages,type Site,type Camera,type CameraDisplayMode,type Profile} from "@/components/management";
 import {CameraConnectionEditor,emptyCameraConnection,savedCameraConnection,type CameraConnection,type ConnectionType} from "@/components/camera-connection-editor";
 import {CameraDiagnostic} from "@/components/diagnostic";
 import {onEnvironmentChange} from "@/lib/events";
 import {CameraAvailabilityBadge,CameraAvailabilityCounts} from "@/components/camera-availability";
+import {useIsMobile} from "@/hooks/use-mobile";
 import {availabilityLabels,cameraAvailability} from "@/lib/camera-availability";
 
 import {CameraRecordingEditor} from "@/components/camera-recording-editor";
 import {newRecordingConfig,recordingLabels,type RecordingConfig,type RecordingStatus,type RecordingStatusPage} from "@/lib/camera-recording";
 
 export function CamerasWorkspace({tenant,onStorage,registerCloseGuard}:{tenant:Tenant;onStorage?:()=>void;registerCloseGuard?:(guard:(()=>boolean)|null)=>void}){
+ const isMobile=useIsMobile();
  const base=`/tenants/${tenant.id}`;const [sites,setSites]=useState<Site[]>([]),[cameras,setCameras]=useState<Camera[]>([]);
  const [error,setError]=useState(""),[busy,setBusy]=useState(false),[loading,setLoading]=useState(true);
  const [refreshError,setRefreshError]=useState("");
@@ -34,8 +36,10 @@ export function CamerasWorkspace({tenant,onStorage,registerCloseGuard}:{tenant:T
  const removed=useRef(new Set<string>());
  const [cameraSite,setCameraSite]=useState("");
  const editorTrigger=useRef<HTMLElement|null>(null);
+ const editorContent=useRef<HTMLDivElement>(null);
  const deleteTrigger=useRef<HTMLElement|null>(null);
  const [cameraName,setCameraName]=useState(""),[cameraActive,setCameraActive]=useState(true);
+ const [displayMode,setDisplayMode]=useState<CameraDisplayMode>("contain");
  const [profiles,setProfiles]=useState<Profile[]>([{id:"main",name:"Principal",url:""}]);
  const [connectionType,setConnectionType]=useState<ConnectionType>("rtsp"),[connection,setConnection]=useState<CameraConnection>(emptyCameraConnection);
  const [caps,setCaps]=useState<Record<string,boolean>>({});
@@ -48,10 +52,10 @@ export function CamerasWorkspace({tenant,onStorage,registerCloseGuard}:{tenant:T
  const draftBase=useRef(""),editorEpoch=useRef(0);
  const canInventory=!!editor&&(!editor.camera||!!editor.camera.capabilities["inventory.manage"]);
  const canRecording=!!editor&&(editor.camera?!!editor.camera.capabilities["recording.manage"]:!!(caps["recording.manage"]||sites.find(site=>site.id===cameraSite)?.capabilities?.["recording.manage"]));
- const draft=JSON.stringify({name:cameraName,site:cameraSite,active:cameraActive,type:connectionType,connection,profiles,recording});
+ const draft=JSON.stringify({name:cameraName,site:cameraSite,active:cameraActive,displayMode,type:connectionType,connection,profiles,recording});
  const dirty=!!editor&&draft!==draftBase.current;
  const canLeave=()=>!busy&&(!dirty||window.confirm("Descartar as alterações não salvas desta câmera?"));
- function closeEditor(){if(!canLeave())return;editorEpoch.current++;setEditor(null);setError("");}
+ function closeEditor(){editorEpoch.current++;setEditor(null);setError("");}
  useEffect(()=>{registerCloseGuard?.(canLeave);return()=>registerCloseGuard?.(null);},[dirty,busy,registerCloseGuard]);
  useEffect(()=>{if(!dirty)return;const unload=(event:BeforeUnloadEvent)=>{event.preventDefault();event.returnValue="";};window.addEventListener("beforeunload",unload);return()=>window.removeEventListener("beforeunload",unload);},[dirty]);
  useEffect(()=>{
@@ -103,9 +107,10 @@ export function CamerasWorkspace({tenant,onStorage,registerCloseGuard}:{tenant:T
  }
  function open(type:string,camera?:Camera){
   const epoch=++editorEpoch.current;
-  const initial={name:camera?.name??"",site:camera?.siteId??"",active:camera?.active??true,type:camera?.connectionType??"rtsp",connection:savedCameraConnection(camera?.connection),profiles:camera?.profiles.map(p=>({...p,url:""}))??[{id:"main",name:"Principal",url:""}],recording:newRecordingConfig()};
+  const initial={name:camera?.name??"",site:camera?.siteId??"",active:camera?.active??true,displayMode:camera?.displayMode??"contain",type:camera?.connectionType??"rtsp",connection:savedCameraConnection(camera?.connection),profiles:camera?.profiles.map(p=>({...p,url:""}))??[{id:"main",name:"Principal",url:""}],recording:newRecordingConfig()};
   draftBase.current=JSON.stringify(initial);
   editorTrigger.current=document.activeElement as HTMLElement;setCameraSite(initial.site);setCameraName(initial.name);setCameraActive(initial.active);setError("");
+  setDisplayMode(initial.displayMode);
   setEditor({type:camera&&!camera.capabilities["inventory.manage"]&&camera.capabilities["recording.manage"]?"recording":type,camera});
   setConnectionType(initial.type);setConnection(initial.connection);setConnectionChanged(false);setProfiles(initial.profiles);
   setRecording(initial.recording);setImpact(null);setConfirmImpact(false);setConflict(false);setRecordingFailed(false);setRecordingLoading(false);
@@ -149,9 +154,10 @@ export function CamerasWorkspace({tenant,onStorage,registerCloseGuard}:{tenant:T
   }
   const f=new FormData(form);setBusy(true);setError("");
   try{
-   const recordingInput=canRecording?{recording:{...recording,confirmImpact}}:{};
-   if(editor.camera)await api(base+`/cameras/${editor.camera.id}/configuration`,"PATCH",{revision:editor.camera.revision,...(canInventory?{name:f.get("name"),siteId:cameraSite,active:cameraActive,...(connectionChanged?{source:connectionInput()}:{})}:{recordingOnly:true}),...recordingInput},true);
-   else await api(base+"/cameras","POST",{name:f.get("name"),siteId:cameraSite,...connectionInput(),...recordingInput},true);
+   const recordingChanged=JSON.stringify(recording)!==JSON.stringify(JSON.parse(draftBase.current).recording);
+   const recordingInput=canRecording&&(!editor.camera||!canInventory||recordingChanged)?{recording:{...recording,confirmImpact}}:{};
+   if(editor.camera)await api(base+`/cameras/${editor.camera.id}/configuration`,"PATCH",{revision:editor.camera.revision,...(canInventory?{name:f.get("name"),siteId:cameraSite,active:cameraActive,displayMode,...(connectionChanged?{source:connectionInput()}:{})}:{recordingOnly:true}),...recordingInput},true);
+   else await api(base+"/cameras","POST",{name:f.get("name"),siteId:cameraSite,displayMode,...connectionInput(),...recordingInput},true);
    editorEpoch.current++;setEditor(null);setResult("Câmera salva. O estado da gravação indica quando a captura estiver em andamento.");await load();
   }catch(e){
    if(e instanceof ApiError&&e.code==="retention_impact_confirmation"){setImpact(Number(e.details.eligibleBytes));setConfirmImpact(false);setEditor({...editor,type:"recording"});}
@@ -178,22 +184,32 @@ export function CamerasWorkspace({tenant,onStorage,registerCloseGuard}:{tenant:T
   {refreshError&&<Alert role="alert" className="alert" variant="destructive"><AlertDescription>Não foi possível atualizar as câmeras. {refreshError}</AlertDescription></Alert>}
   {result&&<p role="status">{result}</p>}
   {error&&!editor&&!deleting&&<Alert role="alert" className="alert" variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
-  {deleting&&<EditorDialog title="Excluir câmera" showClose={false} returnFocus={deleteTrigger.current} fallbackFocus={()=>heading.current} busy={busy} onClose={()=>{setDeleting(null);setError("");}}>
-   <p>Excluir a câmera “{deleting.name}” do site “{sites.find(site=>site.id===deleting.siteId)?.name??"Site restrito"}” e todas as suas gravações?</p>
-   {error&&<Alert role="alert" className="alert" variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
-   <div className="form-actions"><Button type="button" variant="ghost" disabled={busy} onClick={()=>{setDeleting(null);setError("");}}>Cancelar</Button><Button type="button" variant="destructive" disabled={busy} onClick={()=>void removeCamera()}>{busy?"Excluindo…":"Excluir"}</Button></div>
-  </EditorDialog>}
-  {editor&&<FormDialog noValidate showClose={false} actionsAtEnd className="camera-details-dialog" returnFocus={editorTrigger.current} fallbackFocus={()=>heading.current} saveDisabled={(!canInventory&&!canRecording)||recordingLoading||recordingFailed||conflict} saveLabel="Salvar" title={editor.camera?"Editar câmera":"Cadastro da câmera"} onClose={closeEditor} onSubmit={save} busy={busy} footerActions={editor.camera?.capabilities["camera.delete"]&&<Button type="button" variant="destructive" disabled={busy} onClick={()=>confirmDelete(editor.camera!)}>Excluir câmera</Button>}>
-   <Tabs value={editor.type} onValueChange={type=>{setEditor({...editor,type});if(!conflict&&!recordingFailed)setError("");}} orientation="vertical" className="camera-editor-layout">
+  {editor&&<FormDialog noValidate hasChanges={dirty} className="camera-details-dialog" returnFocus={editorTrigger.current} fallbackFocus={()=>heading.current} saveDisabled={(!canInventory&&!canRecording)||recordingLoading||recordingFailed||conflict} saveLabel="Salvar" title={editor.camera?"Editar câmera":"Cadastro da câmera"} onClose={closeEditor} onSubmit={save} busy={busy} footerActions={editor.camera?.capabilities["camera.delete"]&&<Button type="button" variant="destructive" disabled={busy} onClick={()=>confirmDelete(editor.camera!)}>Excluir câmera</Button>}>
+   <Tabs value={editor.type} onValueChange={type=>{
+    if(editorContent.current)editorContent.current.scrollTop=0;
+    setEditor({...editor,type});
+    if(!conflict&&!recordingFailed)setError("");
+   }} orientation={isMobile?"horizontal":"vertical"} className="camera-editor-layout">
     <TabsList aria-label="Edição da câmera" className="camera-editor-nav">
+     {canInventory&&<TabsTrigger value="general"><Settings aria-hidden="true"/>Geral</TabsTrigger>}
      <TabsTrigger value="camera"><SlidersHorizontal aria-hidden="true"/>Informações</TabsTrigger>
      {canInventory&&<TabsTrigger value="streams"><Layers aria-hidden="true"/>Streams</TabsTrigger>}
      {(canRecording||editor.camera?.capabilities.playback)&&<TabsTrigger value="recording"><CalendarClock aria-hidden="true"/>Gravação</TabsTrigger>}
      {editor.camera&&canInventory&&<TabsTrigger value="diagnostic"><Activity aria-hidden="true"/>Diagnóstico</TabsTrigger>}
     </TabsList>
-    <div className="camera-editor-content">
+    <div ref={editorContent} className="camera-editor-content">
    {error&&<Alert role="alert" className="alert" variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
    {conflict&&<Button type="button" variant="outline" onClick={()=>void reopen()}>Reabrir versão atual</Button>}
+   {canInventory&&<TabsContent value="general" className="camera-editor-section">
+    <div className="grid max-w-72 gap-2">
+     <Label htmlFor="camera-display-mode">Visualizando</Label>
+     <NativeSelect id="camera-display-mode" className="w-full" value={displayMode} onChange={event=>setDisplayMode(event.target.value as CameraDisplayMode)}>
+      <NativeSelectOption value="cover">Espalhar pela célula</NativeSelectOption>
+      <NativeSelectOption value="4:3">Forçar 4:3</NativeSelectOption>
+      <NativeSelectOption value="contain">Manter a proporção</NativeSelectOption>
+     </NativeSelect>
+    </div>
+   </TabsContent>}
    {!canInventory&&<TabsContent value="camera" className="camera-editor-section"><h3>Identificação da câmera</h3><p><strong>{editor.camera?.name}</strong></p><p>Site: {sites.find(site=>site.id===cameraSite)?.name??"Site restrito"}</p></TabsContent>}
    {canInventory&&<CameraConnectionEditor key={`${connectionType}:${editor.camera?.id??"new"}`} tenant={tenant.id} siteId={cameraSite} cameraId={editor.camera?.id} maintenance={!!editor.camera&&connectionType===editor.camera.connectionType} savedProfileIds={editor.camera?.profiles.map(p=>p.id)} connectionType={connectionType} onTypeChange={changeConnectionType} connection={connection} onConnectionChange={value=>{setConnectionChanged(true);setConnection(value);}} profiles={profiles} onProfilesChange={value=>{setConnectionChanged(true);setProfiles(value);}} render={(fields,streams)=><>
    {/* Keep fields mounted for validation and preserve connection-test results between sections. */}
@@ -220,6 +236,11 @@ export function CamerasWorkspace({tenant,onStorage,registerCloseGuard}:{tenant:T
     </div>
    </Tabs>
   </FormDialog>}
+  {deleting&&<ConfirmationDialog title="Excluir câmera" returnFocus={deleteTrigger.current} fallbackFocus={()=>heading.current}
+   description={`A câmera “${deleting.name}” do site “${sites.find(site=>site.id===deleting.siteId)?.name??"Site restrito"}” e todas as suas gravações serão excluídas.`}
+   busy={busy} confirmLabel={busy?"Excluindo…":"Excluir câmera"} onCancel={()=>{setDeleting(null);setError("");}} onConfirm={()=>void removeCamera()}>
+   {error&&<Alert role="alert" className="alert" variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
+  </ConfirmationDialog>}
   {loading?<p className="flex items-center gap-2" role="status"><Spinner aria-hidden="true"/>Carregando câmeras…</p>:<DataTable key={tenant.id} data={displayedCameras} columns={columns} getRowId={c=>c.id} onRowClick={c=>open("camera",c)} canActivateRow={c=>!!(c.capabilities["inventory.manage"]||c.capabilities["recording.manage"]||c.capabilities["camera.delete"]||c.capabilities.playback)} rowLabel={c=>`Editar câmera ${c.name}`} label="Câmeras" searchPlaceholder="Buscar câmeras…" emptyMessage={<><h2>Nenhuma câmera disponível</h2><p>Cadastre uma câmera ou solicite acesso ao administrador.</p></>}/>}
  </>;
 }

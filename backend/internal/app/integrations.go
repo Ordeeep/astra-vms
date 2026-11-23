@@ -166,8 +166,8 @@ func (a *App) authorizeSourceRequest(w http.ResponseWriter, r *http.Request, id 
 }
 func (a *App) previewSource(ctx context.Context, tenant string, c Camera, s camera.Source) (camera.Source, error) {
 	s = sourceInput(s)
-	if c.ID != "" && s.Type == c.ConnectionType && s.Connection != nil && s.Connection.Password == nil {
-		stored, e := a.loadCameraSource(ctx, tenant, c.ID, c.SourceVersion)
+	if c.key != "" && s.Type == c.ConnectionType && s.Connection != nil && s.Connection.Password == nil {
+		stored, e := a.loadCameraSource(ctx, tenant, c.key, c.SourceVersion)
 		if e != nil {
 			return s, errors.New("vault_unavailable")
 		}
@@ -188,7 +188,11 @@ func (a *App) sourceDiscovery(w http.ResponseWriter, r *http.Request, id identit
 	if !body(w, r, &in) {
 		return
 	}
-	c, ok := a.authorizeSourceRequest(w, r, id, tenant, in.SiteID, in.CameraID)
+	key, ok := a.requestCameraKey(w, r, tenant, in.CameraID)
+	if !ok {
+		return
+	}
+	c, ok := a.authorizeSourceRequest(w, r, id, tenant, in.SiteID, key)
 	if !ok {
 		return
 	}
@@ -207,8 +211,8 @@ func (a *App) sourceDiscovery(w http.ResponseWriter, r *http.Request, id identit
 	ctx, cancel := context.WithTimeout(r.Context(), 9*time.Second)
 	defer cancel()
 	var stored *camera.Source
-	if c.ID != "" && c.ConnectionType == s.Type {
-		known, err := a.loadCameraSource(ctx, tenant, c.ID, c.SourceVersion)
+	if c.key != "" && c.ConnectionType == s.Type {
+		known, err := a.loadCameraSource(ctx, tenant, c.key, c.SourceVersion)
 		if err != nil {
 			problem(w, 503, "vault_unavailable")
 			return

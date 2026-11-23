@@ -93,7 +93,7 @@ func (a *App) controlPTZ(w http.ResponseWriter, r *http.Request, id identity) {
 		fail(404, "camera_not_found")
 		return
 	}
-	if !allowedWith(r.Context(), tx, current, tenant, "ptz.control", c.SiteID, c.ID) {
+	if !allowedWith(r.Context(), tx, current, tenant, "ptz.control", c.SiteID, c.key) {
 		fail(403, "forbidden")
 		return
 	}

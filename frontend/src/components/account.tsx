@@ -76,11 +76,11 @@ export function Account({ user, onUpdate }: { user: Operator; onUpdate: (user: O
   }
 
   return <div className="account-page">
-    <div className="page-heading account-heading"><div><span className="eyebrow">SEU ESPAÇO NO ASTRA</span><h1>Minha conta</h1><p>Seus dados e suas opções de acesso.</p></div></div>
+    <div className="page-heading account-heading"><div><h1>Minha conta</h1><p>Seus dados e suas opções de acesso.</p></div></div>
     <section className="account-summary" aria-label="Resumo do perfil">
       <div className="account-avatar" aria-hidden="true">{initials}<span><UserRound /></span></div>
-      <div className="account-summary-identity"><span className="account-kicker">PERFIL DO OPERADOR</span><h2>{displayName}</h2><span className="account-summary-email"><Mail aria-hidden="true" />{user.email || "Adicione seu e-mail para entrar com ele também"}</span></div>
-      <div className="account-summary-role"><ShieldCheck aria-hidden="true" /><div><strong>{user.globalAdmin ? "Administrador da instalação" : "Operador"}</strong><span><i />{user.active ? "Conta ativa" : "Conta inativa"}</span></div></div>
+      <div className="account-summary-identity"><h2>{displayName}</h2><span className="account-summary-email"><Mail aria-hidden="true" />{user.email || "Adicione seu e-mail para entrar com ele também"}</span></div>
+      <div className="account-summary-role"><ShieldCheck aria-hidden="true" /><div><strong>{user.globalAdmin ? "Administrador da instalação" : "Operador"}</strong><span>{user.active && <i aria-hidden="true" />}{user.active ? "Conta ativa" : "Conta inativa"}</span></div></div>
     </section>
 
     <Tabs defaultValue="profile" className="account-tabs">
@@ -90,7 +90,7 @@ export function Account({ user, onUpdate }: { user: Operator; onUpdate: (user: O
       </TabsList>
       <TabsContent value="profile">
         <section className="account-panel">
-          <div className="account-section-intro"><span className="account-section-icon"><UserRound aria-hidden="true" /></span><h2>Um perfil com a sua identidade</h2><p>Mantenha seu nome e e-mail atualizados em todos os tenants que você acessa.</p><div className="account-tip"><AtSign aria-hidden="true" /><span>Entre no Astra usando seu usuário ou o e-mail cadastrado.</span></div></div>
+          <div className="account-section-intro"><span className="account-section-icon"><UserRound aria-hidden="true" /></span><h2>Perfil do operador</h2><p>Seu nome e e-mail são usados em todos os ambientes que você acessa.</p></div>
           <form onSubmit={saveProfile} aria-label="Dados pessoais" aria-busy={busy === "profile"}>
             <input type="hidden" name="username" autoComplete="username" value={user.username} />
             {profileError && <Alert role="alert" variant="destructive" className="account-feedback"><AlertDescription>{profileError}</AlertDescription></Alert>}
@@ -107,7 +107,7 @@ export function Account({ user, onUpdate }: { user: Operator; onUpdate: (user: O
       </TabsContent>
       <TabsContent value="security">
         <section className="account-panel">
-          <div className="account-section-intro"><span className="account-section-icon"><KeyRound aria-hidden="true" /></span><h2>Cuide do seu acesso</h2><p>Use uma senha exclusiva para sua conta e evite compartilhá-la.</p><div className="account-tip"><ShieldCheck aria-hidden="true" /><span>Ao alterar a senha, suas outras sessões são encerradas. Esta sessão continua ativa.</span></div></div>
+          <div className="account-section-intro"><span className="account-section-icon"><KeyRound aria-hidden="true" /></span><h2>Alterar senha</h2><p>Ao salvar uma nova senha, o Astra encerra suas outras sessões.</p></div>
           <form onSubmit={savePassword} aria-label="Alterar senha" aria-busy={busy === "password"}>
             <input type="hidden" name="username" autoComplete="username" value={user.username} />
             {passwordError && <Alert role="alert" variant="destructive" className="account-feedback"><AlertDescription>{passwordError}</AlertDescription></Alert>}

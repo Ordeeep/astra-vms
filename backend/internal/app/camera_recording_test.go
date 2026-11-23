@@ -125,10 +125,11 @@ func TestCameraRecordingPendingProfilesAndRetentionRollback(t *testing.T) {
 	cid := created["id"].(string)
 	path = base + "/cameras/" + cid
 	db := cameraDeletionDB(t, b)
+	key := cameraTestKey(t, db, tenant, cid)
 	if _, err := db.Exec(context.Background(), `INSERT INTO recording_policies(tenant_id,quota_bytes,export_bytes,retention_days,export_hours) VALUES($1,0,0,10,24)`, tenant); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := db.Exec(context.Background(), `INSERT INTO archive_segments(id,tenant_id,camera_id,site_id,source_version,profile_id,start_at,end_at,bytes,charged,metadata) SELECT 'segment',tenant_id,id,site_id,source_version,'main',now()-interval '5 days',now()-interval '4 days',10,4096,'{}' FROM cameras WHERE tenant_id=$1 AND id=$2`, tenant, cid); err != nil {
+	if _, err := db.Exec(context.Background(), `INSERT INTO archive_segments(id,tenant_id,camera_id,site_id,source_version,profile_id,start_at,end_at,bytes,charged,metadata) SELECT 'segment',tenant_id,id,site_id,source_version,'main',now()-interval '5 days',now()-interval '4 days',10,4096,'{}' FROM cameras WHERE tenant_id=$1 AND id=$2`, tenant, key); err != nil {
 		t.Fatal(err)
 	}
 	recording := recordingDraft(false, "main", 1)

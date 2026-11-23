@@ -20,20 +20,6 @@ ASSETS = {"frontend/src/app/apple-icon.png", "frontend/src/app/favicon.ico"}
 DOTFILES = {".gitattributes", ".gitignore", ".gitleaks.toml", "LICENSE"}
 
 
-def public_login(content):
-    for component, module in (("LoginBackground", "login-background"), ("Lightfall", "lightfall")):
-        original_import = f'import {component} from "@/components/{module}";'
-        if original_import in content:
-            content = content.replace(original_import, 'import OrbitalDawn from "@/components/orbital-dawn";')
-            content, count = re.subn(rf"<{component}\b[^>]*\/>", "<OrbitalDawn/>", content)
-            if count != 1:
-                raise ValueError("Unexpected login markup; review the replacement")
-            return content
-    if '<OrbitalDawn' not in content:
-        raise ValueError("Unknown login background; review before exporting")
-    return content
-
-
 def selected_files():
     entries = [line.strip() for line in LIST.read_text(encoding="utf-8-sig").splitlines()
                if line.strip() and not line.startswith("#")]
@@ -54,17 +40,18 @@ def selected_files():
                 raise ValueError(f"Link/reparse point in source path: {entry}")
         if not source.resolve().is_relative_to(ROOT.resolve()) or not source.is_file():
             raise ValueError(f"Missing or external source: {entry}")
-        if entry not in ASSETS and source.name not in DOTFILES and source.suffix not in TEXT_SUFFIXES:
+        is_asset = entry in ASSETS or (
+            path.parent == PurePosixPath("frontend/public/mosaic-layouts") and path.suffix == ".png"
+        )
+        if not is_asset and source.name not in DOTFILES and source.suffix not in TEXT_SUFFIXES:
             raise ValueError(f"Unreviewed file type: {entry}")
         raw = source.read_bytes()
-        if entry not in ASSETS:
+        if not is_asset:
             content = raw.decode("utf-8-sig")
             if "\x00" in content:
                 raise ValueError(f"Binary content in text file: {entry}")
             if re.search(r"-----BEGIN (?:[A-Z0-9]+ )*PRIVATE KEY-----", content):
                 raise ValueError(f"Private key in source: {entry}")
-            if entry == "frontend/src/components/workspace.tsx":
-                raw = public_login(content).encode("utf-8")
         result.append((entry, raw))
     return result
 

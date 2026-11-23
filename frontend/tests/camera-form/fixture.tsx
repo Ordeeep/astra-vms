@@ -25,6 +25,7 @@ window.fetch=async(input,options)=>{
  requests.push({method,path,body});
  if(method==="GET"&&path.endsWith("/sites"))return json({items:[{id:"site",name:"Matriz",active:true,capabilities},{id:"other-site",name:"Anexo",active:true,capabilities},{id:"forbidden",name:"Sem permissão",active:true,capabilities:{}}]});
  if(method==="GET"&&path.endsWith("/cameras"))return json({items:cameras});
+ if(method==="GET"&&path.endsWith("/recording-status"))return json({items:[]});
  if(method==="GET"&&path.endsWith("/capabilities"))return json(capabilities);
  if(method==="POST"&&path.endsWith("/source-discovery")){
   const failed=failDiscovery;
@@ -36,7 +37,7 @@ window.fetch=async(input,options)=>{
  if(method==="PATCH"&&path.endsWith("/configuration")){
   if(failSave)return json({code:"revision_conflict"},412);
   const cameraId=path.split("/").at(-2);
-  cameras=cameras.map(camera=>camera.id===cameraId?{...camera,name:body.name,siteId:body.siteId,active:body.active,revision:camera.revision+1}:camera);
+  cameras=cameras.map(camera=>camera.id===cameraId?{...camera,name:body.name,siteId:body.siteId,active:body.active,displayMode:body.displayMode??camera.displayMode,revision:camera.revision+1}:camera);
   return json({ok:true});
  }
  if(method==="POST"&&path.endsWith("/cameras"))return failSave?json({code:"revision_conflict"},412):json({id:"created"},201);

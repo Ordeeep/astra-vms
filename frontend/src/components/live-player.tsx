@@ -5,14 +5,16 @@ import {LoaderCircle,VideoOff} from "lucide-react";
 import {Button} from "@/components/ui/button";
 import type {Camera} from "@/components/management";
 import {LiveStream,type LiveStreamRequest} from "@/components/live-stream";
+import {LiveDebugMetrics} from "@/components/live-debug-metrics";
 import type {LiveTransitionQueue} from "@/lib/live-transition-queue";
 
 type Entry=LiveStreamRequest&{ready?:boolean;actualProfile?:string;serialized:boolean};
 type Model={active:Entry|null;pending:Entry|null;message:string;failed:boolean};
 const requestKey=(profile:string,fallback:string[])=>JSON.stringify([profile,fallback]);
 
-function ContinuousVideo({tenant,camera,profile,fallback,queue,visible,onDenied}:{
+function ContinuousVideo({tenant,camera,profile,fallback,queue,visible,debugEnabled,onDenied}:{
  tenant:string;camera:Camera;profile:string;fallback:string[];queue:LiveTransitionQueue;visible:boolean;
+ debugEnabled:boolean;
  onDenied:()=>void;
 }){
  const [attempt,setAttempt]=useState(0),target=requestKey(profile,fallback),key=JSON.stringify([target,attempt]);
@@ -43,19 +45,24 @@ function ContinuousVideo({tenant,camera,profile,fallback,queue,visible,onDenied}
   });
  };
  const showing=available;
- return <div className="live-video-stack" data-changing={!!model.pending&&showing}>
-  {[model.active,model.pending].filter((entry):entry is Entry=>!!entry).map(entry=><LiveStream key={entry.key} tenant={tenant} camera={camera} request={entry} presented={model.active?.key===entry.key&&!!entry.ready} visible={visible&&model.active?.key===entry.key} queue={entry.serialized?queue:undefined} onReady={actual=>ready(entry,actual)} onWaiting={message=>waiting(entry,message)} onFailure={(message,denied)=>failure(entry,message,denied)}/>)}
+ return <div className="live-video-stack" data-display-mode={camera.displayMode??"contain"} data-changing={!!model.pending&&showing}>
+  {[model.active,model.pending].filter((entry):entry is Entry=>!!entry).map(entry=><LiveStream key={entry.key} tenant={tenant} camera={camera} request={entry} presented={model.active?.key===entry.key&&!!entry.ready} visible={visible&&model.active?.key===entry.key} debugEnabled={debugEnabled} queue={entry.serialized?queue:undefined} onReady={actual=>ready(entry,actual)} onWaiting={message=>waiting(entry,message)} onFailure={(message,denied)=>failure(entry,message,denied)}/>)}
+  {debugEnabled&&visible&&!showing&&<LiveDebugMetrics/>}
   {model.message&&(!showing?<div className="video-state" role="status">{model.failed?<Button className="video-failure" onClick={()=>setAttempt(value=>value+1)} variant="ghost" size="icon" aria-label={`Falha na conexão de ${camera.name}. Reconectar`} title={`${model.message} Clique para reconectar.`}><VideoOff aria-hidden="true"/></Button>:<LoaderCircle className="animate-spin" aria-label={model.message}/>}</div>:model.failed?<div className="live-video-notice" role="status"><span>{model.message}</span><button type="button" onClick={()=>setAttempt(value=>value+1)}>Tentar novamente</button></div>:null)}
  </div>;
 }
 
-export function LivePlayer({tenant,camera,profile,fallback,focusProfile,focusFallback,visible,queue}:{
+export function LivePlayer({tenant,camera,profile,fallback,focusProfile,focusFallback,visible,debugEnabled,queue}:{
  tenant:string;camera:Camera;profile:string;fallback:string[];focusProfile?:string;focusFallback?:string[];visible:boolean;queue:LiveTransitionQueue;
+ debugEnabled:boolean;
 }){
  const [denied,setDenied]=useState(false);
  const needsFocus=!!focusProfile&&focusProfile!==profile;
- if(!camera.effectiveActive||denied)return <div className="video-state" role="status"><VideoOff aria-label={denied?"Acesso à transmissão encerrado":"Câmera desativada"}/></div>;
+ if(!camera.effectiveActive||denied)return <>
+  <div className="video-state" role="status"><VideoOff aria-label={denied?"Acesso à transmissão encerrado":"Câmera desativada"}/></div>
+  {debugEnabled&&visible&&<LiveDebugMetrics/>}
+ </>;
  // Maximization is a profile transition owned by the same player. Promotion
  // unmounts the previous stream instead of keeping a hidden base connection.
- return <ContinuousVideo tenant={tenant} camera={camera} profile={needsFocus?focusProfile!:profile} fallback={needsFocus?(focusFallback??[]):fallback} queue={queue} visible={visible} onDenied={()=>setDenied(true)}/>;
+ return <ContinuousVideo tenant={tenant} camera={camera} profile={needsFocus?focusProfile!:profile} fallback={needsFocus?(focusFallback??[]):fallback} queue={queue} visible={visible} debugEnabled={debugEnabled} onDenied={()=>setDenied(true)}/>;
 }

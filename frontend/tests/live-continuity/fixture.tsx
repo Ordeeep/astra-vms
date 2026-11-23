@@ -1,13 +1,15 @@
 import {createRoot} from "react-dom/client";
 import {useState} from "react";
 import {LiveWorkspace} from "../../src/components/live";
-import {LiveHeaderControls} from "../../src/components/live-header-controls";
+import {LiveHeaderActions, LiveHeaderControls} from "../../src/components/live-header-controls";
+import {TooltipProvider} from "../../src/components/ui/tooltip";
 import {LiveViewProvider, useLiveView} from "../../src/components/live-view-context";
 import "../../src/app/workspace.css";
 
 // Real React reconciliation and HTML video decoding with a simulated API.
 // #native uses actual local WebRTC peers. No credentials/backend are required.
-const cameras=Array.from({length:5},(_,i)=>({id:`cam${i+1}`,name:`Câmera ${i+1}`,siteId:"site",active:true,effectiveActive:true,revision:1,sourceVersion:"1",connectionRevision:1,capabilities:{live:true},profiles:[{id:"main",name:"Principal"},{id:"sub2",name:"Substream 2"}]}));
+const debugCameraId=new URLSearchParams(location.search).get("debugCameraId");
+const cameras=Array.from({length:5},(_,i)=>({id:i===0&&debugCameraId?debugCameraId:`cam${i+1}`,name:`Câmera ${i+1}`,siteId:"site",active:true,effectiveActive:true,revision:1,sourceVersion:"1",connectionRevision:1,capabilities:{live:true},profiles:[{id:"main",name:"Principal"},{id:"sub2",name:"Substream 2"}]}));
 const sessions=new Map<string,{id:string;cameraId:string;profile:string;signaling:string}>();
 const mosaics=new Map<string,unknown[]>();
 const events:{type:string;id?:string;cameraId?:string;profile?:string}[]=[];
@@ -78,7 +80,15 @@ class Peer {
   draw();this.stream=canvas.captureStream(10);this.clock=setInterval(draw,100);
   this.ontrack?.({streams:[this.stream],track:this.stream.getVideoTracks()[0]});
  }
- async getStats(){return new Map([["inbound",{type:"inbound-rtp",kind:"video",packetsReceived:this.packets,bytesReceived:this.packets*100,framesDecoded:this.packets}]]);}
+ async getStats(){
+  const main=this.session?.profile==="main";
+  const timestamp=performance.now();
+  return new Map<string, unknown>([
+   ["inbound",{id:"inbound",type:"inbound-rtp",kind:"video",timestamp,packetsReceived:this.packets,
+    bytesReceived:Math.round(timestamp*(main?310:150)),framesDecoded:this.packets,framesPerSecond:main?10:undefined,codecId:"codec"}],
+   ["codec",{type:"codec",mimeType:main?"video/H264":"video/VP8"}],
+  ]);
+ }
  close(){if(this.closed)return;this.closed=true;if(this.clock)clearInterval(this.clock);this.stream?.getTracks().forEach(track=>track.stop());peers.delete(this);events.push({type:"close",id:this.session?.id});}
 }
 class NativeSender extends Peer {
@@ -98,7 +108,7 @@ Object.assign(window,{RTCPeerConnection:nativeMode?BrowserPeer:Peer});
 function Controls(){
  const view=useLiveView();
  return <nav aria-label="Controles de teste">
-  <button onClick={()=>{view.changeLayout(3);view.setPositions(cameras.map((c,tileId)=>({tileId,cameraId:c.id,profile:""})));}}>Cinco câmeras</button>
+  <button onClick={()=>{view.changeLayout("3x3");view.setPositions(tiles=>tiles.map((tile,index)=>({...tile,cameraId:cameras[index]?.id??"",profile:""})));}}>Cinco câmeras</button>
   <button onClick={()=>view.setPositions(cameras.slice(0,4).map((c,tileId)=>({tileId,cameraId:c.id,profile:""})))}>Quatro câmeras</button>
   <button onClick={()=>view.setPositions(cameras.slice(0,2).map((c,tileId)=>({tileId,cameraId:c.id,profile:""})))}>Duas câmeras</button>
   <button onClick={()=>view.setPositions(cameras.slice(0,3).map((c,tileId)=>({tileId,cameraId:c.id,profile:""})))}>Três câmeras</button>
@@ -110,8 +120,8 @@ function Controls(){
   <button onClick={()=>view.setPositions(p=>p.map(v=>({...v})))}>Atualizar catálogo</button>
  </nav>;
 }
-function Fixture(){const [tenant,setTenant]=useState("test");return <><button onClick={()=>setTenant(t=>t==="test"?"other":"test")}>Trocar tenant</button><LiveViewProvider key={tenant} tenantId={tenant} enabled><Controls/><header><LiveHeaderControls/></header><LiveWorkspace tenant={{id:tenant,name:tenant,active:true,revision:1}}/></LiveViewProvider></>;}
+function Fixture(){const [tenant,setTenant]=useState("test");return <TooltipProvider><button onClick={()=>setTenant(t=>t==="test"?"other":"test")}>Trocar tenant</button><LiveViewProvider key={tenant} tenantId={tenant} enabled><Controls/><header className="workspace-header" data-live><div className="workspace-path">Astra › Ao vivo</div><LiveHeaderControls/><div className="workspace-actions"><LiveHeaderActions/></div></header><LiveWorkspace tenant={{id:tenant,name:tenant,active:true,revision:1}}/></LiveViewProvider></TooltipProvider>;}
 document.body.innerHTML='<div id="fixture"></div>';
 document.body.style.cssText="margin:0;background:#111;color:white;font-family:sans-serif";
-const style=document.createElement("style");style.textContent=".live-workspace{height:85vh}.live-grid{width:100%}.live-cell{display:flex;flex-direction:column}.video-area{min-height:180px}button{margin:4px} .video-state{background:#000}";document.head.append(style);
+const style=document.createElement("style");style.textContent=".live-workspace{height:85vh}.live-grid{width:100%}.live-cell{display:flex;flex-direction:column}.video-area{min-height:180px}button{margin:4px}.workspace-header button{margin:0;font-size:12px}.workspace-header [data-slot=button-group]{display:flex}.workspace-header .live-wall-button svg,.workspace-header .live-layout-more svg,.workspace-header .theme-toggle svg{width:16px;height:16px;vertical-align:middle}.workspace-header .theme-toggle{width:36px;height:36px}@media(max-width:640px){.workspace-header .theme-toggle{min-width:44px;min-height:44px}}.video-state{background:#000}";document.head.append(style);
 createRoot(document.getElementById("fixture")!).render(<Fixture/>);

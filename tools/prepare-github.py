@@ -46,7 +46,7 @@ def prepare():
     readme = re.sub(r"O código também contém uma integração.*?(?=\n\n## Arquitetura)",
                     "As integrações Dahua e Hikvision são mantidas, incluindo os recursos PTZ já implementados. Manuais de fabricantes e suas extrações não são distribuídos com o código.", readme, flags=re.S)
     readme = re.sub(r"## Licença e terceiros.*\Z",
-                    "## Licença e terceiros\n\nLicença MIT para o código próprio: consulte [LICENSE](LICENSE).\n\nAs dependências conservam suas próprias licenças. Esta variante usa o fundo CSS original OrbitalDawn e não distribui os componentes React Bits. Consulte [THIRD-PARTY.md](backend/deploy/windows/THIRD-PARTY.md) antes de distribuir binários.\n", readme, flags=re.S)
+                    "## Licença e terceiros\n\nLicença MIT para o código próprio: consulte [LICENSE](LICENSE).\n\nAs dependências conservam suas próprias licenças. Esta variante não distribui os componentes React Bits. Consulte [THIRD-PARTY.md](backend/deploy/windows/THIRD-PARTY.md) antes de distribuir binários.\n", readme, flags=re.S)
     files["README.md"] = readme.encode("utf-8")
     files["LICENSE"] = files["tools/github/LICENSE-MIT.txt"]
     files["docs/publication.md"] = files["tools/github/publication.md"]
@@ -62,14 +62,6 @@ def prepare():
     if ptz in files:
         content = re.sub(r"## Adaptador Hikvision.*?(?=## Validação e limites)", "", text(files[ptz]), flags=re.S)
         files[ptz] = content.encode("utf-8")
-    files["frontend/docs/ui.md"] = (
-        "# Interface do Astra\n\nA interface usa shadcn/ui, tema escuro, cores ciano e fonte Inter. "
-        "Os componentes compartilhados ficam em src/components/ui; os estilos gerais em src/app.\n\n"
-        "A variante pública usa a cena CSS original OrbitalDawn no login. Os componentes derivados "
-        "de React Bits e os respectivos ensaios WebGL não são distribuídos nesta variante.\n\n"
-        "A marca e os ícones usam os ativos Astra presentes em public/brand e src/app. "
-        "A interface consulta a API na mesma origem HTTPS e respeita as permissões por tenant.\n"
-    ).encode("utf-8")
     for path in ("frontend/package.json", "frontend/package-lock.json"):
         package = json.loads(text(files[path]))
         package["license"] = "MIT"
@@ -113,7 +105,7 @@ def main():
         "purpose": "MIT source release approved by maintainer",
         "vendor_integrations": "preserved",
         "private_manuals": "excluded",
-        "react_bits_components": "excluded; original OrbitalDawn used",
+        "react_bits_components": "excluded",
         "files": manifest,
     }, indent=2) + "\n", encoding="utf-8")
     print(f"Prepared {len(files)} files: {destination}")

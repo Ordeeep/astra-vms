@@ -44,6 +44,7 @@ func TestCameraDeletionPermissionTenantRevisionAndRevocation(t *testing.T) {
 	base := "/tenants/" + tenant
 	path := base + "/cameras/" + camera
 	db := cameraDeletionDB(t, b)
+	key := cameraTestKey(t, db, tenant, camera)
 	ctx := context.Background()
 	exec := func(sql string, args ...any) {
 		t.Helper()
@@ -54,10 +55,10 @@ func TestCameraDeletionPermissionTenantRevisionAndRevocation(t *testing.T) {
 	// The current-site deletion grant covers the whole camera history in this tenant.
 	currentSite := b.call("POST", base+"/sites", map[string]string{"name": "Current", "timezone": "UTC"}, 201)["id"].(string)
 	b.call("POST", path+"/site-changes", map[string]any{"siteId": currentSite, "revision": 1}, 200)
-	exec(`INSERT INTO archive_segments(id,tenant_id,camera_id,site_id,source_version,profile_id,start_at,end_at,bytes,charged,metadata) SELECT 'old-segment',tenant_id,id,$3,source_version,'main',now()-interval '1 hour',now(),10,4096,'{}' FROM cameras WHERE tenant_id=$1 AND id=$2`, tenant, camera, site)
-	exec(`INSERT INTO playback_sessions(id,tenant_id,camera_id,context_id,session_hash,start_at,end_at,expires) VALUES('playing',$1,$2,'context','session',now()-interval '1 hour',now(),now()+interval '1 hour')`, tenant, camera)
-	exec(`INSERT INTO live_sessions(id,tenant_id,camera_id,context_id,session_hash,source_version,profile_id,worker_token,media_path,expires) SELECT 'watching',tenant_id,id,'context','session',source_version,'main','lease','path',now()+interval '1 hour' FROM cameras WHERE tenant_id=$1 AND id=$2`, tenant, camera)
-	plan, _ := json.Marshal(media.ExportPlan{Tenant: tenant, Camera: camera, Clips: []media.ExportClip{{ID: "old-segment", Index: media.SegmentIndex{Tenant: tenant, Camera: camera, Site: site}}}})
+	exec(`INSERT INTO archive_segments(id,tenant_id,camera_id,site_id,source_version,profile_id,start_at,end_at,bytes,charged,metadata) SELECT 'old-segment',tenant_id,id,$3,source_version,'main',now()-interval '1 hour',now(),10,4096,'{}' FROM cameras WHERE tenant_id=$1 AND id=$2`, tenant, key, site)
+	exec(`INSERT INTO playback_sessions(id,tenant_id,camera_id,context_id,session_hash,start_at,end_at,expires) VALUES('playing',$1,$2,'context','session',now()-interval '1 hour',now(),now()+interval '1 hour')`, tenant, key)
+	exec(`INSERT INTO live_sessions(id,tenant_id,camera_id,context_id,session_hash,source_version,profile_id,worker_token,media_path,expires) SELECT 'watching',tenant_id,id,'context','session',source_version,'main','lease','path',now()+interval '1 hour' FROM cameras WHERE tenant_id=$1 AND id=$2`, tenant, key)
+	plan, _ := json.Marshal(media.ExportPlan{Tenant: tenant, Camera: key, Clips: []media.ExportClip{{ID: "old-segment", Index: media.SegmentIndex{Tenant: tenant, Camera: key, Site: site}}}})
 	for _, status := range []string{"queued", "running", "completed"} {
 		exec(`INSERT INTO export_jobs(id,tenant_id,actor_id,preview_id,idempotency_key,plan,status,expires) VALUES($1,$2,$3,'preview',$1,$4,$5,now()+interval '1 hour')`, status, tenant, actor, plan, status)
 	}
@@ -96,7 +97,7 @@ func TestCameraDeletionPermissionTenantRevisionAndRevocation(t *testing.T) {
  (SELECT count(*) FROM export_jobs WHERE tenant_id=$1 AND status='cancelled'),
  (SELECT count(*) FROM export_jobs WHERE tenant_id=$1 AND status='completed'),
  (SELECT count(*) FROM camera_deletions WHERE tenant_id=$1 AND camera_id=$2),
- (SELECT count(*) FROM audit_events WHERE tenant_id=$1 AND action='camera.deleted' AND resource_id=$2)`, tenant, camera).Scan(&connections, &playing, &watching, &cancelled, &ready, &requests, &audits); err != nil {
+ (SELECT count(*) FROM audit_events WHERE tenant_id=$1 AND action='camera.deleted' AND resource_id=$2)`, tenant, key).Scan(&connections, &playing, &watching, &cancelled, &ready, &requests, &audits); err != nil {
 		t.Fatal(err)
 	}
 	if connections != 0 || playing != 0 || watching != 0 || cancelled != 2 || ready != 1 || requests != 1 || audits != 1 {
@@ -112,7 +113,7 @@ func TestCameraDeletionPermissionTenantRevisionAndRevocation(t *testing.T) {
 		t.Fatal("saved layout kept deleted camera")
 	}
 	// Requests that began before deletion cannot create another consumer afterwards.
-	if _, err := db.Exec(ctx, `INSERT INTO playback_sessions(id,tenant_id,camera_id,context_id,session_hash,start_at,end_at,expires) VALUES('late',$1,$2,'context','session',now(),now()+interval '1 hour',now()+interval '1 hour')`, tenant, camera); err == nil {
+	if _, err := db.Exec(ctx, `INSERT INTO playback_sessions(id,tenant_id,camera_id,context_id,session_hash,start_at,end_at,expires) VALUES('late',$1,$2,'context','session',now(),now()+interval '1 hour',now()+interval '1 hour')`, tenant, key); err == nil {
 		t.Fatal("tombstone accepted a late playback session")
 	}
 }
@@ -140,6 +141,7 @@ func TestCameraDeletionCleanupResumesAfterWorkerFailureAndCoreRestart(t *testing
 	b := newTestAPI(t, func(o *app.Options) { o.WorkerURL = worker.URL; o.WorkerSecret = "fixture-worker" })
 	tenant, _, camera, _ := deletionFixture(t, b)
 	db := cameraDeletionDB(t, b)
+	key := cameraTestKey(t, db, tenant, camera)
 	b.call("DELETE", "/tenants/"+tenant+"/cameras/"+camera, map[string]int{"revision": 1}, 202)
 	waitFor := func(check func() bool) {
 		t.Helper()
@@ -154,11 +156,11 @@ func TestCameraDeletionCleanupResumesAfterWorkerFailureAndCoreRestart(t *testing
 	}
 	waitFor(func() bool {
 		var attempts int
-		db.QueryRow(context.Background(), "SELECT attempts FROM camera_deletions WHERE tenant_id=$1 AND camera_id=$2", tenant, camera).Scan(&attempts)
+		db.QueryRow(context.Background(), "SELECT attempts FROM camera_deletions WHERE tenant_id=$1 AND camera_id=$2", tenant, key).Scan(&attempts)
 		return attempts > 0 && called.Load() > 0
 	})
 	var pending int
-	if err := db.QueryRow(context.Background(), "SELECT count(*) FROM audit_events WHERE tenant_id=$1 AND resource_id=$2 AND action='camera.cleanup_pending' AND outcome='failed'", tenant, camera).Scan(&pending); err != nil || pending != 1 {
+	if err := db.QueryRow(context.Background(), "SELECT count(*) FROM audit_events WHERE tenant_id=$1 AND resource_id=$2 AND action='camera.cleanup_pending' AND outcome='failed'", tenant, key).Scan(&pending); err != nil || pending != 1 {
 		t.Fatal("failure not audited", err, pending)
 	}
 	saved := b.options
@@ -170,11 +172,11 @@ func TestCameraDeletionCleanupResumesAfterWorkerFailureAndCoreRestart(t *testing
 	restarted.call("GET", "/tenants/"+tenant+"/cameras/"+camera, nil, 404)
 	waitFor(func() bool {
 		var status string
-		db.QueryRow(context.Background(), "SELECT status FROM camera_deletions WHERE tenant_id=$1 AND camera_id=$2", tenant, camera).Scan(&status)
+		db.QueryRow(context.Background(), "SELECT status FROM camera_deletions WHERE tenant_id=$1 AND camera_id=$2", tenant, key).Scan(&status)
 		return status == "completed"
 	})
 	var complete int
-	if err := db.QueryRow(context.Background(), "SELECT count(*) FROM audit_events WHERE tenant_id=$1 AND resource_id=$2 AND action='camera.cleanup_completed'", tenant, camera).Scan(&complete); err != nil || complete != 1 {
+	if err := db.QueryRow(context.Background(), "SELECT count(*) FROM audit_events WHERE tenant_id=$1 AND resource_id=$2 AND action='camera.cleanup_completed'", tenant, key).Scan(&complete); err != nil || complete != 1 {
 		t.Fatal("completion not audited", err, complete)
 	}
 }

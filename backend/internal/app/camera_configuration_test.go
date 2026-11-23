@@ -32,11 +32,14 @@ func TestCameraConfigurationAtomicSaveAndSourceHistory(t *testing.T) {
 	siteA := b.call("POST", base+"/sites", map[string]string{"name": "A", "timezone": "UTC"}, 201)["id"].(string)
 	siteB := b.call("POST", base+"/sites", map[string]string{"name": "B", "timezone": "UTC"}, 201)["id"].(string)
 	created := b.call("POST", base+"/cameras", map[string]any{"name": "Before", "siteId": siteA, "profiles": []map[string]string{{"id": "main", "name": "Main", "url": "rtsp://fixture:secret@camera/main"}, {"id": "sub1", "name": "Sub", "url": "rtsp://fixture:secret@camera/sub"}}}, 201)
+	if created["displayMode"] != "contain" {
+		t.Fatal("camera without a display preference should keep the native aspect ratio")
+	}
 	cid := created["id"].(string)
 	path := base + "/cameras/" + cid
-	input := map[string]any{"name": "After", "siteId": siteB, "active": true, "revision": 1, "source": map[string]any{"connectionType": "rtsp", "profiles": []map[string]string{{"id": "main", "name": "Main", "url": "rtsp://camera/new"}, {"id": "sub1", "name": "Sub", "url": ""}}}}
+	input := map[string]any{"name": "After", "siteId": siteB, "active": true, "revision": 1, "displayMode": "4:3", "source": map[string]any{"connectionType": "rtsp", "profiles": []map[string]string{{"id": "main", "name": "Main", "url": "rtsp://camera/new"}, {"id": "sub1", "name": "Sub", "url": ""}}}}
 	updated := b.call("PATCH", path+"/configuration", input, 200)
-	if updated["name"] != "After" || updated["siteId"] != siteB || updated["revision"] != float64(2) || updated["sourceVersion"] != created["sourceVersion"] || updated["connectionRevision"] != float64(2) {
+	if updated["name"] != "After" || updated["siteId"] != siteB || updated["revision"] != float64(2) || updated["sourceVersion"] != created["sourceVersion"] || updated["connectionRevision"] != float64(2) || updated["displayMode"] != "4:3" {
 		t.Fatal("combined maintenance did not preserve origin and save all fields")
 	}
 	raw, _ := json.Marshal(updated)
@@ -65,8 +68,12 @@ func TestCameraConfigurationAtomicSaveAndSourceHistory(t *testing.T) {
 	// Metadata alone must work without resubmitting private connection fields.
 	input = map[string]any{"name": "Metadata", "siteId": siteA, "active": false, "revision": 2}
 	current = b.call("PATCH", path+"/configuration", input, 200)
-	if current["active"] != false || current["connectionRevision"] != float64(2) || current["sourceVersion"] != created["sourceVersion"] {
-		t.Fatal("metadata save changed connection")
+	if current["active"] != false || current["connectionRevision"] != float64(2) || current["sourceVersion"] != created["sourceVersion"] || current["displayMode"] != "4:3" {
+		t.Fatal("metadata save changed connection or the existing display mode")
+	}
+	invalid := map[string]any{"name": "Invalid mode", "siteId": siteA, "active": false, "revision": 3, "displayMode": "stretch"}
+	if rejected := b.call("PATCH", path+"/configuration", invalid, 422); rejected["code"] != "invalid_camera_display_mode" {
+		t.Fatalf("unexpected error for invalid display mode: %v", rejected)
 	}
 	// Profiles can be added or removed directly, retaining the saved URLs.
 	input["revision"] = 3
@@ -99,7 +106,10 @@ func TestCameraConfigurationDestinationPermissions(t *testing.T) {
 	base := "/tenants/" + tenant
 	siteA := b.call("POST", base+"/sites", map[string]string{"name": "A", "timezone": "UTC"}, 201)["id"].(string)
 	siteB := b.call("POST", base+"/sites", map[string]string{"name": "B", "timezone": "UTC"}, 201)["id"].(string)
-	created := b.call("POST", base+"/cameras", map[string]any{"name": "Before", "siteId": siteA, "profiles": []map[string]string{{"id": "main", "name": "Main", "url": "rtsp://camera/main"}}}, 201)
+	created := b.call("POST", base+"/cameras", map[string]any{"name": "Before", "siteId": siteA, "displayMode": "cover", "profiles": []map[string]string{{"id": "main", "name": "Main", "url": "rtsp://camera/main"}}}, 201)
+	if created["displayMode"] != "cover" {
+		t.Fatal("camera creation did not persist the requested display mode")
+	}
 	user := b.call("POST", "/admin/operators", map[string]any{"username": "manager", "password": "fixture-password"}, 201)["id"].(string)
 	group := b.call("POST", base+"/groups", map[string]any{"name": "A only", "grants": []app.Grant{{Action: "inventory.manage", Scope: "site", ResourceID: siteA}}}, 201)["id"].(string)
 	b.call("PUT", base+"/operators/"+user, map[string]any{"groups": []string{group}, "revision": 0}, 200)

@@ -73,7 +73,11 @@ func (a *App) sourceTest(w http.ResponseWriter, r *http.Request, id identity) {
 	if !body(w, r, &in) {
 		return
 	}
-	c, ok := a.authorizeSourceRequest(w, r, id, tenant, in.SiteID, in.CameraID)
+	key, ok := a.requestCameraKey(w, r, tenant, in.CameraID)
+	if !ok {
+		return
+	}
+	c, ok := a.authorizeSourceRequest(w, r, id, tenant, in.SiteID, key)
 	if !ok {
 		return
 	}
@@ -95,8 +99,8 @@ func (a *App) sourceTest(w http.ResponseWriter, r *http.Request, id identity) {
 		}
 		if camera.ManagedProfiles(s.Type) {
 			var stored *camera.Source
-			if c.ID != "" && c.ConnectionType == s.Type {
-				known, e := a.loadCameraSource(ctx, tenant, c.ID, c.SourceVersion)
+			if c.key != "" && c.ConnectionType == s.Type {
+				known, e := a.loadCameraSource(ctx, tenant, c.key, c.SourceVersion)
 				if e != nil {
 					problem(w, 503, "vault_unavailable")
 					return
@@ -142,11 +146,11 @@ func (a *App) profileTest(w http.ResponseWriter, r *http.Request, id identity) {
 		problem(w, 404, "camera_not_found")
 		return
 	}
-	if !a.allowed(r.Context(), id, tenant, "inventory.manage", c.SiteID, c.ID) {
+	if !a.allowed(r.Context(), id, tenant, "inventory.manage", c.SiteID, c.key) {
 		problem(w, 403, "forbidden")
 		return
 	}
-	source, err := a.cameraSource(r.Context(), tenant, c.ID, c.SourceVersion, in.Profile)
+	source, err := a.cameraSource(r.Context(), tenant, c.key, c.SourceVersion, in.Profile)
 	if err != nil {
 		problem(w, 422, "profile_unavailable")
 		return
@@ -158,7 +162,7 @@ func (a *App) profileTest(w http.ResponseWriter, r *http.Request, id identity) {
 		problem(w, 429, "probe_capacity")
 		return
 	}
-	if _, err = a.db.Exec(r.Context(), "INSERT INTO jobs(id,tenant_id,actor_id,camera_id,kind,status) VALUES($1,$2,$3,$4,'profile-test','running')", job, tenant, id.User.ID, c.ID); err != nil {
+	if _, err = a.db.Exec(r.Context(), "INSERT INTO jobs(id,tenant_id,actor_id,camera_id,kind,status) VALUES($1,$2,$3,$4,'profile-test','running')", job, tenant, id.User.ID, c.key); err != nil {
 		<-a.probeSlots
 		dbFailure(w)
 		return
@@ -222,7 +226,7 @@ func (a *App) loadLive(r *http.Request, id identity, tenant string) (liveSession
 		return s, err
 	}
 	c, err := scanCamera(a.db.QueryRow(r.Context(), cameraSelect+" WHERE c.tenant_id=$1 AND c.id=$2", tenant, s.Camera))
-	if err != nil || !c.EffectiveActive || c.SourceVersion != s.Source || !liveConnectionCurrent(c, s) || !a.allowed(r.Context(), id, tenant, "live", c.SiteID, c.ID) {
+	if err != nil || !c.EffectiveActive || c.SourceVersion != s.Source || !liveConnectionCurrent(c, s) || !a.allowed(r.Context(), id, tenant, "live", c.SiteID, c.key) {
 		return s, errors.New("live authorization lost")
 	}
 	return s, nil
@@ -246,12 +250,16 @@ func (a *App) createLive(w http.ResponseWriter, r *http.Request, id identity) {
 		problem(w, 422, "invalid_fallback")
 		return
 	}
-	c, err := scanCamera(a.db.QueryRow(r.Context(), cameraSelect+" WHERE c.tenant_id=$1 AND c.id=$2", tenant, in.CameraID))
+	key, ok := a.requestCameraKey(w, r, tenant, in.CameraID)
+	if !ok {
+		return
+	}
+	c, err := scanCamera(a.db.QueryRow(r.Context(), cameraSelect+" WHERE c.tenant_id=$1 AND c.id=$2", tenant, key))
 	if err != nil {
 		problem(w, 404, "camera_not_found")
 		return
 	}
-	if !a.allowed(r.Context(), id, tenant, "live", c.SiteID, c.ID) {
+	if !a.allowed(r.Context(), id, tenant, "live", c.SiteID, c.key) {
 		problem(w, 403, "forbidden")
 		return
 	}
@@ -261,7 +269,7 @@ func (a *App) createLive(w http.ResponseWriter, r *http.Request, id identity) {
 	}
 	chosen, source := "", ""
 	for _, candidate := range append([]string{in.Profile}, in.Fallback...) {
-		value, e := a.cameraSource(r.Context(), tenant, c.ID, c.SourceVersion, candidate)
+		value, e := a.cameraSource(r.Context(), tenant, c.key, c.SourceVersion, candidate)
 		if e == nil {
 			chosen = candidate
 			source = value
@@ -273,7 +281,7 @@ func (a *App) createLive(w http.ResponseWriter, r *http.Request, id identity) {
 		return
 	}
 	mode := deliveryMode(in.Codecs, in.ForceCompatibility)
-	path := "c_" + c.ID + "_" + c.SourceVersion + "_" + chosen + "_r" + strconv.FormatInt(c.ConnectionRevision, 10) + "_" + mode
+	path := "c_" + c.key + "_" + c.SourceVersion + "_" + chosen + "_r" + strconv.FormatInt(c.ConnectionRevision, 10) + "_" + mode
 	if a.worker(r.Context(), "POST", "/sources", map[string]any{"path": path, "url": source, "compatible": mode != "native", "forceTranscode": in.ForceCompatibility}, nil) != nil {
 		problem(w, 503, "media_unavailable")
 		return
@@ -287,7 +295,7 @@ func (a *App) createLive(w http.ResponseWriter, r *http.Request, id identity) {
 		return
 	}
 	sid := newID()
-	_, err = a.db.Exec(r.Context(), "WITH inserted AS (INSERT INTO live_sessions(id,tenant_id,context_id,session_hash,camera_id,source_version,profile_id,worker_token,media_path,expires) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id) INSERT INTO audit_events(actor_id,tenant_id,action,resource_id) SELECT $11,$2,'live.started',$5 FROM inserted", sid, tenant, r.Header.Get("X-VMS-Context"), id.SessionHash, c.ID, c.SourceVersion, chosen, lease.Token, path, lease.Expires, id.User.ID)
+	_, err = a.db.Exec(r.Context(), "WITH inserted AS (INSERT INTO live_sessions(id,tenant_id,context_id,session_hash,camera_id,source_version,profile_id,worker_token,media_path,expires) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id) INSERT INTO audit_events(actor_id,tenant_id,action,resource_id) SELECT $11,$2,'live.started',$5 FROM inserted", sid, tenant, r.Header.Get("X-VMS-Context"), id.SessionHash, c.key, c.SourceVersion, chosen, lease.Token, path, lease.Expires, id.User.ID)
 	if err != nil {
 		a.worker(r.Context(), "DELETE", "/leases/"+lease.Token, nil, nil)
 		dbFailure(w)
@@ -308,7 +316,7 @@ func (a *App) createLive(w http.ResponseWriter, r *http.Request, id identity) {
 }
 
 func liveConnectionCurrent(c Camera, s liveSession) bool {
-	base := "c_" + c.ID + "_" + c.SourceVersion + "_" + s.Profile
+	base := "c_" + c.key + "_" + c.SourceVersion + "_" + s.Profile
 	// Legacy sessions expire quickly but may still exist during an update.
 	if c.ConnectionRevision <= 1 && s.Path == base {
 		return true

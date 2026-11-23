@@ -59,7 +59,14 @@ func migrate(ctx context.Context, db *pgxpool.Pool) error {
  `, `ALTER TABLE operators ADD COLUMN deleted_at timestamptz;`, installationGroupsMigration, linkedInstallationAdministrationMigration,
 		// Existing installations already applied the initial schema. Publish the
 		// checkpoint column and event contract as an additive upgrade as well.
-		`ALTER TABLE archive_segments ADD COLUMN IF NOT EXISTS catalog_sequence bigint NOT NULL DEFAULT 0;` + eventsSQL}
+		`ALTER TABLE archive_segments ADD COLUMN IF NOT EXISTS catalog_sequence bigint NOT NULL DEFAULT 0;` + eventsSQL, `
+ ALTER TABLE export_jobs ADD COLUMN IF NOT EXISTS camera_name text NOT NULL DEFAULT '';
+ ALTER TABLE export_jobs ADD COLUMN IF NOT EXISTS author_name text NOT NULL DEFAULT '';
+ CREATE INDEX IF NOT EXISTS export_owner_history ON export_jobs(tenant_id,actor_id,created_at DESC,id DESC);
+ `, `ALTER TABLE mosaics ADD COLUMN layout text NOT NULL DEFAULT '';`, cameraNumbersMigration, `
+ ALTER TABLE cameras ADD COLUMN IF NOT EXISTS display_mode text NOT NULL DEFAULT 'contain'
+  CHECK (display_mode IN ('cover','4:3','contain'));
+ `}
 	if version > len(migrations) {
 		return errors.New("database requires a newer VMS core")
 	}

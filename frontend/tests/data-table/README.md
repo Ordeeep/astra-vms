@@ -41,10 +41,10 @@ npx --yes --package @playwright/cli playwright-cli -s=tables close
 `check.cjs` verifica filtros combinados, intervalos numéricos e de datas,
 ordenação, visibilidade, teclado, estados vazios, paginação durante polling,
 carregamento parcial e layout em 390 px. `integration-check.cjs` verifica as
-11 tabelas dos workspaces, busca em arrays, ações, 237 trechos no acervo,
+tabelas dos workspaces, busca em arrays, ações,
 cursores e descarte de respostas antigas ao trocar aba ou escopo da auditoria.
 As capturas são gravadas em `output/playwright/data-table/` na raiz.
 
-Para smoke de integração, abra `http://127.0.0.1:13111/?integration#cameras`. Os links no topo montam os workspaces reais de câmeras, sites, administração, exportações, gravação, consulta e operação. Todos os endpoints são simulados em memória, inclusive páginas de API com cursor; chamadas desconhecidas retornam 404 simulado. `window.syntheticTableRequests` registra as requisições para inspeção no navegador. Formulários de alteração e players não são simulados neste smoke.
+Para smoke de integração, abra `http://127.0.0.1:13111/?integration#cameras`. Os links no topo montam os workspaces reais de câmeras, sites, administração e operação. Todos os endpoints são simulados em memória, inclusive páginas de API com cursor. Chamadas desconhecidas retornam 404 simulado. `window.syntheticTableRequests` registra as requisições para inspeção no navegador.
 
-Na tela `playback`, selecione a primeira câmera e busque para obter 237 segmentos, cobrindo a remoção do antigo corte em 200. Em `operations`, alterne Diagnóstico/Auditoria e carregue registros anteriores. O link `management` abre Acessos; `tenants`, `groups` e `operators` abrem as telas dedicadas. Os demais cadastros têm entre 14 e 37 registros para exercitar a paginação.
+Em `operations`, alterne Diagnóstico/Auditoria e carregue registros anteriores. O link `management` abre Acessos; `tenants`, `groups` e `operators` abrem as telas dedicadas. Os demais cadastros têm entre 14 e 37 registros para exercitar a paginação.

@@ -41,8 +41,10 @@ func (a *App) audit(w http.ResponseWriter, r *http.Request, id identity) {
 		problem(w, 422, "invalid_filter")
 		return
 	}
-	rows, err := a.db.Query(r.Context(), `SELECT e.id,e.actor_id,coalesce(o.username,'Sistema'),e.action,coalesce(e.resource_id,''),e.occurred_at,e.revision,coalesce(e.details->>'status',e.outcome),coalesce(e.details->>'code','')
+	rows, err := a.db.Query(r.Context(), `SELECT e.id,e.actor_id,coalesce(o.username,'Sistema'),e.action,coalesce(c.camera_number::text,e.resource_id,''),e.occurred_at,e.revision,coalesce(e.details->>'status',e.outcome),coalesce(e.details->>'code','')
  FROM audit_events e LEFT JOIN operators o ON o.id=e.actor_id
+ LEFT JOIN cameras c ON c.tenant_id=e.tenant_id AND c.id=e.resource_id
+  AND (e.action LIKE 'camera.%' OR e.action IN ('ptz.command','live.started','playback.started','recording.configured'))
  WHERE (($1='' AND e.tenant_id IS NULL) OR e.tenant_id=$1) AND e.id<$2 AND ($3='' OR e.action=$3)
  ORDER BY e.id DESC LIMIT 101`, tenant, before, action)
 	if err != nil {
@@ -111,8 +113,12 @@ func (a *App) diagnostics(w http.ResponseWriter, r *http.Request, id identity) {
 		workerOK = a.worker(workerCtx, "GET", "/archive/usage?tenant="+tenant, nil, &usage) == nil
 	}
 	workerCancel()
-	rows, err := a.db.Query(ctx, `SELECT c.id,c.name,c.site_id,coalesce(s.code,'not_configured'),s.last_frame,s.last_write,s.updated_at
- FROM cameras c LEFT JOIN recording_status s ON s.tenant_id=c.tenant_id AND s.camera_id=c.id WHERE c.tenant_id=$1 AND c.deleted_at IS NULL AND c.id>$2 ORDER BY c.id LIMIT 201`, tenant, r.URL.Query().Get("cursor"))
+	after, ok := a.cameraCursor(w, r, tenant)
+	if !ok {
+		return
+	}
+	rows, err := a.db.Query(ctx, `SELECT c.camera_number::text,c.name,c.site_id,coalesce(s.code,'not_configured'),s.last_frame,s.last_write,s.updated_at
+ FROM cameras c LEFT JOIN recording_status s ON s.tenant_id=c.tenant_id AND s.camera_id=c.id WHERE c.tenant_id=$1 AND c.deleted_at IS NULL AND c.camera_number>$2 ORDER BY c.camera_number LIMIT 201`, tenant, after)
 	if err != nil {
 		dbFailure(w)
 		return
@@ -171,7 +177,7 @@ func (a *App) recordingEvents(w http.ResponseWriter, r *http.Request, id identit
 		}
 		before = n
 	}
-	rows, err := a.db.Query(r.Context(), `SELECT e.id,e.camera_id,c.name,e.site_id,e.source_version,e.code,e.occurred_at FROM recording_events e JOIN cameras c ON c.tenant_id=e.tenant_id AND c.id=e.camera_id WHERE e.tenant_id=$1 AND e.id<$2 ORDER BY e.id DESC LIMIT 201`, tenant, before)
+	rows, err := a.db.Query(r.Context(), `SELECT e.id,e.camera_id,coalesce(c.camera_number::text,e.camera_id),c.name,e.site_id,e.source_version,e.code,e.occurred_at FROM recording_events e JOIN cameras c ON c.tenant_id=e.tenant_id AND c.id=e.camera_id WHERE e.tenant_id=$1 AND e.id<$2 ORDER BY e.id DESC LIMIT 201`, tenant, before)
 	if err != nil {
 		dbFailure(w)
 		return
@@ -182,9 +188,9 @@ func (a *App) recordingEvents(w http.ResponseWriter, r *http.Request, id identit
 	count := 0
 	for rows.Next() {
 		var n int64
-		var camera, name, site, source, code string
+		var camera, number, name, site, source, code string
 		var at time.Time
-		if rows.Scan(&n, &camera, &name, &site, &source, &code, &at) != nil {
+		if rows.Scan(&n, &camera, &number, &name, &site, &source, &code, &at) != nil {
 			dbFailure(w)
 			return
 		}
@@ -196,7 +202,7 @@ func (a *App) recordingEvents(w http.ResponseWriter, r *http.Request, id identit
 		if !id.User.GlobalAdmin && !permits(grants, tenant, "audit.view", site, camera) && !permits(grants, tenant, "recording.manage", site, camera) {
 			continue
 		}
-		items = append(items, map[string]any{"id": cursor, "cameraId": camera, "name": name, "siteId": site, "sourceVersion": source, "code": code, "occurredAt": at})
+		items = append(items, map[string]any{"id": cursor, "cameraId": number, "name": name, "siteId": site, "sourceVersion": source, "code": code, "occurredAt": at})
 	}
 	if rows.Err() != nil {
 		dbFailure(w)
