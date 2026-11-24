@@ -26,7 +26,7 @@ foreach($entry in $manifest.files){
 Get-ChildItem -LiteralPath $Bundle -Recurse -Force -File|ForEach-Object{
  if($_.FullName -ne (Join-Path $Bundle 'manifest.json') -and !$listed.ContainsKey($_.FullName)){throw "Unlisted package file: $($_.Name)"}
 }
-foreach($required in @('backend/vms.exe','backend/vms-worker.exe','backend/vms-service.exe','runtime/node/node.exe','frontend/server.js')){
+foreach($required in @('backend/vms.exe','backend/vms-worker.exe','backend/vms-event-worker.exe','backend/vms-service.exe','runtime/node/node.exe','frontend/server.js')){
  if(!$listed.ContainsKey([IO.Path]::GetFullPath((Join-Path $Bundle $required)))){throw "Required package file missing: $required"}
 }
 $scratch=Join-Path ([IO.Path]::GetTempPath()) ('vms-package-check-'+[Guid]::NewGuid().ToString('N'))

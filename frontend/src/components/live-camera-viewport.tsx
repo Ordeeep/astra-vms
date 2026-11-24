@@ -1,7 +1,9 @@
 "use client";
 
-import {useEffect,useRef,useState,type CSSProperties,type ReactNode} from "react";
-import {LoaderCircle,Minus,Plus,RotateCcw,Search,X} from "lucide-react";
+import {useEffect,useRef,useState,type CSSProperties,type MouseEvent,type ReactNode} from "react";
+import {Film,LoaderCircle,Search,Timeline,Video} from "lucide-react";
+import {Slider} from "@/components/ui/slider";
+import {Button} from "@/components/ui/button";
 import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip";
 
 type View={scale:number;x:number;y:number};
@@ -13,12 +15,14 @@ function bounded(view:View):View{
 }
 
 // Owns only the local framing: the player stays mounted throughout zoom/pan.
-export function LiveCameraViewport({name,debugCameraId,position,onClose,children}:{
- name:string;debugCameraId?:string;position:number;onClose:()=>void;children:ReactNode;
+export function LiveCameraViewport({name,debugCameraId,showShortcuts,playback,onTogglePlayback,children}:{
+ name:string;debugCameraId?:string;showShortcuts:boolean;children:ReactNode;
+ playback?:{timelineVisible:boolean;onToggleTimeline:()=>void};onTogglePlayback:()=>void;
 }){
  const [enabled,setEnabled]=useState(false),[view,setView]=useState<View>(original);
  const displayId=debugCameraId&&/^[\da-f]{48}$/i.test(debugCameraId)?debugCameraId.slice(0,8):debugCameraId;
  const area=useRef<HTMLDivElement>(null);
+ const zoomTrigger=useRef<HTMLButtonElement>(null);
  const drag=useRef<{id:number;x:number;y:number;view:View}|null>(null);
  const zoom=(delta:number,anchor={x:0,y:0})=>setView(previous=>{
   const scale=Math.max(1,Math.min(8,previous.scale+delta)),ratio=scale/previous.scale;
@@ -30,6 +34,14 @@ export function LiveCameraViewport({name,debugCameraId,position,onClose,children
   if(current&&area.current?.hasPointerCapture(current.id))area.current.releasePointerCapture(current.id);
  };
  const disable=()=>{clearDrag();setEnabled(false);setView(original);};
+ const toggleZoom=(event:MouseEvent<HTMLButtonElement>)=>{
+  event.stopPropagation();
+  zoomTrigger.current=event.currentTarget;
+  if(enabled)disable();
+  else setEnabled(true);
+ };
+ const zoomHint=enabled?"Desativar zoom digital":"Ativar zoom digital";
+ const timelineHint=playback?.timelineVisible?"Ocultar linha do tempo":"Mostrar linha do tempo";
  useEffect(()=>{
   const element=area.current;
   if(!enabled||!element)return;
@@ -57,8 +69,6 @@ export function LiveCameraViewport({name,debugCameraId,position,onClose,children
     </Tooltip>
    ) : <span title={name}>{name}</span>}
    <span className="live-stream-change" role="status" aria-live="polite"><LoaderCircle className="animate-spin" aria-hidden="true"/><span>Alterando stream…</span></span>
-   <button type="button" className="live-camera-close live-camera-zoom" aria-label={`Zoom digital de ${name}`} aria-pressed={enabled} title={enabled?"Desativar zoom digital":"Ativar zoom digital"} onClick={event=>{event.stopPropagation();if(enabled)disable();else{setView(original);setEnabled(true);}}}><Search aria-hidden="true"/></button>
-   <button type="button" className="live-camera-close" aria-label={`Fechar câmera da posição ${position+1}`} title="Fechar câmera" onClick={event=>{event.stopPropagation();onClose();event.currentTarget.closest<HTMLElement>("[data-live-position]")?.focus();}}><X aria-hidden="true"/></button>
   </div>
   <div ref={area} className="video-area live-digital-zoom" data-zoom-enabled={enabled} data-zoomed={enabled&&view.scale>1} style={{"--digital-zoom-scale":view.scale,"--digital-zoom-x":`${view.x}cqw`,"--digital-zoom-y":`${view.y}cqh`} as CSSProperties}
    tabIndex={enabled?0:undefined} role={enabled?"group":undefined} aria-label={enabled?`Zoom digital de ${name}. Use mais e menos para ampliar, setas para mover e Escape para sair.`:undefined}
@@ -80,7 +90,12 @@ export function LiveCameraViewport({name,debugCameraId,position,onClose,children
    onDoubleClick={event=>{if(enabled)event.stopPropagation();}}
    onKeyDown={event=>{
     if(!enabled)return;
-    if(event.key==="Escape"){event.preventDefault();event.stopPropagation();disable();event.currentTarget.closest(".live-cell")?.querySelector<HTMLButtonElement>(".live-camera-zoom")?.focus();return;}
+    if(event.key==="Escape"){
+     event.preventDefault();event.stopPropagation();disable();
+     const trigger=showShortcuts?zoomTrigger.current:area.current?.closest<HTMLElement>("[data-live-position]");
+     trigger?.focus();
+     return;
+    }
     if(event.target!==event.currentTarget)return;
     if(!["+","=","-","0","ArrowLeft","ArrowRight","ArrowUp","ArrowDown"].includes(event.key))return;
     event.preventDefault();event.stopPropagation();
@@ -90,11 +105,38 @@ export function LiveCameraViewport({name,debugCameraId,position,onClose,children
     else setView(previous=>bounded({...previous,x:previous.x+(event.key==="ArrowLeft"?5:event.key==="ArrowRight"?-5:0),y:previous.y+(event.key==="ArrowUp"?5:event.key==="ArrowDown"?-5:0)}));
    }}>
    {children}
-   {enabled&&<div className="live-digital-zoom-controls" aria-label="Controles de zoom digital" onPointerDown={event=>event.stopPropagation()} onDoubleClick={event=>event.stopPropagation()}>
-    <button type="button" aria-label="Diminuir zoom digital" title="Diminuir" disabled={view.scale<=1} onClick={()=>zoom(-.25)}><Minus aria-hidden="true"/></button>
-    <output aria-label="Ampliação digital">{view.scale.toLocaleString("pt-BR",{maximumFractionDigits:2})}×</output>
-    <button type="button" aria-label="Aumentar zoom digital" title="Aumentar" disabled={view.scale>=8} onClick={()=>zoom(.25)}><Plus aria-hidden="true"/></button>
-    <button type="button" aria-label="Restaurar enquadramento digital" title="Restaurar enquadramento" onClick={()=>setView(original)}><RotateCcw aria-hidden="true"/></button>
+   {(showShortcuts||enabled)&&
+    <Tooltip>
+     <TooltipTrigger asChild>
+      <Button type="button" variant="ghost" size="icon-xs" className="live-camera-shortcut live-zoom-shortcut"
+       aria-label={`Lupa de ${name}`} aria-pressed={enabled} onClick={toggleZoom}>
+       <Search className="size-5" strokeWidth={2.5} aria-hidden="true"/>
+      </Button>
+     </TooltipTrigger>
+     <TooltipContent side="right" sideOffset={6}>{zoomHint}</TooltipContent>
+    </Tooltip>}
+   {showShortcuts&&<>
+    <Tooltip>
+     <TooltipTrigger asChild>
+      <Button type="button" variant="ghost" size="icon-xs" className="live-camera-shortcut live-recording-shortcut"
+       aria-label={playback?`Voltar ao vivo em ${name}`:`Abrir gravações de ${name}`} onClick={onTogglePlayback}>
+       {playback?<Video className="size-5" aria-hidden="true"/>:<Film className="size-5" aria-hidden="true"/>}
+      </Button>
+     </TooltipTrigger>
+     <TooltipContent side="left" sideOffset={6}>{playback?"Voltar ao vivo":"Abrir gravações"}</TooltipContent>
+    </Tooltip>
+    {playback&&<Tooltip>
+     <TooltipTrigger asChild>
+      <Button type="button" variant="ghost" size="icon-xs" className="live-camera-shortcut live-timeline-shortcut"
+       aria-label={timelineHint} aria-expanded={playback.timelineVisible} aria-controls="live-recording-timeline" onClick={playback.onToggleTimeline}>
+       <Timeline className="size-5" aria-hidden="true"/>
+      </Button>
+     </TooltipTrigger>
+     <TooltipContent side="left" sideOffset={6}>{timelineHint}</TooltipContent>
+    </Tooltip>}
+   </>}
+   {enabled&&<div className="live-digital-zoom-controls" role="group" aria-label="Controles de zoom digital" onPointerDown={event=>event.stopPropagation()} onDoubleClick={event=>event.stopPropagation()}>
+    <Slider orientation="vertical" min={1} max={8} step={0.25} value={[view.scale]} aria-label="Zoom digital" onValueChange={([scale])=>zoom(scale-view.scale)}/>
    </div>}
   </div>
  </>;

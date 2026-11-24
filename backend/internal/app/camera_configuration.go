@@ -1,8 +1,11 @@
 package app
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
+
+	"github.com/jackc/pgx/v5"
 	"vms.local/backend/internal/camera"
 )
 
@@ -152,11 +155,7 @@ func (a *App) cameraConfiguration(w http.ResponseWriter, r *http.Request, id ide
 		return
 	}
 	if oldSite != in.SiteID {
-		if _, err = tx.Exec(r.Context(), "INSERT INTO camera_locations(tenant_id,camera_id,site_id) VALUES($1,$2,$3)", tenant, cid, in.SiteID); err != nil {
-			dbFailure(w)
-			return
-		}
-		if audit(r.Context(), tx, current, tenant, "camera.site_changed", cid, map[string]string{"previousSite": oldSite, "siteId": in.SiteID}) != nil {
+		if recordCameraLocation(r.Context(), tx, current, tenant, cid, oldSite, in.SiteID) != nil {
 			dbFailure(w)
 			return
 		}
@@ -185,4 +184,11 @@ func (a *App) cameraConfiguration(w http.ResponseWriter, r *http.Request, id ide
 		a.invalidateAvailability(tenant, cid, "")
 	}
 	a.cameraResponse(w, r, current, tenant, cid, 200)
+}
+
+func recordCameraLocation(ctx context.Context, tx pgx.Tx, actor identity, tenant, cid, oldSite, newSite string) error {
+	if _, err := tx.Exec(ctx, "INSERT INTO camera_locations(tenant_id,camera_id,site_id) VALUES($1,$2,$3)", tenant, cid, newSite); err != nil {
+		return err
+	}
+	return audit(ctx, tx, actor, tenant, "camera.site_changed", cid, map[string]string{"previousSite": oldSite, "siteId": newSite})
 }

@@ -16,6 +16,7 @@ const merge = (intervals: RecordingInterval[]) => intervals.sort((a, b) => a.sta
 export class RecordingAvailabilityCache {
   private pages = new Map<number, Page>();
   private view: RecordingInterval | null = null;
+  private playbackDay: number | null = null;
   private load: (range: RecordingInterval, signal: AbortSignal) => Promise<Loaded>;
   private changed: () => void;
   constructor(load: (range: RecordingInterval, signal: AbortSignal) => Promise<Loaded>, changed: () => void) { this.load = load; this.changed = changed; }
@@ -26,9 +27,10 @@ export class RecordingAvailabilityCache {
     return keys;
   }
 
-  setView(view: RecordingInterval) {
+  setView(view: RecordingInterval, playbackDay: number | null = null) {
     this.view = view;
-    const wanted = new Set(this.keys(view));
+    this.playbackDay = playbackDay;
+    const wanted = this.wantedPages(view);
     for (const [key, page] of this.pages) if (!wanted.has(key) && page.controller) {
       page.dirtyRange = page.dirtyRange ?? page.requestedRange; page.requestedRange = undefined;
       page.version++; page.controller.abort(); page.controller = undefined;
@@ -38,6 +40,12 @@ export class RecordingAvailabilityCache {
       if (candidate === undefined) break;
       this.pages.delete(candidate);
     }
+  }
+
+  private wantedPages(view: RecordingInterval) {
+    const keys = new Set(this.keys(view));
+    if (this.playbackDay !== null) keys.add(this.playbackDay);
+    return keys;
   }
 
   invalidate(range?: RecordingInterval) {
@@ -51,7 +59,7 @@ export class RecordingAvailabilityCache {
 
   refresh() {
     if (!this.view) return;
-    for (const key of this.keys(this.view)) {
+    for (const key of this.wantedPages(this.view)) {
       let page = this.pages.get(key);
       if (!page) { page = {updated: 0, version: 0, dirty: true, error: ""}; this.pages.set(key, page); }
       // Touch the LRU entry without tying its identity to the visible window.

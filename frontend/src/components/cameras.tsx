@@ -14,7 +14,7 @@ import {Badge} from "@/components/ui/badge";
 import {Tabs,TabsList,TabsTrigger,TabsContent} from "@/components/ui/tabs";
 import {Activity,Layers,Settings,SlidersHorizontal,CalendarClock} from "lucide-react";
 import {api,ApiError,type Tenant} from "@/lib/api";
-import {allPages,type Site,type Camera,type CameraDisplayMode,type Profile} from "@/components/management";
+import {allPages,cameraDisplayModes,type Site,type Camera,type CameraDisplayMode,type Profile} from "@/components/management";
 import {CameraConnectionEditor,emptyCameraConnection,savedCameraConnection,type CameraConnection,type ConnectionType} from "@/components/camera-connection-editor";
 import {CameraDiagnostic} from "@/components/diagnostic";
 import {onEnvironmentChange} from "@/lib/events";
@@ -23,6 +23,8 @@ import {useIsMobile} from "@/hooks/use-mobile";
 import {availabilityLabels,cameraAvailability} from "@/lib/camera-availability";
 
 import {CameraRecordingEditor} from "@/components/camera-recording-editor";
+import {EventCollectionDialog} from "@/components/event-collection";
+import {CameraBulkActions,bulkCameraSummary,canSelectCameras,type BulkCameraAction,type BulkCameraResult} from "@/components/camera-bulk-actions";
 import {newRecordingConfig,recordingLabels,type RecordingConfig,type RecordingStatus,type RecordingStatusPage} from "@/lib/camera-recording";
 
 export function CamerasWorkspace({tenant,onStorage,registerCloseGuard}:{tenant:Tenant;onStorage?:()=>void;registerCloseGuard?:(guard:(()=>boolean)|null)=>void}){
@@ -31,7 +33,9 @@ export function CamerasWorkspace({tenant,onStorage,registerCloseGuard}:{tenant:T
  const [error,setError]=useState(""),[busy,setBusy]=useState(false),[loading,setLoading]=useState(true);
  const [refreshError,setRefreshError]=useState("");
  const [editor,setEditor]=useState<{type:string;camera?:Camera}|null>(null);
+ const [collection,setCollection]=useState<{camera:Camera;trigger:HTMLElement}|null>(null);
  const [deleting,setDeleting]=useState<Camera|null>(null),[result,setResult]=useState("");
+ const [selection,setSelection]=useState<Set<string>>(()=>new Set()),[bulkBusy,setBulkBusy]=useState(false);
  const heading=useRef<HTMLHeadingElement|null>(null);
  const removed=useRef(new Set<string>());
  const [cameraSite,setCameraSite]=useState("");
@@ -54,9 +58,9 @@ export function CamerasWorkspace({tenant,onStorage,registerCloseGuard}:{tenant:T
  const canRecording=!!editor&&(editor.camera?!!editor.camera.capabilities["recording.manage"]:!!(caps["recording.manage"]||sites.find(site=>site.id===cameraSite)?.capabilities?.["recording.manage"]));
  const draft=JSON.stringify({name:cameraName,site:cameraSite,active:cameraActive,displayMode,type:connectionType,connection,profiles,recording});
  const dirty=!!editor&&draft!==draftBase.current;
- const canLeave=()=>!busy&&(!dirty||window.confirm("Descartar as alterações não salvas desta câmera?"));
+ const canLeave=()=>!busy&&!bulkBusy&&(!dirty||window.confirm("Descartar as alterações não salvas desta câmera?"));
  function closeEditor(){editorEpoch.current++;setEditor(null);setError("");}
- useEffect(()=>{registerCloseGuard?.(canLeave);return()=>registerCloseGuard?.(null);},[dirty,busy,registerCloseGuard]);
+ useEffect(()=>{registerCloseGuard?.(canLeave);return()=>registerCloseGuard?.(null);},[dirty,busy,bulkBusy,registerCloseGuard]);
  useEffect(()=>{if(!dirty)return;const unload=(event:BeforeUnloadEvent)=>{event.preventDefault();event.returnValue="";};window.addEventListener("beforeunload",unload);return()=>window.removeEventListener("beforeunload",unload);},[dirty]);
  useEffect(()=>{
   let active=true,pending=false;
@@ -87,6 +91,7 @@ export function CamerasWorkspace({tenant,onStorage,registerCloseGuard}:{tenant:T
  }
  useEffect(()=>{
   removed.current.clear();setCameras([]);setSites([]);setCaps({});setRefreshError("");setError("");setResult("");setEditor(null);setDeleting(null);setLoading(true);void load();
+  setSelection(new Set());setBulkBusy(false);
   const unsubscribe=onEnvironmentChange(["CameraStatusChanged"],()=>void load());
   const poll=window.setInterval(()=>{if(!document.hidden&&pendingLoads.current===0)void load();},10_000);
   return()=>{loadEpoch.current++;editorEpoch.current++;window.clearInterval(poll);unsubscribe();};
@@ -130,6 +135,16 @@ export function CamerasWorkspace({tenant,onStorage,registerCloseGuard}:{tenant:T
    setCameras(current=>current.filter(camera=>camera.id!==deleting.id));
    setDeleting(null);setEditor(null);setResult("Câmera excluída. As gravações serão removidas em segundo plano.");
   }catch(e){setError((e as Error).message);}finally{setBusy(false);}
+ }
+ function finishBulk(action:BulkCameraAction,summary:BulkCameraResult,ids:string[]){
+  if(action==="delete"){
+   const deleted=new Set(ids);
+   for(const id of deleted)removed.current.add(id);
+   setCameras(current=>current.filter(camera=>!deleted.has(camera.id)));
+  }
+  setSelection(new Set());
+  setResult(bulkCameraSummary(action,summary));
+  void load();
  }
  function connectionInput(){return {connectionType,...(connectionType!=="rtsp"?{connection:{host:connection.host.trim(),protocol:connection.protocol,httpPort:connection.httpPort,username:connection.username,...(connection.password?{password:connection.password}:{})}}:{profiles})};}
  function changeConnectionType(type:ConnectionType){
@@ -177,12 +192,17 @@ export function CamerasWorkspace({tenant,onStorage,registerCloseGuard}:{tenant:T
   {id:"recording",header:"Gravação",accessor:(c:Camera)=>{const status=recordingStatuses.find(s=>s.cameraId===c.id);return status?recordingLabels[status.code]??status.code:recordingStatusError?"Estado indisponível":"—";},filter:"select",cell:(c:Camera)=>{const status=recordingStatuses.find(s=>s.cameraId===c.id);return <Badge variant={status?.code==="recording"?"outline":"secondary"}>{status?recordingLabels[status.code]??status.code:recordingStatusError?"Estado indisponível":"—"}</Badge>;}},
 
  ];
+ if(displayedCameras.some(c=>c.capabilities["event-collection.configure"]))columns.push({
+  id:"eventCollection",header:"Eventos",accessor:()=>"",cell:c=>c.capabilities["event-collection.configure"]?
+   <Button type="button" variant="outline" size="sm" onClick={e=>{e.stopPropagation();setCollection({camera:c,trigger:e.currentTarget});}}>Configurar coleta</Button>:null,
+ });
  return <>
   <div className="page-heading"><div><h1 ref={heading} tabIndex={-1}>Câmeras</h1><p>Gerencie as câmeras e suas fontes de vídeo por site neste tenant.</p></div>{(caps["inventory.manage"]||sites.some(s=>s.capabilities?.["inventory.manage"]))&&<Button onClick={()=>open("camera")} variant="default">+ Nova câmera</Button>}</div>
   {!loading&&<CameraAvailabilityCounts cameras={displayedCameras} now={now}/>}
   {recordingStatusError&&<Alert role="alert" variant="destructive"><AlertDescription>{recordingStatusError}</AlertDescription></Alert>}
   {refreshError&&<Alert role="alert" className="alert" variant="destructive"><AlertDescription>Não foi possível atualizar as câmeras. {refreshError}</AlertDescription></Alert>}
   {result&&<p role="status">{result}</p>}
+  {collection&&<EventCollectionDialog key={tenant.id+"/"+collection.camera.id} base={base+"/cameras/"+collection.camera.id+"/event-collection"} name={collection.camera.name} trigger={collection.trigger} onClose={()=>setCollection(null)}/>}
   {error&&!editor&&!deleting&&<Alert role="alert" className="alert" variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
   {editor&&<FormDialog noValidate hasChanges={dirty} className="camera-details-dialog" returnFocus={editorTrigger.current} fallbackFocus={()=>heading.current} saveDisabled={(!canInventory&&!canRecording)||recordingLoading||recordingFailed||conflict} saveLabel="Salvar" title={editor.camera?"Editar câmera":"Cadastro da câmera"} onClose={closeEditor} onSubmit={save} busy={busy} footerActions={editor.camera?.capabilities["camera.delete"]&&<Button type="button" variant="destructive" disabled={busy} onClick={()=>confirmDelete(editor.camera!)}>Excluir câmera</Button>}>
    <Tabs value={editor.type} onValueChange={type=>{
@@ -204,9 +224,7 @@ export function CamerasWorkspace({tenant,onStorage,registerCloseGuard}:{tenant:T
     <div className="grid max-w-72 gap-2">
      <Label htmlFor="camera-display-mode">Visualizando</Label>
      <NativeSelect id="camera-display-mode" className="w-full" value={displayMode} onChange={event=>setDisplayMode(event.target.value as CameraDisplayMode)}>
-      <NativeSelectOption value="cover">Espalhar pela célula</NativeSelectOption>
-      <NativeSelectOption value="4:3">Forçar 4:3</NativeSelectOption>
-      <NativeSelectOption value="contain">Manter a proporção</NativeSelectOption>
+      {Object.entries(cameraDisplayModes).map(([value,label])=><NativeSelectOption key={value} value={value}>{label}</NativeSelectOption>)}
      </NativeSelect>
     </div>
    </TabsContent>}
@@ -241,6 +259,16 @@ export function CamerasWorkspace({tenant,onStorage,registerCloseGuard}:{tenant:T
    busy={busy} confirmLabel={busy?"Excluindo…":"Excluir câmera"} onCancel={()=>{setDeleting(null);setError("");}} onConfirm={()=>void removeCamera()}>
    {error&&<Alert role="alert" className="alert" variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
   </ConfirmationDialog>}
-  {loading?<p className="flex items-center gap-2" role="status"><Spinner aria-hidden="true"/>Carregando câmeras…</p>:<DataTable key={tenant.id} data={displayedCameras} columns={columns} getRowId={c=>c.id} onRowClick={c=>open("camera",c)} canActivateRow={c=>!!(c.capabilities["inventory.manage"]||c.capabilities["recording.manage"]||c.capabilities["camera.delete"]||c.capabilities.playback)} rowLabel={c=>`Editar câmera ${c.name}`} label="Câmeras" searchPlaceholder="Buscar câmeras…" emptyMessage={<><h2>Nenhuma câmera disponível</h2><p>Cadastre uma câmera ou solicite acesso ao administrador.</p></>}/>}
+  {loading?<p className="flex items-center gap-2" role="status"><Spinner aria-hidden="true"/>Carregando câmeras…</p>:<DataTable key={tenant.id}
+   data={displayedCameras} columns={columns} getRowId={c=>c.id} onRowClick={c=>open("camera",c)}
+   canActivateRow={c=>!bulkBusy&&!!(c.capabilities["inventory.manage"]||c.capabilities["recording.manage"]||c.capabilities["camera.delete"]||c.capabilities.playback)}
+   rowLabel={c=>`Editar câmera ${c.name}`} label="Câmeras" searchPlaceholder="Buscar câmeras…"
+   emptyMessage={<><h2>Nenhuma câmera disponível</h2><p>Cadastre uma câmera ou solicite acesso ao administrador.</p></>}
+   selection={canSelectCameras(cameras)||selection.size?{
+    ids:selection,onChange:setSelection,disabled:bulkBusy,label:camera=>`Selecionar ${camera.name}`,
+    allLabel:(count,filtered)=>`Selecionar ${count===1?"a câmera":`as ${count} câmeras`} ${filtered?"deste filtro":"da tabela"}`,
+    renderActions:outsideFilters=><CameraBulkActions base={base} cameras={cameras} sites={sites} selection={selection} outsideFilters={outsideFilters}
+     onSelectionChange={setSelection} onComplete={finishBulk} onBusyChange={setBulkBusy} fallbackFocus={()=>heading.current}/>,
+   }:undefined}/>}
  </>;
 }

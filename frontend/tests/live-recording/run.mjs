@@ -27,17 +27,38 @@ try{
   if(path.startsWith('/fixture-media/')){const name=path.split('/').at(-1);if(!/^(manifest\.m3u8|init\.mp4|part\d+\.m4s)$/.test(name))return route.abort();return route.fulfill({contentType:name.endsWith('m3u8')?'application/vnd.apple.mpegurl':'video/mp4',body:await readFile(new URL('.generated/media/'+name,import.meta.url))});}
   return route.continue();
  });
- const panel=()=>page.getByRole('region',{name:'Gravações da câmera'});
+ const panel=()=>page.getByRole('region',{name:'Gravações do mosaico'});
+ const expectCenteredPlayback=async()=>{
+  const controls=panel().getByRole('group',{name:'Controles de reprodução de gravações'});
+  const [bar,first,last,navigation]=await Promise.all([
+   controls.boundingBox(),
+   controls.getByRole('button',{name:'Gravação anterior',exact:true}).boundingBox(),
+   controls.getByLabel('Velocidade da gravação',{exact:true}).boundingBox(),
+   controls.locator('.recording-navigation-controls').boundingBox(),
+  ]);
+  expect(Math.abs((first.x+last.x+last.width)/2-(bar.x+bar.width/2))).toBeLessThan(1);
+  expect(navigation.y+navigation.height<=first.y || navigation.y>=first.y+first.height || navigation.x>=last.x+last.width).toBe(true);
+ };
  const posts=()=>page.evaluate(()=>window.recordingQA.requests.filter(r=>r.method==='POST'&&r.path.endsWith('/playback-sessions')).length);
  const fresh=async()=>{await page.goto(origin);await page.getByRole('button',{name:'Mosaico repetido',exact:true}).click();await expect(page.locator('[data-live-position="0"] video')).toBeVisible();};
- const open=async(index=0)=>{await page.locator(`[data-live-position="${index}"]`).click({button:'right'});await page.getByRole('menuitem',{name:'Gravação',exact:true}).click();await expect(panel().getByRole('group',{name:'Linha do tempo de gravações',exact:true})).toBeVisible();await expect(panel().getByText('Consultando gravações…',{exact:true})).toHaveCount(0);};
+ const open=async(index=0)=>{await page.locator(`[data-live-position="${index}"]`).click({button:'right'});await page.getByRole('menuitem',{name:'Gravação',exact:true}).click();await expect(panel().getByRole('group',{name:'Linha do tempo de gravações',exact:true}).first()).toBeVisible();await expect(panel().getByText('Consultando gravações…',{exact:true})).toHaveCount(0);};
  await fresh();
  const debug=page.getByRole('button',{name:'Debug do mosaico'});
  const firstTile=page.locator('[data-live-position="0"]');
  const liveMetrics=firstTile.getByRole('group',{name:'Métricas da transmissão ao vivo'});
  await debug.click();
  await expect(liveMetrics).toBeVisible();
- await open();
+ const shortcuts=page.locator('.live-camera-shortcut');
+ await expect(shortcuts).toHaveCount(0);
+ await firstTile.locator('.live-camera-title').hover();
+ await expect(shortcuts).toHaveCount(2);
+ const nextTile=page.locator('[data-live-position="1"]');
+ await nextTile.hover();
+ await expect(firstTile.locator('.live-camera-shortcut')).toHaveCount(0);
+ await expect(nextTile.locator('.live-camera-shortcut')).toHaveCount(2);
+ await firstTile.hover();
+ await firstTile.getByRole('button',{name:/^Abrir gravações de /}).click();
+ await expect(panel().getByRole('group',{name:'Linha do tempo de gravações',exact:true}).first()).toBeVisible();
  await expect(firstTile.locator('.live-camera-debug-name')).toContainText('[cam1]');
  await expect(liveMetrics).toHaveCount(0);
  await panel().getByRole('button',{name:'Fechar painel de gravações'}).click();
@@ -49,6 +70,7 @@ try{
  await expect(debug).toHaveAttribute('aria-pressed','false');
  await expect(liveMetrics).toHaveCount(0);
  checks.push('debug mantém o ID na gravação, restaura as métricas ao voltar ao vivo e desliga ao sair da tela');
+ if(!process.argv.includes('--playback-only')){
  await page.goto(origin);
  await expect(page.locator('header').getByRole('button',{name:/Exporta/})).toHaveCount(0);
  const exportTab=page.getByRole('button',{name:/^Exportação/});
@@ -242,10 +264,11 @@ try{
  await page.clock.setFixedTime(new Date('2026-11-17T18:00:00Z'));
  checks.push('formulário móvel, últimos dez minutos e virada do dia, pulso e diálogo de tarefas, envio sucessivo, progresso, cancelamento individual e geral, download manual e histórico após expiração');
  checks.push('motivo de falha por tarefa ao passar o mouse ou navegar com Tab, inclusive histórico sem código');
+ }
  const go=async(time)=>{
   await panel().getByRole('button',{name:'Escolher data das gravações'}).click();
   await page.getByRole('button',{name:'17/11/2026, com gravações',exact:true}).click();
-  const ruler=panel().getByRole('group',{name:'Linha do tempo de gravações',exact:true});
+  const ruler=panel().getByRole('group',{name:'Linha do tempo de gravações',exact:true}).first();
   const target=Date.parse('2026-11-17T'+time+'-03:00')+250;
   let span=86400000,center=Date.parse('2026-11-17T12:00:00-03:00');
   while(true){
@@ -268,10 +291,56 @@ try{
    current=rates[rates.indexOf(current)+direction];
   }
  };
- const video=()=>page.locator('.recording-video video');
+ const video=()=>firstTile.locator('.recording-video video');
+ await fresh();
+ await firstTile.hover();
+ await open(2);
+ await expect(panel().getByLabel('Horário da reprodução')).toContainText('13:00:06');
+ await expect.poll(()=>page.locator('.recording-video video').evaluateAll(v=>v.length===3&&v.every(e=>e.readyState>=2&&e.paused))).toBe(true);
+ await panel().getByRole('button',{name:'Fechar painel de gravações'}).click();
+ await firstTile.hover();
+ const openRecordings=firstTile.getByRole('button',{name:/^Abrir gravações de /});
+ await openRecordings.click();
+ const backToLive=firstTile.getByRole('button',{name:/^Voltar ao vivo em /});
+ const hideTimeline=firstTile.getByRole('button',{name:'Ocultar linha do tempo'});
+ const showTimeline=firstTile.getByRole('button',{name:'Mostrar linha do tempo'});
+ await expect(backToLive).toBeVisible();
+ const cameraBox=await backToLive.boundingBox(),timelineBox=await hideTimeline.boundingBox();
+ expect(timelineBox.x).toBe(cameraBox.x);
+ expect(timelineBox.y).toBeGreaterThan(cameraBox.y+cameraBox.height);
+ await go('09:00:05'); await panel().getByRole('button',{name:'Reproduzir gravação'}).click();
+ await expect.poll(()=>video().evaluate(v=>v.readyState>=2&&!v.paused)).toBe(true);
+ await expect.poll(()=>page.locator('.recording-video video').count()).toBe(3);
+ const playbackPosts=await posts(), area=firstTile.locator('.live-digital-zoom');
+ await video().evaluate(v=>{window.qaVideo=v;});
+ await area.hover();
+ await firstTile.getByRole('button',{name:/^Lupa de /}).click();
+ await area.hover();
+ await page.mouse.wheel(0,-120);
+ await expect.poll(()=>video().evaluate(v=>new DOMMatrix(getComputedStyle(v).transform).a)).toBe(1.25);
+ const image=await area.boundingBox(), x=image.x+image.width/2, y=image.y+image.height/2;
+ await page.mouse.move(x,y);await page.mouse.down();await page.mouse.move(x+24,y+12,{steps:4});await page.mouse.up();
+ await expect.poll(()=>video().evaluate(v=>new DOMMatrix(getComputedStyle(v).transform).e)).toBeGreaterThan(0);
+ await hideTimeline.click();
+ await expect(page.locator('#live-recording-timeline')).toBeHidden();
+ await expect(showTimeline).toHaveAttribute('aria-expanded','false');
+ const hiddenAt=await video().evaluate(v=>v.currentTime);
+ await expect.poll(()=>video().evaluate(v=>v.currentTime)).toBeGreaterThan(hiddenAt);
+ await showTimeline.click();
+ await expect(panel().getByRole('group',{name:'Linha do tempo de gravações'}).first()).toBeVisible();
+ await expect(hideTimeline).toHaveAttribute('aria-expanded','true');
+ expect(await video().evaluate(v=>v===window.qaVideo)).toBe(true);
+ expect(await posts()).toBe(playbackPosts);
+ await hideTimeline.click();
+ await backToLive.click();
+ await expect(firstTile.locator('video.live-stream-video')).toBeVisible();
+ await expect.poll(()=>page.evaluate(()=>window.recordingQA.sessions.size)).toBe(0);
+ await openRecordings.click();
+ await expect(hideTimeline).toHaveAttribute('aria-expanded','true');
+ checks.push('atalhos da reprodução, zoom e arraste do vídeo gravado, linha do tempo reversível sem reiniciar a sessão e retorno ao vivo');
  // Keep the real pointer gesture active while an archive notification arrives.
  await fresh();await open();
- const qaRuler=panel().getByRole('group',{name:'Linha do tempo de gravações',exact:true});
+ const qaRuler=panel().getByRole('group',{name:'Linha do tempo de gravações',exact:true}).first();
  await qaRuler.press('+');
  await expect.poll(()=>panel().locator('.recording-available').count()).toBeGreaterThan(0);
  const qaCalls=()=>page.evaluate(()=>window.recordingQA.requests.filter(r=>r.path.includes('recording-availability?start=')).length);
@@ -285,7 +354,7 @@ try{
  for(let i=0;i<12;i++){await page.mouse.move(qaBox.x+qaBox.width*(.49-i*.0001),qaBox.y+42);await page.waitForTimeout(20);expect(await panel().locator('.recording-available').count()).toBeGreaterThan(0);}
  await expect.poll(()=>panel().locator('.recording-available').evaluateAll(nodes=>nodes.reduce((sum,node)=>sum+parseFloat(node.style.width),0))).toBeGreaterThan(qaWidth);
  await page.mouse.up();
- const qaAfter=await qaCalls();await page.evaluate(()=>window.dispatchEvent(new CustomEvent('vms:change',{detail:{type:'ArchiveChanged',cameraId:'cam2'}})));
+ const qaAfter=await qaCalls();await page.evaluate(()=>window.dispatchEvent(new CustomEvent('vms:change',{detail:{type:'ArchiveChanged',cameraId:'outside'}})));
  await page.waitForTimeout(220);expect(await qaCalls()).toBe(qaAfter);
  await page.evaluate(()=>window.dispatchEvent(new CustomEvent('vms:change',{detail:{type:'Disconnected'}})));
  await expect(panel()).toContainText('Disponibilidade pode estar desatualizada');expect(await panel().locator('.recording-available').count()).toBeGreaterThan(0);
@@ -303,63 +372,124 @@ try{
  const navigation=panel().locator('.recording-navigation-controls');await expect(navigation.getByRole('button',{name:'Fechar painel de gravações'})).toBeVisible();
  checks.push('status e recolhimento removidos; slider sincronizado com zoom e fechamento ao lado dos controles');
  await fresh();await open();
- expect(await posts()).toBe(0);await expect(page.locator('[data-live-position="0"]')).toContainText('Escolha um horário');await expect(page.locator('[data-live-position="1"] video')).toBeVisible();
- await expect(panel().getByLabel('Horário exato da gravação')).toHaveCount(0);await expect(panel().getByRole('button',{name:/Visão de 24h|Acompanhar reprodução|Voltar ao vivo|^Ir$/})).toHaveCount(0);await expect(page.locator('.recording-mode-badge')).toHaveCount(0);await expect(panel().getByRole('button',{name:'Escolher data das gravações'})).toContainText('17:11:2026');checks.push('abertura sem vídeo, quadro isolado e fuso do site independente do navegador');
+ await expect.poll(posts).toBe(2);await expect(panel().getByLabel('Horário da reprodução')).toContainText('13:00:11');await expect(page.locator('[data-live-position="1"] video')).toBeVisible();
+ await expect(panel().getByLabel('Horário exato da gravação')).toHaveCount(0);await expect(panel().getByRole('button',{name:/Visão de 24h|Acompanhar reprodução|Voltar ao vivo|^Ir$/})).toHaveCount(0);await expect(page.locator('.recording-mode-badge')).toHaveCount(0);await expect(panel().getByRole('button',{name:'Escolher data das gravações'})).toContainText('17:11:2026');checks.push('abertura no instante mais recente, mosaico sincronizado e fuso do site independente do navegador');
  await panel().getByRole('button',{name:'Escolher data das gravações'}).click();
  await expect(page.getByRole('button',{name:'17/11/2026, com gravações',exact:true})).toHaveAttribute('data-recorded','true');await expect(page.getByRole('button',{name:'15/11/2026, sem gravações',exact:true})).toHaveAttribute('data-recorded','false');
  await expect(page.getByText('Dias em azul possuem gravações',{exact:true})).toHaveCount(0);expect((await page.locator('.recording-calendar').boundingBox()).width).toBeLessThanOrEqual(224);await page.screenshot({path:fileURLToPath(new URL('calendar-dark.png',output)),fullPage:true});await page.keyboard.press('Escape');
  await page.evaluate(()=>window.recordingQA.failMonth(true));await panel().getByRole('button',{name:'Escolher data das gravações'}).click();await expect(page.locator('.recording-calendar-status[role="alert"]')).toBeVisible();await expect(page.getByRole('button',{name:'17/11/2026, disponibilidade desconhecida',exact:true})).toBeVisible();await page.evaluate(()=>window.recordingQA.failMonth(false));await page.locator('.recording-calendar').getByRole('button',{name:'Tentar novamente',exact:true}).click();await expect(page.getByRole('button',{name:'17/11/2026, com gravações',exact:true})).toBeVisible();await page.keyboard.press('Escape');checks.push('calendário azul por disponibilidade e erro distinto de dia vazio');
  await panel().getByRole('button',{name:'Diminuir zoom da linha do tempo'}).click();await expect(panel().getByRole('button',{name:'Diminuir zoom da linha do tempo'})).toBeDisabled();
- const ruler=panel().getByRole('group',{name:'Linha do tempo de gravações',exact:true});let box=await ruler.boundingBox();await page.mouse.move(box.x+box.width*.55,box.y+42);await expect(panel().locator('.recording-hover-time')).toContainText(/\d\d:\d\d:\d\d/);
+ const ruler=panel().getByRole('group',{name:'Linha do tempo de gravações',exact:true}).first();let box=await ruler.boundingBox();await page.mouse.move(box.x+box.width*.55,box.y+42);await expect(panel().locator('.recording-hover-time')).toContainText(/\d\d:\d\d:\d\d/);
+ const lastRuler=panel().locator('.recording-ruler').last(), lastBox=await lastRuler.boundingBox();
+ const bubble=await ruler.locator('.recording-hover-time').elementHandle();
+ const firstBandBox=await ruler.locator('.recording-band').boundingBox();
+ const lastBandBox=await lastRuler.locator('.recording-band').boundingBox();
+ for(let y=firstBandBox.y+firstBandBox.height-1;y<=lastBandBox.y+1;y++){
+  await page.mouse.move(box.x+box.width*.55,y);
+  expect(await bubble.evaluate(el=>el.isConnected)).toBe(true);
+ }
+ await lastRuler.hover({position:{x:lastBox.width*.55,y:6}});
+ await expect(ruler.locator('.recording-hover-time')).toHaveText(/^\d{2}:\d{2}:\d{2}$/);
+ await expect(panel().locator('.recording-hover-line')).toHaveCount(1);
+ const hoverLine=await ruler.locator('.recording-hover-line').boundingBox(), lastTrack=await lastRuler.locator('.recording-band').boundingBox();
+ expect(Math.abs(hoverLine.y+hoverLine.height-lastTrack.y-lastTrack.height)).toBeLessThan(1);
+ await page.mouse.move(box.x+box.width*.55,box.y+42);
  const before=await posts();await page.mouse.down();await page.mouse.move(box.x+box.width*.25,box.y+42,{steps:8});await page.mouse.up();expect(await posts()).toBe(before);
  await page.mouse.move(box.x+box.width*.5,box.y+42);await page.mouse.wheel(0,-200);await expect(panel().getByRole('button',{name:'Diminuir zoom da linha do tempo'})).toBeEnabled();
  for(let i=0;i<12;i++)await panel().getByRole('button',{name:'Aumentar zoom da linha do tempo'}).click({force:true});await expect(panel().getByRole('button',{name:'Aumentar zoom da linha do tempo'})).toBeDisabled();
  await panel().getByRole('button',{name:'Escolher data das gravações'}).click();await page.getByRole('button',{name:'17/11/2026, com gravações',exact:true}).click();
- const divider=panel().getByRole('separator',{name:'Largura do nome da câmera'});const card=panel().getByRole('button',{name:'Escolher data das gravações',exact:true});const cardWidth=(await card.boundingBox()).width;await divider.focus();await page.keyboard.press('ArrowRight');expect(Number(await divider.getAttribute('aria-valuenow'))).toBeGreaterThan(190);expect((await card.boundingBox()).width).toBeGreaterThan(cardWidth);expect(Math.abs((await card.boundingBox()).width-(await panel().locator('.recording-camera-name').boundingBox()).width)).toBeLessThan(1);checks.push('arraste independente, zoom de 1 minuto a 48h, tooltip e divisor por teclado');
+ const divider=panel().getByRole('separator',{name:'Largura do nome da câmera'}).first();
+ const card=panel().getByRole('button',{name:'Escolher data das gravações',exact:true});
+ const clockBox=await card.boundingBox();
+ expect(clockBox.width).toBe(131);
+ expect(clockBox.height).toBe(64);
+ await expect(panel().getByRole('separator',{name:'Largura do nome da câmera'})).toHaveCount(1);
+ const timelineBoxForDivider=await page.locator('#live-recording-timeline').boundingBox();
+ const fullDivider=await divider.boundingBox();
+ expect(fullDivider.y).toBeCloseTo(timelineBoxForDivider.y);
+ expect(fullDivider.height).toBeCloseTo(timelineBoxForDivider.height);
+ const cameraName=panel().locator('.recording-camera-name').first();
+ const originalWidth=(await cameraName.boundingBox()).width;
+ await expectCenteredPlayback();
+ await divider.press('ArrowRight');
+ const resizedWidth=(await cameraName.boundingBox()).width;
+ expect(resizedWidth).toBeGreaterThan(originalWidth);
+ await expectCenteredPlayback();
+ const dividerBox=await divider.boundingBox();
+ const dividerX=dividerBox.x+dividerBox.width/2;
+ const dividerY=dividerBox.y+dividerBox.height/2;
+ await page.mouse.move(dividerX,dividerY);
+ await page.mouse.down();
+ await page.mouse.move(dividerX+80,dividerY,{steps:4});
+ expect((await cameraName.boundingBox()).width).toBeGreaterThan(resizedWidth);
+ await expectCenteredPlayback();
+ await page.mouse.up();
+ expect(await card.boundingBox()).toEqual(clockBox);
+ checks.push('arraste independente, zoom de 1 minuto a 48h, tooltip e reprodução centralizada ao redimensionar a data');
  await go('09:00:00');await expect.poll(()=>video().evaluate(v=>v.readyState)).toBeGreaterThanOrEqual(2);await expect.poll(()=>video().evaluate(v=>v.currentTime)).toBeGreaterThan(.1);
- await expect(page.locator('[data-live-position="1"] video')).toBeVisible();await setSpeed(2);await expect.poll(()=>video().evaluate(v=>v.playbackRate)).toBe(2);
+ await panel().getByRole('button',{name:'Reproduzir gravação'}).click();await expect(page.locator('[data-live-position="1"] video')).toBeVisible();await setSpeed(2);await expect.poll(()=>video().evaluate(v=>v.playbackRate)).toBe(2);
  await panel().getByRole('button',{name:'Pausar gravação'}).click();await expect.poll(()=>video().evaluate(v=>v.paused)).toBe(true);await go('09:00:10');await expect.poll(()=>video().evaluate(v=>v.readyState)).toBeGreaterThanOrEqual(2);expect(await video().evaluate(v=>v.paused)).toBe(true);
  await page.screenshot({path:fileURLToPath(new URL('playback-paused-dark.png',output)),fullPage:true});checks.push('vídeo HLS decodificado, velocidade real e pausa preservada ao buscar');
  const renewals=()=>page.evaluate(()=>window.recordingQA.requests.filter(r=>r.method==='PUT'&&r.path.includes('/playback-sessions/')).length);
  const renewalBefore=await renewals();await page.waitForTimeout(4200);const renewalCount=(await renewals())-renewalBefore;
- expect(renewalCount).toBeGreaterThanOrEqual(1);expect(renewalCount).toBeLessThanOrEqual(3);checks.push('sessão pausada continua renovada com frequência de dois segundos');
- // The pointer commit, not pointermove, owns the new playback request.
- const marker=panel().getByRole('slider',{name:'Posição de reprodução'});box=await marker.boundingBox();const count=await posts();await page.mouse.move(box.x+7,box.y+10);await page.mouse.down();await page.mouse.move(box.x+24,box.y+10,{steps:5});expect(await posts()).toBe(count);await page.mouse.up();await expect.poll(posts).toBe(count+1);checks.push('arrastar marcador busca somente ao soltar');
- await go('09:00:00');await setSpeed(8);await panel().getByRole('button',{name:'Reproduzir gravação'}).click();
- await expect(page.locator('.recording-video-message')).toContainText('Sem gravação neste período.',{timeout:20000});await expect(panel().getByLabel('Horário da reprodução')).toContainText('09:00:36');expect(await video().evaluate(v=>v.paused)).toBe(true);await expect.poll(()=>page.evaluate(()=>window.recordingQA.sessions.size)).toBe(0);checks.push('continuidade automática entre sessões e parada na lacuna real');
+ expect(renewalCount).toBeGreaterThanOrEqual(3);expect(renewalCount).toBeLessThanOrEqual(9);checks.push('sessão pausada continua renovada com frequência de dois segundos');
+ // Drag within the loaded block. The three paused videos must seek before pointerup.
+ const marker=panel().getByRole('slider',{name:'Posição de reprodução'}).first();
+ const allTimes=()=>page.locator('.recording-video video').evaluateAll(videos=>videos.map(v=>v.currentTime));
+ await expect.poll(async()=>(await allTimes()).length).toBe(3);
+ const originalTimes=await allTimes();
+ await expect(panel().getByRole('slider',{name:'Posição de reprodução'})).toHaveCount(1);
+ box=await marker.boundingBox();
+ const lastBand=await panel().locator('.recording-band').last().boundingBox();
+ expect(Math.abs(box.y+box.height-lastBand.y-lastBand.height)).toBeLessThan(1);
+ const dragY=lastBand.y+lastBand.height/2;
+ await page.mouse.move(box.x+7,dragY);await page.mouse.down();await page.mouse.move(box.x-25,dragY,{steps:5});
+ await expect.poll(async()=>(await allTimes()).every((t,i)=>Math.abs(t-originalTimes[i])>.5)).toBe(true);
+ await page.mouse.up();expect(await video().evaluate(v=>v.paused)).toBe(true);
+ await go('09:00:01');
+ const parking=page.locator('[data-live-position="2"]');
+ await expect(parking).toContainText('Sem gravação neste horário');
+ await panel().getByRole('button',{name:'Reproduzir gravação'}).click();
+ await expect.poll(()=>parking.locator('video').evaluateAll(v=>v.some(e=>e.readyState>=2&&!e.paused))).toBe(true);
+ await expect(panel().locator('.recording-ruler-row')).toHaveCount(2);
+ await expect(panel().getByRole('group',{name:'Controles de reprodução de gravações'})).toHaveCount(1);
+ checks.push('prévia de três células durante o arraste, relógio compartilhado, lacuna isolada e retorno automático da câmera');
  await page.getByRole('button',{name:'Video Wall',exact:true}).click();await expect(panel()).toBeVisible();expect(await page.evaluate(()=>!!document.fullscreenElement)).toBe(true);await page.screenshot({path:fileURLToPath(new URL('videowall-dark.png',output)),fullPage:true});
  await expect(panel().getByRole('group',{name:'Controles de reprodução de gravações'})).toBeVisible();await expect(ruler).toBeVisible();await expect(zoomSlider).toBeVisible();await page.keyboard.press('Escape');await expect.poll(()=>page.evaluate(()=>!!document.fullscreenElement)).toBe(false);checks.push('tela cheia com linha do tempo e controles acessíveis');
  await panel().getByRole('button',{name:'Fechar painel de gravações'}).click();await expect(panel()).toHaveCount(0);await expect(page.locator('[data-live-position="0"] video')).toBeVisible();await open(1);await page.getByRole('button',{name:'Layout 1',exact:true}).click();await expect(panel()).toHaveCount(0);checks.push('fechar restaura ao vivo e retirar quadro do layout encerra a barra');
- await fresh();await open();await page.evaluate(()=>window.recordingQA.hold(true));await go('09:00:00');await expect.poll(posts).toBe(1);await panel().getByRole('button',{name:'Fechar painel de gravações'}).click();await page.evaluate(()=>window.recordingQA.release());await expect.poll(()=>page.evaluate(()=>window.recordingQA.sessions.size)).toBe(0);checks.push('resposta atrasada após fechamento libera sessão');
+ await fresh();await page.evaluate(()=>window.recordingQA.hold(true));await open();await expect.poll(posts).toBe(2);await panel().getByRole('button',{name:'Fechar painel de gravações'}).click();await page.evaluate(()=>window.recordingQA.release());await expect.poll(()=>page.evaluate(()=>window.recordingQA.sessions.size)).toBe(0);checks.push('resposta atrasada após fechamento libera sessão');
  await open();await go('09:00:00');await expect.poll(()=>video().evaluate(v=>v.readyState)).toBeGreaterThanOrEqual(2);await page.evaluate(()=>{window.recordingQA.deny(true);window.dispatchEvent(new CustomEvent('vms:change',{detail:{type:'AuthorizationChanged'}}));});await expect.poll(()=>page.evaluate(()=>window.recordingQA.sessions.size)).toBe(0);await expect(panel().locator('.recording-toast[role="alert"]')).toBeVisible();
  await page.evaluate(()=>window.recordingQA.deny(false));await panel().locator('.recording-toast').getByRole('button',{name:'Tentar novamente',exact:true}).click();await expect(panel().locator('.recording-toast')).toHaveCount(0);await expect.poll(()=>panel().locator('.recording-available').count()).toBeGreaterThan(0);checks.push('revogação remove vídeo e disponibilidade; erro aparece em toast e consulta se recupera ao tentar novamente');
- await fresh();await open();await go('08:00:00');await expect(page.locator('.recording-video-message')).toContainText('Sem gravação');await go('09:00:00');await expect.poll(()=>video().evaluate(v=>v.readyState>=2&&!v.paused)).toBe(true);await panel().getByRole('button',{name:'Pausar gravação'}).click();
+ await fresh();await open();await go('08:00:00');await expect(firstTile.locator('.recording-video-message')).toContainText('Sem gravação');await go('09:00:00');await panel().getByRole('button',{name:'Reproduzir gravação'}).click();await expect.poll(()=>video().evaluate(v=>v.readyState>=2&&!v.paused)).toBe(true);await panel().getByRole('button',{name:'Pausar gravação'}).click();
  await panel().getByRole('button',{name:'Próxima gravação',exact:true}).click();await expect(panel().getByLabel('Horário da reprodução')).toContainText('13:00:00');await expect.poll(()=>video().evaluate(v=>v.readyState>=2&&v.paused)).toBe(true);
+ await expect.poll(()=>page.evaluate(()=>window.recordingQA.requests.filter(r=>r.method==='POST'&&r.path.endsWith('/playback-sessions')&&r.body.start==='2026-11-17T16:00:00.000Z').length)).toBe(3);
  const currentPosts=await posts();await page.evaluate(()=>{window.qaVideo=document.querySelector('.recording-video video');});await panel().getByRole('button',{name:'Escolher data das gravações'}).click();await page.getByRole('button',{name:'16/11/2026, com gravações',exact:true}).click();expect(await posts()).toBe(currentPosts);expect(await page.evaluate(()=>window.qaVideo===document.querySelector('.recording-video video'))).toBe(true);await expect(panel().getByLabel('Horário da reprodução')).toContainText('17:11:2026');checks.push('primeiro trecho após horário vazio inicia vídeo; próximo preserva pausa; calendário preserva transporte');
- await fresh();await open();await go('23:59:50');await setSpeed(8);await expect(page.locator('.recording-video-message')).toContainText('Fim da gravação disponível.',{timeout:15000});await expect(panel().getByLabel('Horário da reprodução')).toContainText('00:00:14');expect(await posts()).toBe(2);checks.push('continuidade e relógio original através da meia-noite');
- await fresh();await open();await go('09:00:25');await expect.poll(()=>video().evaluate(v=>v.readyState>=2&&!v.paused)).toBe(true);
+ await fresh();await open();await go('23:59:50');await setSpeed(8);await panel().getByRole('button',{name:'Reproduzir gravação'}).click();await expect(firstTile.locator('.recording-video-message')).toContainText('Sem gravação neste horário.',{timeout:15000});await expect(panel().getByLabel('Horário da reprodução')).toContainText('18:11:2026');checks.push('continuidade e relógio através da meia-noite');
+ await fresh();await open();await go('09:00:25');await panel().getByRole('button',{name:'Reproduzir gravação'}).click();await expect.poll(()=>video().evaluate(v=>v.readyState>=2&&!v.paused)).toBe(true);
  await panel().getByRole('button',{name:'Pausar gravação'}).click();await setSpeed(-2);
  await expect(panel().getByRole('combobox',{name:'Velocidade da gravação'})).toHaveCount(0);
- expect(await video().evaluate(v=>v.playbackRate)).toBe(2);
+ await expect.poll(()=>video().evaluate(v=>v.playbackRate)).toBe(2);
  const reversePosts=await posts();await panel().getByRole('button',{name:'Reproduzir gravação'}).click();
- await expect.poll(async()=>Number(await panel().getByRole('slider',{name:'Posição de reprodução'}).getAttribute('aria-valuenow')),{timeout:15000}).toBeLessThan(Date.parse('2026-11-17T12:00:12Z'));
+ await expect.poll(async()=>Number(await panel().getByRole('slider',{name:'Posição de reprodução'}).first().getAttribute('aria-valuenow')),{timeout:15000}).toBeLessThan(Date.parse('2026-11-17T12:00:12Z'));
  expect(await posts()).toBeGreaterThan(reversePosts);await panel().getByRole('button',{name:'Pausar gravação'}).click();
- const pausedAt=Number(await panel().getByRole('slider',{name:'Posição de reprodução'}).getAttribute('aria-valuenow'));
- await page.waitForTimeout(350);expect(Math.abs(Number(await panel().getByRole('slider',{name:'Posição de reprodução'}).getAttribute('aria-valuenow'))-pausedAt)).toBeLessThan(300);
+ const pausedAt=Number(await panel().getByRole('slider',{name:'Posição de reprodução'}).first().getAttribute('aria-valuenow'));
+ await page.waitForTimeout(350);expect(Math.abs(Number(await panel().getByRole('slider',{name:'Posição de reprodução'}).first().getAttribute('aria-valuenow'))-pausedAt)).toBeLessThan(300);
  await setSpeed(1);await panel().getByRole('button',{name:'Reproduzir gravação'}).click();await expect.poll(()=>video().evaluate(v=>!v.paused&&v.playbackRate===1)).toBe(true);
  await setSpeed(-8);await expect(panel().getByRole('button',{name:'Diminuir velocidade da gravação'})).toBeDisabled();
- await expect(page.locator('.recording-video-message')).toContainText('Sem gravação anterior contínua.',{timeout:15000});
+ await expect(firstTile.locator('.recording-video-message')).toContainText('Sem gravação neste horário.',{timeout:15000});
  await expect.poll(()=>page.evaluate(()=>window.recordingQA.sessions.size)).toBe(0);checks.push('setas de velocidade, retrocesso entre sessões, pausa, retorno ao avanço e parada na lacuna anterior');
- await fresh();await open();await go('23:59:55');await setSpeed(-1);
- const midnightBefore=Number(await panel().getByRole('slider',{name:'Posição de reprodução'}).getAttribute('aria-valuenow'));
- await expect.poll(async()=>Number(await panel().getByRole('slider',{name:'Posição de reprodução'}).getAttribute('aria-valuenow'))).toBeLessThan(midnightBefore-500);
+ await fresh();await open();await go('23:59:55');await setSpeed(-1);await panel().getByRole('button',{name:'Reproduzir gravação'}).click();
+ const midnightBefore=Number(await panel().getByRole('slider',{name:'Posição de reprodução'}).first().getAttribute('aria-valuenow'));
+ await expect.poll(async()=>Number(await panel().getByRole('slider',{name:'Posição de reprodução'}).first().getAttribute('aria-valuenow'))).toBeLessThan(midnightBefore-500);
  await panel().getByRole('button',{name:'Fechar painel de gravações'}).click();await expect.poll(()=>page.evaluate(()=>window.recordingQA.sessions.size)).toBe(0);
  checks.push('fechar durante retrocesso libera a sessão');
- for(const dark of [true,false])for(const width of [1440,390,320]){
+ for(const dark of [true,false])for(const width of [1600,1280,768,390,320]){
   await page.setViewportSize({width,height:1000});await fresh();await page.evaluate(d=>document.documentElement.classList.toggle('dark',d),dark);await open();
+  await expectCenteredPlayback();
+  await expect.poll(()=>firstTile.locator('video').evaluateAll(v=>v.some(e=>e.readyState>=2))).toBe(true);
   expect(await panel().evaluate(e=>e.getBoundingClientRect().right<=innerWidth+1&&e.scrollWidth<=e.clientWidth+1)).toBe(true);
   expect(await panel().evaluate(e=>[...e.querySelectorAll('button:not(:disabled)')].every(button=>{const b=button.getBoundingClientRect();const p=e.getBoundingClientRect();if(b.top<p.top||b.bottom>p.bottom)return true;const hit=document.elementFromPoint(b.x+b.width/2,b.y+b.height/2);return button===hit||button.contains(hit);}))).toBe(true);
   await page.screenshot({path:fileURLToPath(new URL(`timeline-${dark?'dark':'light'}-${width}.png`,output)),fullPage:true});
  }
- checks.push('layout em 1440, 390 e 320px nos dois temas');expect(errors).toEqual([]);console.log(JSON.stringify({checks},null,2));
+ checks.push('layout em 1600, 1280, 768, 390 e 320px nos dois temas');expect(errors).toEqual([]);console.log(JSON.stringify({checks},null,2));
 }catch(error){console.error(error);if(page){console.log(await page.locator('body').innerText());await page.screenshot({path:fileURLToPath(new URL('failure.png',output)),fullPage:true,timeout:5000}).catch(()=>{});}throw error;}finally{await browser.close();server?.close();}

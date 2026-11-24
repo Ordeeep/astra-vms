@@ -1,6 +1,7 @@
 export const workspacePaths = {
   overview: "/visao-geral",
   live: "/ao-vivo",
+  events: "/eventos",
   sites: "/sites",
   cameras: "/cameras",
   operators: "/operadores",

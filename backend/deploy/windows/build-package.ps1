@@ -20,7 +20,7 @@ New-Item -ItemType Directory -Path $destination | Out-Null
 if(!$SkipBuild){
  Push-Location $backend
  try{
-  foreach($name in @('vms','vms-worker','vms-service')){
+  foreach($name in @('vms','vms-worker','vms-event-worker','vms-service')){
    & $Go build -trimpath -o "bin/$name.exe" "./cmd/$name"
    if($LASTEXITCODE -ne 0){throw 'Backend build failed'}
   }
@@ -31,7 +31,7 @@ if(!$SkipBuild){
 foreach($dir in @('backend','frontend','runtime/node','runtime/media','runtime/postgres','licenses')){
  New-Item -ItemType Directory -Path (Join-Path $destination $dir) -Force|Out-Null
 }
-foreach($name in @('vms','vms-worker','vms-service')){
+foreach($name in @('vms','vms-worker','vms-event-worker','vms-service')){
  Copy-Item -LiteralPath (Join-Path $backend "bin/$name.exe") -Destination (Join-Path $destination 'backend')
 }
 Get-ChildItem -LiteralPath (Join-Path $frontend '.next/standalone') -Force | ForEach-Object {

@@ -11,10 +11,11 @@ include_archive=false
 if [[ ${2:-} == --include-archive ]]; then include_archive=true; elif [[ $# != 1 ]]; then exit 1; fi
 [[ -f /etc/astra/installation ]] || exit 1
 restart=()
-for service in astra-core astra-media; do if systemctl is-active --quiet "$service"; then restart+=("$service"); fi; done
+for service in astra-core astra-media astra-events; do if systemctl is-active --quiet "$service"; then restart+=("$service"); fi; done
 restore_services() { if ((${#restart[@]})); then systemctl start "${restart[@]}"; fi; }
 trap restore_services EXIT
 systemctl stop astra-core.service astra-media.service
+if systemctl is-active --quiet astra-events.service; then systemctl stop astra-events.service; fi
 mkdir -p -m 0700 -- "$(dirname -- "$destination")"
 mkdir -m 0700 -- "$destination"
 runuser -u postgres -- pg_dump --format=custom astra_vms > "$destination/database.dump"

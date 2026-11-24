@@ -2,24 +2,37 @@ async page => {
  const assert=(ok,message)=>{if(!ok)throw new Error(message);};
  const noOverlap=async()=>{
   const toggle=await page.getByRole('button',{name:'Recuar listagem',exact:true}).boundingBox();
-  for(const close of await page.locator('.live-camera-close:visible').all()){
+  for(const close of await page.locator('.live-camera-title:visible').all()){
    const box=await close.boundingBox();
-   assert(!(toggle.x<box.x+box.width&&toggle.x+toggle.width>box.x&&toggle.y<box.y+box.height&&toggle.y+toggle.height>box.y),'Panel toggle overlaps the camera close button');
+   assert(!(toggle.x<box.x+box.width&&toggle.x+toggle.width>box.x&&toggle.y<box.y+box.height&&toggle.y+toggle.height>box.y),'Panel toggle overlaps the camera title');
   }
  };
  await page.goto('http://127.0.0.1:13110/');
  await page.getByRole('button',{name:'Quatro câmeras',exact:true}).click();
- await page.locator('.live-camera-close').nth(3).waitFor();
+ await page.locator('.live-camera-title').nth(3).waitFor();
+ assert(await page.locator('.live-camera-title button').count()===0,'Camera titles must have no buttons');
  await noOverlap();
+ const expandSites=page.getByRole('button',{name:'Expandir todos os sites',exact:true});
+ const collapseSites=page.getByRole('button',{name:'Recolher todos os sites',exact:true});
+ const sites='.live-camera-site > .live-camera-site-trigger';
+ assert(await page.locator(`${sites}[aria-expanded="true"]`).count()===0,'Camera sites must start collapsed');
+ await expandSites.press('Enter');
+ await collapseSites.waitFor();
+ assert(await page.locator(`${sites}[aria-expanded="false"]`).count()===0,'Expand all must open every camera site');
+ await collapseSites.press('Space');
+ await expandSites.waitFor();
+ assert(await page.locator(`${sites}[aria-expanded="true"]`).count()===0,'Collapse all must close every camera site');
+ await expandSites.click();
+ await collapseSites.waitFor();
  const marked=page.locator('.live-camera-item[data-in-mosaic="true"]');
  assert(await marked.count()===4,'All cameras in the mosaic must be highlighted');
  await page.getByRole('group',{name:'Posição 2 do mosaico',exact:true}).click();
  assert(await marked.count()===4,'Changing the active position must retain all highlights');
- await page.getByRole('button',{name:'Fechar câmera da posição 1',exact:true}).click();
+ await page.getByRole('button',{name:'Esvaziar posição 1',exact:true}).click();
  assert(await marked.count()===3,'Removing a camera must remove its highlight');
  await page.getByRole('button',{name:'Arrastar Câmera 2',exact:true}).press('Enter');
  await page.getByRole('group',{name:'Posição 1 do mosaico',exact:true}).press('Enter');
- await page.getByRole('button',{name:'Fechar câmera da posição 2',exact:true}).click();
+ await page.getByRole('button',{name:'Esvaziar posição 2',exact:true}).click();
  assert(await marked.count()===3,'A duplicated camera stays highlighted while another occurrence remains');
  for(const size of [1,2,3,4]){
   await page.getByRole('button',{name:`Layout ${size}×${size}`,exact:true}).click();
@@ -35,23 +48,108 @@ async page => {
  await page.getByRole('button',{name:'Exibir listagem',exact:true}).click();
  assert(await page.locator('#live-camera-list-content').isVisible(),'The side toggle must reopen the panel');
  await page.getByRole('tab',{name:'Visualização',exact:true}).click();
+ const search=page.getByRole('searchbox',{name:'Buscar visualização',exact:true});
+ const saveView=page.getByRole('button',{name:'Salvar mosaico atual',exact:true});
+ const [searchBox, searchIcon, saveButton]=await Promise.all([
+  search.boundingBox(), page.locator('.live-saved-views .live-camera-search > svg').boundingBox(), saveView.boundingBox(),
+ ]);
+ assert(searchBox.height===32,'Saved view search must use the compact height');
+ assert(Math.abs(searchBox.y+searchBox.height/2-searchIcon.y-searchIcon.height/2)<1,'The search icon must be centered in the field');
+ const toolsGap=saveButton.x-searchBox.x-searchBox.width;
+ assert(Math.abs(saveButton.y+saveButton.height/2-searchBox.y-searchBox.height/2)<1
+  &&toolsGap>=0&&toolsGap<=8,'The save button must sit beside the search field');
+ assert(await saveView.innerText()===''&&await saveView.locator('svg').count()===1,'Save must display only its icon');
+ assert(await search.evaluate(input=>getComputedStyle(input,'::placeholder').fontSize)==='12px','The search placeholder must use 12px text');
  for(const name of ['Portária','Estacionamento']){
-  await page.getByRole('button',{name:'Salvar mosaico atual',exact:true}).click();
+  await saveView.click();
   await page.getByRole('textbox',{name:'Nome da visualização'}).fill(name);
   await page.getByRole('button',{name:'Salvar',exact:true}).click();
   await page.getByRole('dialog',{name:'Salvar visualização'}).waitFor({state:'detached'});
  }
- const search=page.getByRole('searchbox',{name:'Buscar visualização',exact:true});
  await search.fill(' PORTARIA ');
  assert(await page.locator('.live-saved-view').count()===1,'Search must ignore case, whitespace and accents');
  assert(await page.locator('.live-saved-view').innerText()==='Portária','View rows must show only their names');
  assert(await page.locator('.live-saved-view svg, .live-saved-view small').count()===0,'View rows must not contain icons or metadata');
- await page.getByRole('button',{name:'Carregar visualização Portária',exact:true}).click();
+ const portaria=page.getByRole('button',{name:'Carregar visualização Portária',exact:true});
+ const rowIcons=page.locator('.live-saved-view-icons');
+ const editView=page.getByRole('button',{name:'Editar nome da visualização Portária',exact:true});
+ const iconOpacity=()=>rowIcons.evaluate(element=>getComputedStyle(element).opacity);
+ assert(await iconOpacity()==='0','Row icons must stay hidden until hover or keyboard focus');
+ await portaria.hover();
+ assert(await iconOpacity()==='1'&&await rowIcons.getByRole('button').count()===2,'Hover must reveal the pencil and trash buttons');
+ await portaria.focus();
+ await page.keyboard.press('Tab');
+ await editView.and(page.locator(':focus')).waitFor();
+ await page.keyboard.press('Enter');
+ const editDialog=page.getByRole('dialog',{name:'Editar nome da visualização'});
+ const editName=editDialog.getByRole('textbox',{name:'Nome da visualização'});
+ await editName.and(page.locator(':focus')).waitFor();
+ assert(await editName.inputValue()==='Portária','The editor must prefill the saved name');
+ await page.keyboard.press('Escape');
+ await editDialog.waitFor({state:'hidden'});
+ await editView.and(page.locator(':focus')).waitFor();
+ assert(await portaria.getAttribute('aria-pressed')==='false','Opening the editor must not load the view');
+ await portaria.click();
  assert(await page.locator('.live-saved-views .live-camera-notice').count()===0,'Loading a view must not show a success notice');
+ const liveVideos=page.locator('.live-stream-video[data-presented="true"]');
+ await liveVideos.first().waitFor({state:'attached'});
+ const streams=await liveVideos.evaluateAll(videos=>{
+  window.viewActionVideos=videos.map(video=>({video,stream:video.srcObject}));
+  return [...qa.sessions.keys()];
+ });
+ const readViews=()=>page.evaluate(async()=> (await (await fetch('/api/v1/tenants/test/mosaics')).json()).items);
+ const original=(await readViews()).find(view=>view.name==='Portária');
+ await editView.click();
+ await editName.fill('   ');
+ await editDialog.getByRole('button',{name:'Salvar',exact:true}).click();
+ await editDialog.getByRole('alert').getByText('Informe o nome da visualização.').waitFor();
+ await editName.fill('  Portaria principal  ');
+ await editName.press('Enter');
+ await editDialog.waitFor({state:'hidden'});
+ const renamed=page.getByRole('button',{name:'Carregar visualização Portaria principal',exact:true});
+ assert(await renamed.getAttribute('aria-pressed')==='true','Renaming must keep the selected view');
+ const saved=(await readViews()).find(view=>view.id===original.id);
+ assert(saved.name==='Portaria principal'&&saved.revision===original.revision+1&&saved.layout===original.layout
+  &&saved.visibility===original.visibility&&JSON.stringify(saved.positions)===JSON.stringify(original.positions),'Renaming must persist only the name');
+
+ const deleteView=page.getByRole('button',{name:'Excluir visualização Portaria principal',exact:true});
+ await renamed.hover();
+ await deleteView.click();
+ const deleteDialog=page.getByRole('alertdialog',{name:'Excluir visualização?'});
+ const cancelDelete=deleteDialog.getByRole('button',{name:'Cancelar',exact:true});
+ await cancelDelete.and(page.locator(':focus')).waitFor();
+ assert((await deleteDialog.innerText()).includes('“Portaria principal” será excluída.'),'Confirmation must name the view');
+ await page.keyboard.press('Enter');
+ await deleteDialog.waitFor({state:'hidden'});
+ await deleteView.and(page.locator(':focus')).waitFor();
+ assert((await readViews()).some(view=>view.id===original.id),'Cancelling must keep the saved view');
+ const gridBeforeDelete=await page.locator('.live-cell').evaluateAll(cells=>cells.map(cell=>cell.textContent));
+ await deleteView.press('Enter');
+ await deleteDialog.getByRole('button',{name:'Excluir visualização',exact:true}).click();
+ await deleteDialog.waitFor({state:'hidden'});
+ await search.and(page.locator(':focus')).waitFor();
+ assert(JSON.stringify(await page.locator('.live-cell').evaluateAll(cells=>cells.map(cell=>cell.textContent)))===JSON.stringify(gridBeforeDelete),'Deleting the loaded view must keep the live mosaic');
+ assert(await page.evaluate(sessions=>sessions.every(id=>qa.sessions.has(id))
+  &&window.viewActionVideos.every(({video,stream})=>video.isConnected&&video.srcObject===stream),streams),'Renaming and deleting must preserve active live streams');
+ assert(!(await readViews()).some(view=>view.id===original.id),'Confirmed deletion must persist');
+ await page.getByText('Nenhuma visualização encontrada.',{exact:true}).waitFor();
  await search.fill('inexistente');
  await page.getByText('Nenhuma visualização encontrada.',{exact:true}).waitFor();
  await search.fill('');
- assert(await page.locator('.live-saved-view').count()===2,'Clearing search must restore all saved views');
+ assert(await page.locator('.live-saved-view').count()===1,'Clearing search must restore the remaining saved view');
+ const remaining=(await readViews())[0];
+ const remainingView=page.getByRole('button',{name:'Carregar visualização Estacionamento',exact:true});
+ await remainingView.hover();
+ await page.getByRole('button',{name:'Excluir visualização Estacionamento',exact:true}).click();
+ await page.evaluate(view=>fetch(`/api/v1/tenants/test/mosaics/${view.id}`,{
+  method:'PUT',body:JSON.stringify({...view,name:'Estacionamento lateral'}),
+ }),remaining);
+ await deleteDialog.getByRole('button',{name:'Excluir visualização',exact:true}).click();
+ await deleteDialog.getByRole('alert').getByText('A visualização foi alterada.',{exact:false}).waitFor();
+ await cancelDelete.click();
+ await deleteDialog.waitFor({state:'hidden'});
+ await page.getByRole('button',{name:'Carregar visualização Estacionamento lateral',exact:true}).waitFor();
+ assert((await readViews())[0].id===remaining.id,'A stale confirmation must not delete the updated view');
  await page.screenshot({path:'output/playwright/live-panel-views.png'});
  await page.getByRole('tab',{name:'Câmeras',exact:true}).click();
  await page.screenshot({path:'output/playwright/live-panel-cameras.png'});
@@ -129,5 +227,5 @@ async page => {
  assert((await Promise.all([0,1,2,3].map(cameraAt))).join(',')==='Câmera 1,Câmera 2,Câmera 3,Câmera 4','Left click must fill the current layout in list order');
  await page.getByRole('button',{name:'Arrastar Câmera 4',exact:true}).click();
  assert((await Promise.all([0,1].map(cameraAt))).join(',')==='Câmera 4,Câmera 5'&&await grid.locator('[data-occupied="true"]').count()===2,'Clicking near the end must replace the mosaic and clear unused positions');
- return {passed:true,checks:['toggle avoids camera close buttons in every layout and maximization','collapse and reopen from the side','all mosaic cameras highlighted','removal and duplicate cameras','highlight follows layout changes','view search without accents or case','name-only rows','no view-loaded notice','featured layout and saved geometry','centered layout picker and labeled Vídeo Wall beside the theme','single layout menu with every preset','videowall hides and restores camera list controls','left click fills and replaces the mosaic in list order']};
+ return {passed:true,checks:['toggle avoids camera titles in every layout and maximization','collapse and reopen from the side','all mosaic cameras highlighted','removal and duplicate cameras','highlight follows layout changes','view search without accents or case','keyboard and hover actions','rename preserves the saved layout and selection','cancel or confirm deletion without changing the live mosaic','stale confirmation preserves the updated view','no view-loaded notice','featured layout and saved geometry','centered layout picker and labeled Vídeo Wall beside the theme','single layout menu with every preset','videowall hides and restores camera list controls','left click fills and replaces the mosaic in list order']};
 }

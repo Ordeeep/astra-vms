@@ -26,6 +26,7 @@ Na raiz da cópia de fontes:
 Push-Location backend
 go build -trimpath -o bin/vms.exe ./cmd/vms
 go build -trimpath -o bin/vms-worker.exe ./cmd/vms-worker
+go build -trimpath -o bin/vms-event-worker.exe ./cmd/vms-event-worker
 Pop-Location
 Push-Location frontend
 npm ci
@@ -55,7 +56,7 @@ Restrinja o acesso ao diretório privado à sua conta e aos processos que precis
 
 ## Iniciar os processos
 
-Use três terminais. As portas abaixo precisam estar disponíveis; não inicie outra cópia sobre uma instalação já em execução.
+Use quatro terminais. As portas abaixo precisam estar disponíveis para esta instalação.
 
 **Terminal 1**, na pasta `frontend`:
 
@@ -98,6 +99,30 @@ Remove-Item Env:VMS_WORKER_SECRET -ErrorAction SilentlyContinue
 ```
 
 Esses comandos iniciam processos no terminal, sem registrar serviços Windows. O roteiro foi conferido com os argumentos do código, mas ainda exige homologação de instalação em máquina limpa.
+
+## Simular eventos analíticos
+
+O **terminal 4**, na raiz da cópia de fontes, executa o coletor de eventos independentemente do banco e do Core.
+
+```powershell
+$astraData = Join-Path $env:LOCALAPPDATA 'Astra-dev'
+$env:VMS_WORKER_SECRET = (Get-Content (Join-Path $astraData 'worker-secret.txt') -Raw).Trim()
+.\backend\bin\vms-event-worker.exe --data (Join-Path $astraData 'events')
+```
+
+Para exercitar o protocolo e a fila, abra outro terminal em `backend` e execute `go run -tags astra_dev ./cmd/vms-simulate-camera`. No Astra de desenvolvimento, cadastre uma câmera Hikvision com o nome **Câmera simulada**, protocolo HTTP, host `127.0.0.1` e porta `19093`. Preencha os campos de usuário e senha com valores fictícios. O simulador é local e fornece somente a interface de eventos e a descoberta do perfil.
+
+Em **Câmeras**, abra a configuração de recepção, habilite a coleta e consulte as regras. Selecione a linha 7 e salve. Em **Eventos** aparecem as intrusões da região 1 e os cruzamentos das linhas 7 e 8, com suas aberturas e encerramentos. Digite `off` no terminal da câmera para desabilitar a linha 7. No próximo ciclo de supervisão, o Astra abre a falha. Digite `on` para restabelecer a regra. O ciclo dura cinco minutos. Encerrar e reiniciar o simulador permite observar o período de cobertura incerta. Esses recebimentos percorrem o adaptador ISAPI e aparecem com o nome da câmera cadastrada.
+
+### Gerar um lote diretamente no histórico
+
+Na pasta `backend`, com o core de desenvolvimento já iniciado e o `VMS_DATABASE_URL` apontando para o banco de desenvolvimento, gere um lote de eventos para uma câmera cadastrada. Use o ID do ambiente e o número da câmera nesse ambiente.
+
+```powershell
+go run -tags astra_dev ./cmd/vms-simulate-events -tenant ID_DO_AMBIENTE -camera NUMERO_DA_CAMERA
+```
+
+Abra **Operação → Eventos** e clique em **Atualizar**. O lote inclui duas intrusões com o mesmo horário de câmera e um cruzamento de linha. Os três aparecem como **Simulado** e usam o histórico consultado pela interface.
 
 ## Testes e pacote Windows
 

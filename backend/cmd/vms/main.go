@@ -33,6 +33,7 @@ func main() {
 	key := flag.String("key", "", "TLS private key PEM")
 	tlsHost := flag.String("tls-host", "localhost", "DNS name or IP included in a new local certificate")
 	worker := flag.String("worker", "http://127.0.0.1:19091", "private media worker")
+	collector := flag.String("event-worker", "http://127.0.0.1:19092", "private event worker")
 	whep := flag.String("whep", "http://127.0.0.1:18889", "private WHEP endpoint")
 	flag.Parse()
 	if *data == "" || os.Getenv("VMS_DATABASE_URL") == "" {
@@ -57,7 +58,7 @@ func main() {
 	ctx, cancel := servicehost.SignalContext(context.Background())
 	defer cancel()
 	servicehost.WatchParent(cancel)
-	api, err := app.New(ctx, app.Options{DatabaseURL: os.Getenv("VMS_DATABASE_URL"), SecureCookies: true, DataDir: *data, WorkerURL: *worker, WHEPURL: *whep, WorkerSecret: os.Getenv("VMS_WORKER_SECRET")})
+	api, err := app.New(ctx, app.Options{DatabaseURL: os.Getenv("VMS_DATABASE_URL"), SecureCookies: true, DataDir: *data, WorkerURL: *worker, EventWorkerURL: *collector, WHEPURL: *whep, WorkerSecret: os.Getenv("VMS_WORKER_SECRET")})
 	if err != nil {
 		log.Fatal("could not initialize database; verify local database configuration")
 	}

@@ -10,6 +10,7 @@ import type {LiveTransitionQueue} from "@/lib/live-transition-queue";
 
 type Entry=LiveStreamRequest&{ready?:boolean;actualProfile?:string;serialized:boolean};
 type Model={active:Entry|null;pending:Entry|null;message:string;failed:boolean};
+const reconnectDelayMs=5000;
 const requestKey=(profile:string,fallback:string[])=>JSON.stringify([profile,fallback]);
 
 function ContinuousVideo({tenant,camera,profile,fallback,queue,visible,debugEnabled,onDenied}:{
@@ -27,6 +28,12 @@ function ContinuousVideo({tenant,camera,profile,fallback,queue,visible,debugEnab
   });
  },[key,profile,target]);
  const available=!!model.active?.ready;
+ const waitingToReconnect=model.failed&&!available&&!model.pending;
+ useEffect(()=>{
+  if(!waitingToReconnect)return;
+  const timer=setTimeout(()=>setAttempt(value=>value+1),reconnectDelayMs);
+  return()=>clearTimeout(timer);
+ },[waitingToReconnect,key]);
  const ready=(entry:Entry,actualProfile:string)=>setModel(previous=>{
   if(previous.active?.key===entry.key)return {...previous,active:{...previous.active,ready:true,actualProfile},message:"",failed:false};
   if(previous.pending?.key!==entry.key)return previous;

@@ -21,13 +21,18 @@ import {type CameraAvailability} from "@/lib/camera-availability";
 export type Site={id:string;name:string;address:string;timezone:string;active:boolean;revision:number;capabilities?:Record<string,boolean>};
 export type Profile={id:string;name:string;url?:string;codec?:string;width?:number;height?:number;fps?:number;enabled?:boolean};
 export type CameraDisplayMode="cover"|"4:3"|"contain";
-export type Camera={id:string;name:string;siteId:string;active:boolean;displayMode?:CameraDisplayMode;effectiveActive:boolean;revision:number;sourceVersion:string;connectionType?:ConnectionType;connection?:CameraConnection;connectionRevision?:number;profiles:Profile[];capabilities:Record<string,boolean>;availability?:CameraAvailability};
+export const cameraDisplayModes:Record<CameraDisplayMode,string>={
+ cover:"Espalhar pela célula",
+ "4:3":"Forçar 4:3",
+ contain:"Manter a proporção",
+};
+export type Camera={id:string;name:string;siteId:string;active:boolean;displayMode?:CameraDisplayMode;effectiveActive:boolean;revision:number;sourceVersion:string;connectionType?:ConnectionType;connection?:CameraConnection;connectionRevision?:number;profiles:Profile[];capabilities:Record<string,boolean>;availability?:CameraAvailability;recordingActive?:boolean};
 type Group={id:string;name:string;grants:Grant[];revision:number};
 type ScopedGroup=Group&{scope:"installation"|"tenant"};
 type Member=Operator&{groups:string[];membershipRevision:number};
-export async function allPages<T>(path:string):Promise<T[]> {
+export async function allPages<T>(path:string,signal?:AbortSignal):Promise<T[]> {
  const items:T[]=[];let cursor="";
- do {const page=await api<{items:T[];nextCursor?:string}>(path+(cursor?`?cursor=${encodeURIComponent(cursor)}`:""),"GET",undefined,true);items.push(...page.items);cursor=page.nextCursor??"";}while(cursor);
+ do {const page=await api<{items:T[];nextCursor?:string}>(path+(cursor?`?cursor=${encodeURIComponent(cursor)}`:""),"GET",undefined,true,signal);items.push(...page.items);cursor=page.nextCursor??"";}while(cursor);
  return items;
 }
 

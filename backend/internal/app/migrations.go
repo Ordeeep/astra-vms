@@ -66,7 +66,7 @@ func migrate(ctx context.Context, db *pgxpool.Pool) error {
  `, `ALTER TABLE mosaics ADD COLUMN layout text NOT NULL DEFAULT '';`, cameraNumbersMigration, `
  ALTER TABLE cameras ADD COLUMN IF NOT EXISTS display_mode text NOT NULL DEFAULT 'contain'
   CHECK (display_mode IN ('cover','4:3','contain'));
- `}
+ `, analyticEventsMigration, eventCollectionMigration}
 	if version > len(migrations) {
 		return errors.New("database requires a newer VMS core")
 	}

@@ -12,6 +12,7 @@ dest="$root/backend/dist/astra-linux-amd64-$version"
 [[ ! -e $dest ]] || { echo 'Package version already exists.' >&2; exit 1; }
 mkdir -p "$dest/bin" "$dest/frontend" "$dest/systemd" "$dest/licenses"
 (cd "$root/backend"; go build -trimpath -o "$dest/bin/vms" ./cmd/vms; go build -trimpath -o "$dest/bin/vms-worker" ./cmd/vms-worker)
+(cd "$root/backend"; go build -trimpath -o "$dest/bin/vms-event-worker" ./cmd/vms-event-worker)
 (cd "$root/frontend"; npm ci --no-audit --no-fund; NEXT_TELEMETRY_DISABLED=1 npm run build)
 cp -a "$root/frontend/.next/standalone/." "$dest/frontend/"
 install -m 0755 "$(command -v node)" "$dest/bin/node"

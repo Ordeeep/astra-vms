@@ -34,17 +34,19 @@ const response=(value:unknown,status=200)=>new Response(status===204?null:JSON.s
 window.fetch=async(input,options)=>{
  const url=new URL(typeof input==='string'?input:input instanceof URL?input.href:input.url,location.origin),path=url.pathname,method=options?.method??'GET',body=options?.body&&path.startsWith('/api/v1/')?JSON.parse(String(options.body)):null;
  requests.push({path:path+url.search,method,body,context:new Headers(options?.headers).get('X-VMS-Context')});
+ const cameraId=body?.cameraId??path.match(/\/cameras\/([^/]+)/)?.[1];
+ const available=cameraId==='cam2'?blocks.map((block,index)=>index===1?{...block,start:block.start+4000}:index===2?{...block,end:block.end-5000}:block):blocks;
  if(path.endsWith('/recording-availability')){
   if(deny)return response({code:'forbidden'},403);
   if(url.searchParams.has('month'))return monthFailure?response({code:'database_unavailable'},503):response({timezone:'America/Sao_Paulo',days:['2026-11-16','2026-11-17','2026-11-18'].filter(d=>d.startsWith(url.searchParams.get('month')!))});
   const direction=url.searchParams.get('direction');
-  if(direction){const at=Date.parse(url.searchParams.get('at')!);const candidates=blocks.filter(b=>direction==='next'?b.start>at:b.end<=at);const interval=direction==='next'?candidates[0]:candidates.at(-1);return response({timezone:'America/Sao_Paulo',interval:interval?{start:new Date(interval.start).toISOString(),end:new Date(interval.end).toISOString()}:null});}
-  if(url.searchParams.has('start')){const start=Date.parse(url.searchParams.get('start')!),end=Date.parse(url.searchParams.get('end')!);return response({timezone:'America/Sao_Paulo',intervals:blocks.filter(b=>b.end>start&&b.start<end).map(b=>({start:new Date(b.start).toISOString(),end:new Date(b.end).toISOString()}))});}
+  if(direction){const at=Date.parse(url.searchParams.get('at')!);const candidates=available.filter(b=>direction==='next'?b.start>at:b.end<=at);const interval=direction==='next'?candidates[0]:candidates.at(-1);return response({timezone:'America/Sao_Paulo',interval:interval?{start:new Date(interval.start).toISOString(),end:new Date(interval.end).toISOString()}:null});}
+  if(url.searchParams.has('start')){const start=Date.parse(url.searchParams.get('start')!),end=Date.parse(url.searchParams.get('end')!);return response({timezone:'America/Sao_Paulo',intervals:available.filter(b=>b.end>start&&b.start<end).map(b=>({start:new Date(b.start).toISOString(),end:new Date(b.end).toISOString()}))});}
   return response({timezone:'America/Sao_Paulo'});
  }
  if(path.endsWith('/playback-sessions')&&method==='POST'){
   if(deny)return response({code:'forbidden'},403);
-  const at=Date.parse(body.start),block=blocks.find(b=>b.start<=at&&b.end>at);
+  const at=Date.parse(body.start),block=available.find(b=>b.start<=at&&b.end>at);
   if(!block)return response({code:'recording_gap',nextStart:new Date(blocks.find(b=>b.start>at)?.start??blocks[0].start).toISOString()},409);
   const reverse=Date.parse(body.end)-at<9000;
   const start=reverse?at:block.start+Math.floor((at-block.start)/12000)*12000,end=Math.min(block.end,start+12000);

@@ -10,7 +10,7 @@ async page => {
  const preserved=()=>page.evaluate(()=>window.savedVideos.every((v,i)=>v.isConnected&&v.srcObject===window.savedStreams[i])&&!qa.events.some(e=>e.type==='open'||e.type==='delete'||e.type==='close'));
  await page.goto('http://127.0.0.1:13110/#native');await page.reload();
  await page.getByRole('button',{name:'Quatro câmeras',exact:true}).click();await ready(4);
- await page.getByRole('button',{name:'Fechar câmera da posição 4',exact:true}).click();await ready(3);
+ await page.getByRole('button',{name:'Esvaziar posição 4',exact:true}).click();await ready(3);
  await page.getByRole('button',{name:'Principal na primeira',exact:true}).click();
  await page.waitForFunction(()=>qa.sessions.size===3&&[...qa.sessions.values()].some(s=>s.cameraId==='cam1'&&s.profile==='main'));
  await ready(3);await save();
@@ -42,11 +42,12 @@ async page => {
  assert(await page.locator('.live-grid').getAttribute('data-maximized')==='false','Duplo clique deixou de restaurar');
  assert(await preserved(),'Maximizar após troca recriou transmissões');
  await page.waitForFunction(frames=>window.savedVideos.every((v,i)=>v.getVideoPlaybackQuality().totalVideoFrames>frames[i]),frames);
+ await page.getByRole('button',{name:'Expandir todos os sites',exact:true}).click();
  await page.getByRole('button',{name:'Arrastar Câmera 1',exact:true}).press('Enter');await cell(0).press('Enter');await ready(4);
  await save();await drag(0,1);
  assert(await title(0)==='Câmera 1'&&await title(1)==='Câmera 1'&&await preserved(),'Câmeras duplicadas perderam identidade');
- await page.getByRole('button',{name:'Fechar câmera da posição 1',exact:true}).click();await ready(3);
+ await page.getByRole('button',{name:'Esvaziar posição 1',exact:true}).click();await ready(3);
  assert(await cell(0).getAttribute('data-occupied')==='false'&&await title(1)==='Câmera 1','Fechar após troca afetou outro card');
  await page.screenshot({path:'output/playwright/live-drag-result.png'});
- return {transport:'native WebRTC loopback; simulated API',passed:['move to empty','swap occupied','stable video nodes and streams','frames continue','profile follows camera','same position','Escape','outside drop','pointer cancel','context menu','maximize and restore','duplicate cameras','close after swap']};
+ return {transport:'native WebRTC loopback; simulated API',passed:['move to empty','swap occupied','stable video nodes and streams','frames continue','profile follows camera','same position','Escape','outside drop','pointer cancel','context menu','maximize and restore','duplicate cameras','empty position after swap']};
 }

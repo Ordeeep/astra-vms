@@ -24,6 +24,10 @@ type Props<T>={
  data:T[];columns:DataTableColumn<T>[];label:string;getRowId:(row:T)=>string;
  searchPlaceholder?:string;emptyMessage?:ReactNode;loading?:boolean;
  onRowClick?:(row:T)=>void;canActivateRow?:(row:T)=>boolean;rowLabel?:(row:T)=>string;
+ selection?:{
+  ids:ReadonlySet<string>;onChange:(ids:Set<string>)=>void;label:(row:T)=>string;disabled?:boolean;
+  allLabel:(count:number,filtered:boolean)=>string;renderActions?:(outsideFilters:number)=>ReactNode;
+ };
  /** Cursor-backed histories expose only their loaded subset to local transforms. */
  partial?:boolean;hasMore?:boolean;onLoadMore?:()=>void|Promise<void>;loadingMore?:boolean;
 };
@@ -62,7 +66,7 @@ function ColumnFilter<T>({column,definition,options,onChange}:{column:Column<T>;
  </div>;
 }
 
-export function DataTable<T>({data,columns,label,getRowId,searchPlaceholder="Buscar…",emptyMessage="Nenhum registro disponível.",loading=false,partial=false,hasMore=false,onLoadMore,loadingMore=false,onRowClick,canActivateRow,rowLabel}:Props<T>){
+export function DataTable<T>({data,columns,label,getRowId,searchPlaceholder="Buscar…",emptyMessage="Nenhum registro disponível.",loading=false,partial=false,hasMore=false,onLoadMore,loadingMore=false,onRowClick,canActivateRow,rowLabel,selection}:Props<T>){
  const [search,setSearch]=useState(""),[filters,setFilters]=useState<ColumnFiltersState>([]),[sorting,setSorting]=useState<SortingState>([]),[visibility,setVisibility]=useState<VisibilityState>({}),[pagination,setPagination]=useState<PaginationState>({pageIndex:0,pageSize:10});
  const searchId=useId(),sizeId=useId();
  const definitions=useMemo<ColumnDef<T>[]>(()=>columns.map(definition=>({
@@ -89,7 +93,19 @@ export function DataTable<T>({data,columns,label,getRowId,searchPlaceholder="Bus
   getCoreRowModel:getCoreRowModel(),getFilteredRowModel:getFilteredRowModel(),getSortedRowModel:getSortedRowModel(),getPaginationRowModel:getPaginationRowModel(),
   autoResetPageIndex:false,
  });
- const count=table.getFilteredRowModel().rows.length,pageCount=Math.max(1,table.getPageCount());
+ const filteredRows=table.getFilteredRowModel().rows,pageRows=table.getRowModel().rows;
+ const count=filteredRows.length,pageCount=Math.max(1,table.getPageCount());
+ const selectedOnPage=selection?pageRows.filter(row=>selection.ids.has(row.id)).length:0;
+ const selectedInFilter=selection?filteredRows.filter(row=>selection.ids.has(row.id)).length:0;
+ const selectRows=(rows:typeof pageRows,checked:boolean)=>{
+  if(!selection||selection.disabled)return;
+  const next=new Set(selection.ids);
+  for(const row of rows){
+   if(checked)next.add(row.id);
+   else next.delete(row.id);
+  }
+  selection.onChange(next);
+ };
  // Polling must preserve the current page, while removals clamp an obsolete page.
  useEffect(()=>{setPagination(current=>current.pageIndex>=pageCount?{...current,pageIndex:pageCount-1}:current);},[pageCount]);
  const resetPage=()=>setPagination(current=>({...current,pageIndex:0}));
@@ -101,7 +117,7 @@ export function DataTable<T>({data,columns,label,getRowId,searchPlaceholder="Bus
  // Render row callbacks directly: replacing a column definition during polling
  // must not remount an open status popover or another stateful cell component.
  const renderCell=(row:T,id:string,value:unknown)=>{const definition=columns.find(column=>column.id===id);return definition?.cell?definition.cell(row):String(value??"—");};
- return <section className="data-table" aria-label={label} aria-busy={loading}>
+ return <section className={selection?.ids.size?"data-table data-table-has-selection":"data-table"} aria-label={label} aria-busy={loading}>
   <div className="data-table-toolbar">
    <div className="data-table-search"><Search aria-hidden="true"/><Label className="sr-only" htmlFor={searchId}>{`Buscar em ${label}`}</Label><Input id={searchId} value={search} placeholder={searchPlaceholder} onChange={event=>{setSearch(event.target.value);resetPage();}}/></div>
    {columns.filter(definition=>definition.filter==="select").map(definition=>{
@@ -114,24 +130,28 @@ export function DataTable<T>({data,columns,label,getRowId,searchPlaceholder="Bus
   {filters.length>0&&<div className="data-table-active-filters" aria-label="Filtros aplicados">{filters.map(filter=>{const definition=columns.find(c=>c.id===filter.id)!;const values=Array.isArray(filter.value)?filter.value.map(v=>definition.options?.find(o=>o.value===v)?.label??v).filter(Boolean).join(" · "):String(filter.value);return <Button type="button" size="sm" variant="secondary" key={filter.id} onClick={()=>changeFilter(table.getColumn(filter.id)!,undefined)} aria-label={`Remover filtro ${definition.header}`}><span>{definition.header}: {values}</span><X aria-hidden="true"/></Button>;})}</div>}
   {partial&&<p className="data-table-scope">Busca, filtros e ordenação abrangem os {data.length} registros carregados.{hasMore?" Carregue os anteriores para ampliar a consulta.":""}</p>}
   <div className="data-table-frame"><Table aria-label={label} containerProps={{role:"region","aria-label":`Rolagem da tabela ${label}`,tabIndex:0}}>
-   <TableHeader>{table.getHeaderGroups().map(group=><TableRow key={group.id}>{group.headers.map(header=>{
+   <TableHeader>{table.getHeaderGroups().map(group=><TableRow key={group.id}>
+    {selection&&<TableHead scope="col" className="data-table-selection-cell"><Label className="data-table-selection-target"><Checkbox aria-label="Selecionar linhas desta página" disabled={loading||selection.disabled||!pageRows.length} checked={selectedOnPage>0&&(selectedOnPage===pageRows.length||"indeterminate")} onCheckedChange={checked=>selectRows(pageRows,checked===true)}/></Label></TableHead>}
+    {group.headers.map(header=>{
     const column=header.column,definition=columns.find(c=>c.id===column.id)!;const sorted=column.getIsSorted();
     return <TableHead key={header.id} scope="col" className={definition.filter==="number"||definition.id==="actions"?"data-table-align-end":undefined} aria-sort={sorted==="asc"?"ascending":sorted==="desc"?"descending":undefined}>
      {column.getCanSort()||column.getCanFilter()?<Popover><PopoverTrigger asChild><Button type="button" variant="ghost" size="sm" className="data-table-heading" aria-label={`Opções da coluna ${definition.header}`}>{definition.header}{sorted==="asc"?<ArrowUp aria-hidden="true"/>:sorted==="desc"?<ArrowDown aria-hidden="true"/>:<ArrowUpDown aria-hidden="true"/>}{column.getIsFiltered()&&<Filter className="data-table-filtered" aria-hidden="true"/>}</Button></PopoverTrigger><PopoverContent className="data-table-popover" align="start" aria-label={`Opções de ${definition.header}`}><strong>{definition.header}</strong>{column.getCanSort()&&<div className="data-table-sort-actions"><Button type="button" variant={sorted==="asc"?"secondary":"ghost"} size="sm" onClick={()=>{column.toggleSorting(false);resetPage();}}><ArrowUp/>Ordem crescente</Button><Button type="button" variant={sorted==="desc"?"secondary":"ghost"} size="sm" onClick={()=>{column.toggleSorting(true);resetPage();}}><ArrowDown/>Ordem decrescente</Button>{sorted&&<Button type="button" variant="ghost" size="sm" onClick={()=>{column.clearSorting();resetPage();}}>Remover ordenação</Button>}</div>}{column.getCanFilter()&&<ColumnFilter column={column} definition={definition} options={optionsFor(definition)} onChange={value=>changeFilter(column,value)}/>}</PopoverContent></Popover>:definition.header}
     </TableHead>;
    })}</TableRow>)}</TableHeader>
-   <TableBody>{loading?Array.from({length:5},(_,index)=><TableRow key={index} aria-hidden="true">{visible.map(column=><TableCell key={column.id}><Skeleton className="h-3 w-3/4 min-w-10"/></TableCell>)}</TableRow>):table.getRowModel().rows.length?table.getRowModel().rows.map(row=>{
+   <TableBody>{loading?Array.from({length:5},(_,index)=><TableRow key={index} aria-hidden="true">{selection&&<TableCell/>}{visible.map(column=><TableCell key={column.id}><Skeleton className="h-3 w-3/4 min-w-10"/></TableCell>)}</TableRow>):pageRows.length?pageRows.map(row=>{
     const clickable=!!onRowClick&&(!canActivateRow||canActivateRow(row.original));
-    return <TableRow key={row.id} tabIndex={clickable?0:undefined} aria-label={clickable?rowLabel?.(row.original):undefined} className={clickable?"cursor-pointer focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2":undefined}
+    return <TableRow key={row.id} data-state={selection?.ids.has(row.id)?"selected":undefined} tabIndex={clickable?0:undefined} aria-label={clickable?rowLabel?.(row.original):undefined} className={clickable?"cursor-pointer focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2":undefined}
      onClick={clickable?event=>{if((event.target as HTMLElement).closest('button,a,input,select,textarea,[role="button"],[role="checkbox"],[role="dialog"]'))return;event.currentTarget.focus();onRowClick?.(row.original);}:undefined}
      onKeyDown={clickable?event=>{if(event.target===event.currentTarget&&(event.key==="Enter"||event.key===" ")){event.preventDefault();onRowClick?.(row.original);}}:undefined}>
+     {selection&&<TableCell className="data-table-selection-cell" onClick={event=>event.stopPropagation()}><Label className="data-table-selection-target"><Checkbox aria-label={selection.label(row.original)} checked={selection.ids.has(row.id)} disabled={selection.disabled} onCheckedChange={checked=>selectRows([row],checked===true)}/></Label></TableCell>}
      {row.getVisibleCells().map(cell=><TableCell key={cell.id} className={columns.find(column=>column.id===cell.column.id)?.filter==="number"||cell.column.id==="actions"?"data-table-align-end":undefined}>{renderCell(row.original,cell.column.id,cell.getValue())}</TableCell>)}
     </TableRow>;
-   }):<TableRow><TableCell colSpan={visible.length} className="data-table-empty">{active?<><p>Nenhum resultado para os filtros aplicados.</p><Button type="button" variant="ghost" onClick={clear}>Limpar filtros</Button></>:emptyMessage}</TableCell></TableRow>}</TableBody>
+   }):<TableRow><TableCell colSpan={visible.length+(selection?1:0)} className="data-table-empty">{active?<><p>Nenhum resultado para os filtros aplicados.</p><Button type="button" variant="ghost" onClick={clear}>Limpar filtros</Button></>:emptyMessage}</TableCell></TableRow>}</TableBody>
   </Table></div>
   {loading&&<span className="sr-only" role="status">Carregando registros…</span>}
   <div className="data-table-footer">
    <p role="status" aria-live="polite">{count?`${pagination.pageIndex*pagination.pageSize+1}–${Math.min((pagination.pageIndex+1)*pagination.pageSize,count)} de ${count}`:"0"} {partial?"registros carregados":"registros"}{active?` (de ${data.length})`:""}</p>
+   {selection&&!loading&&selection.ids.size>0&&selectedInFilter<count&&(active||count>pageRows.length)&&<Button type="button" size="sm" variant="outline" disabled={selection.disabled} onClick={()=>selectRows(filteredRows,true)}>{selection.allLabel(count,active)}</Button>}
    <div className="data-table-page-size"><Label htmlFor={sizeId}>Linhas por página</Label><NativeSelect id={sizeId} value={pagination.pageSize} onChange={event=>setPagination({pageIndex:0,pageSize:Number(event.target.value)})}>{[10,20,30,50,100].map(size=><NativeSelectOption key={size} value={size}>{size}</NativeSelectOption>)}</NativeSelect></div>
    <span className="data-table-page">Página {Math.min(pagination.pageIndex+1,pageCount)} de {pageCount}{partial?" carregadas":""}</span>
    <nav className="data-table-navigation" aria-label={`Paginação de ${label}`}>
@@ -142,5 +162,6 @@ export function DataTable<T>({data,columns,label,getRowId,searchPlaceholder="Bus
    </nav>
   </div>
   {hasMore&&onLoadMore&&<div className="data-table-load-more"><Button type="button" variant="outline" disabled={loadingMore} onClick={()=>void onLoadMore()}>{loadingMore?"Carregando anteriores…":"Carregar registros anteriores"}</Button></div>}
+  {selection?.renderActions?.(selection.ids.size-selectedInFilter)}
  </section>;
 }

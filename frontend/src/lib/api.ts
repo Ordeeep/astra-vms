@@ -8,6 +8,9 @@ export class ApiError extends Error {
 }
 const messages: Record<string,string> = {
   invalid_camera_display_mode: "Escolha um modo de visualização válido.",
+  invalid_camera_bulk: "Confira as câmeras selecionadas e as alterações escolhidas.",
+  invalid_camera_bulk_agenda: "Confira os dias e horários da agenda de gravação.",
+  camera_bulk_site_not_found: "O site de destino não está mais disponível.",
   recording_profile_unavailable: "O perfil gravado não está disponível. Escolha outro perfil ou desabilite a gravação.",
   recording_profile_change_required: "Esta alteração remove o perfil de uma gravação habilitada. Um operador com permissão para editar a câmera e a gravação deve selecionar outro perfil ou desabilitar a gravação.",
   invalid_recording_config: "Confira o perfil, os horários da agenda e a retenção de gravação.",
@@ -63,6 +66,7 @@ const messages: Record<string,string> = {
   database_unavailable: "O serviço de dados está indisponível.",
   too_many_attempts: "Muitas tentativas. Aguarde antes de tentar novamente.",
   forbidden: "Sua conta não tem permissão para esta operação.",
+  invalid_analytic_event_filter: "Confira o período e os filtros de eventos.",
   quota_reduction_required:"Para reduzir a cota abaixo do uso atual, utilize Redução de cota. O orçamento de exportações só pode ser reduzido após a limpeza desses arquivos.",
   quota_job_active:"Já há uma redução de cota em andamento neste ambiente.",
   invalid_reduction:"Escolha uma cota menor que o limite atual.",

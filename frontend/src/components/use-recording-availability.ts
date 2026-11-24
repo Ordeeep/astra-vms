@@ -7,8 +7,8 @@ import type {RecordingInterval, RecordingSegment} from "@/lib/recording-timeline
 import {recordingTimestamp} from "@/lib/recording-navigation";
 import {RecordingAvailabilityCache} from "@/lib/recording-availability-cache";
 
-export function useRecordingAvailability(base: string, cameraId: string, view: RecordingInterval | null) {
-  const [, redraw] = useState(0), [disconnected, setDisconnected] = useState(false);
+export function useRecordingAvailability(base: string, cameraId: string, view: RecordingInterval | null, playbackDay: number | null = null) {
+  const [version, redraw] = useState(0), [disconnected, setDisconnected] = useState(false);
   const cache = useMemo(() => new RecordingAvailabilityCache(async (range, signal) => {
     const query = new URLSearchParams({start: new Date(range.start).toISOString(), end: new Date(range.end).toISOString()});
     const value = await api<{intervals: RecordingSegment[]; sourceDelaySeconds?: number}>(`${base}?${query}`, "GET", undefined, true, AbortSignal.any([signal, AbortSignal.timeout(5000)]));
@@ -17,10 +17,10 @@ export function useRecordingAvailability(base: string, cameraId: string, view: R
 
   useEffect(() => {
     if (!view) return;
-    cache.setView(view);
+    cache.setView(view, playbackDay);
     const timer = setTimeout(() => cache.refresh(), 140);
     return () => clearTimeout(timer);
-  }, [cache, view]);
+  }, [cache, view, playbackDay]);
 
   useEffect(() => {
     let scheduled: ReturnType<typeof setTimeout> | undefined;
@@ -42,5 +42,7 @@ export function useRecordingAvailability(base: string, cameraId: string, view: R
     const fallback = setInterval(() => { cache.invalidate(); cache.refresh(); }, 60_000);
     return () => { window.removeEventListener("vms:change", receive); clearInterval(fallback); clearTimeout(scheduled); cache.clear(); };
   }, [cache, cameraId]);
-  return {...cache.snapshot(view), disconnected};
+  const visible = useMemo(() => cache.snapshot(view), [cache, view, version]);
+  const playback = useMemo(() => playbackDay === null ? null : cache.snapshot({start: playbackDay, end: playbackDay + 86400000}), [cache, playbackDay, version]);
+  return {...visible, playback, disconnected};
 }

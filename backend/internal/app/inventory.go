@@ -23,6 +23,7 @@ type Site struct {
 type Profile = camera.Profile
 type Camera struct {
 	Availability       *CameraAvailability `json:"availability,omitempty"`
+	RecordingActive    *bool               `json:"recordingActive,omitempty"`
 	ID                 string              `json:"id"`
 	SiteID             string              `json:"siteId"`
 	Name               string              `json:"name"`
@@ -166,12 +167,15 @@ func (a *App) sites(w http.ResponseWriter, r *http.Request, id identity) {
 	response(w, status, in)
 }
 
-const cameraSelect = `SELECT c.id,c.camera_number::text,c.site_id,c.name,c.active,(c.active AND s.active AND t.active),c.revision,c.source_version,v.profiles,v.connection_type,v.connection,v.connection_revision,c.display_mode FROM cameras c JOIN sites s ON s.id=c.site_id AND s.tenant_id=c.tenant_id JOIN tenants t ON t.id=c.tenant_id JOIN camera_sources v ON v.id=c.source_version AND v.camera_id=c.id AND v.tenant_id=c.tenant_id AND c.deleted_at IS NULL`
+const cameraFields = `SELECT c.id,c.camera_number::text,c.site_id,c.name,c.active,(c.active AND s.active AND t.active),c.revision,c.source_version,v.profiles,v.connection_type,v.connection,v.connection_revision,c.display_mode`
+const cameraFrom = ` FROM cameras c JOIN sites s ON s.id=c.site_id AND s.tenant_id=c.tenant_id JOIN tenants t ON t.id=c.tenant_id JOIN camera_sources v ON v.id=c.source_version AND v.camera_id=c.id AND v.tenant_id=c.tenant_id AND c.deleted_at IS NULL`
+const cameraSelect = cameraFields + cameraFrom
 
-func scanCamera(row interface{ Scan(...any) error }) (Camera, error) {
+func scanCamera(row interface{ Scan(...any) error }, extra ...any) (Camera, error) {
 	var c Camera
 	var raw, connection []byte
-	err := row.Scan(&c.key, &c.ID, &c.SiteID, &c.Name, &c.Active, &c.EffectiveActive, &c.Revision, &c.SourceVersion, &raw, &c.ConnectionType, &connection, &c.ConnectionRevision, &c.DisplayMode)
+	fields := []any{&c.key, &c.ID, &c.SiteID, &c.Name, &c.Active, &c.EffectiveActive, &c.Revision, &c.SourceVersion, &raw, &c.ConnectionType, &connection, &c.ConnectionRevision, &c.DisplayMode}
+	err := row.Scan(append(fields, extra...)...)
 	if err == nil {
 		err = json.Unmarshal(raw, &c.Profiles)
 		if err == nil && string(connection) != "null" {
@@ -199,6 +203,8 @@ func cameraCapabilities(c *Camera, grants []Grant, tenant string, admin bool) bo
 	}
 	if !c.Capabilities["inventory.manage"] {
 		c.Connection = nil
+	} else if _, supported := camera.Events(c.ConnectionType); supported {
+		c.Capabilities["event-collection.configure"] = true
 	}
 	return visible
 }
@@ -239,7 +245,11 @@ func (a *App) cameras(w http.ResponseWriter, r *http.Request, id identity) {
 		if !ok {
 			return
 		}
-		rows, err := a.db.Query(r.Context(), cameraSelect+" WHERE c.tenant_id=$1 AND c.camera_number>$2 ORDER BY c.camera_number LIMIT 201", tenant, after)
+		rows, err := a.db.Query(r.Context(), cameraFields+`,
+ EXISTS (SELECT 1 FROM recording_status rs JOIN recording_configs rc USING (tenant_id,camera_id)
+ WHERE rs.tenant_id=c.tenant_id AND rs.camera_id=c.id AND rc.enabled AND rs.code='recording'
+ AND rs.updated_at>=now()-interval '5 seconds')`+cameraFrom+
+			" WHERE c.tenant_id=$1 AND c.camera_number>$2 ORDER BY c.camera_number LIMIT 201", tenant, after)
 		if err != nil {
 			dbFailure(w)
 			return
@@ -249,7 +259,8 @@ func (a *App) cameras(w http.ResponseWriter, r *http.Request, id identity) {
 		cursor := ""
 		count := 0
 		for rows.Next() {
-			c, err := scanCamera(rows)
+			var recording bool
+			c, err := scanCamera(rows, &recording)
 			if err != nil {
 				dbFailure(w)
 				return
@@ -261,6 +272,9 @@ func (a *App) cameras(w http.ResponseWriter, r *http.Request, id identity) {
 			cursor = c.ID
 			if cameraCapabilities(&c, grants, tenant, id.User.GlobalAdmin) {
 				a.attachAvailability(tenant, &c)
+				if c.Capabilities["live"] {
+					c.RecordingActive = new(c.EffectiveActive && recording)
+				}
 				items = append(items, c)
 			}
 		}
@@ -547,6 +561,7 @@ func (a *App) registerInventory(mux *http.ServeMux) {
 	}
 	mux.HandleFunc("PATCH /api/v1/tenants/{tenant}/sites/{site}", a.protected(a.sites))
 	mux.HandleFunc("GET /api/v1/tenants/{tenant}/cameras/{camera}", a.protected(a.cameras))
+	mux.HandleFunc("POST /api/v1/tenants/{tenant}/cameras/bulk", a.protected(a.bulkCameras))
 	mux.HandleFunc("PATCH /api/v1/tenants/{tenant}/cameras/{camera}", a.protected(a.cameras))
 	mux.HandleFunc("DELETE /api/v1/tenants/{tenant}/cameras/{camera}", a.protected(a.deleteCamera))
 	mux.HandleFunc("PATCH /api/v1/tenants/{tenant}/cameras/{camera}/configuration", a.protected(a.cameraConfiguration))

@@ -21,9 +21,11 @@
 .astra-interface [data-slot="alert"].success { border-left: 2px solid var(--success); background: color-mix(in srgb, var(--success) 7%, var(--card)); }
 .astra-interface [data-slot="alert"].success > svg { color: var(--success); }
 .astra-interface [data-slot="alert"]:is(.notice, .success) [data-slot="alert-description"] { color: var(--foreground); }
-.astra-interface :is(button, a, input:not([type="hidden"]), select, textarea, [tabindex]):focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+/* Keep one focus outline across native controls and composed shadcn triggers. */
+.astra-interface :where(button, a, input:not([type="hidden"]), select, textarea, [tabindex]):focus-visible { outline: 2px solid var(--ring); outline-offset: -1px; }
+.astra-interface :is(button, a, input, select, textarea):focus-visible { @apply ring-0; }
 .astra-interface [aria-invalid="true"]:focus-visible { outline-color: var(--destructive); }
-.astra-interface [data-slot="sidebar-trigger"], .astra-interface .theme-toggle { width: 36px; height: 36px; }
+.astra-interface .theme-toggle { width: 36px; height: 36px; }
 .astra-state { min-height: 100dvh; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 32px; width: min(100%, 720px); padding: 32px 24px; margin-inline: auto; }
 .astra-state-content { max-width: 560px; }
 .astra-state-content p { margin-top: 16px; }

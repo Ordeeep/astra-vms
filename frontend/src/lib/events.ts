@@ -6,10 +6,10 @@ export type Notification = {
 };
 
 // A notification invalidates a snapshot; it never grants access or supplies video.
-export function onEnvironmentChange(types:string[], refresh:()=>void) {
+export function onEnvironmentChange(types:string[], refresh:(notification:Notification)=>void) {
   const receive=(event:Event)=>{
     const value=(event as CustomEvent<Notification>).detail;
-    if(types.includes(value.type)||["AuthorizationChanged","ResyncRequired","Connected"].includes(value.type))refresh();
+    if(types.includes(value.type)||["AuthorizationChanged","ResyncRequired","Connected"].includes(value.type))refresh(value);
   };
   window.addEventListener("vms:change",receive);
   return()=>window.removeEventListener("vms:change",receive);

@@ -97,6 +97,94 @@ try{
 
  await fresh('viewer');await edit();await tab('Gravação');await expect(dialog().getByText(/Última escrita/)).toBeVisible();await expect(dialog().getByRole('checkbox')).toHaveCount(0);checks.push('consulta sem edição para operador de reprodução');
 
+ const batchRequest=()=>page.evaluate(()=>window.recordingQA.requests.filter(r=>r.method==='POST'&&r.path.endsWith('/cameras/bulk')).at(-1)?.body);
+ const actions=()=>page.getByRole('region',{name:'Ações em lote de câmeras'});
+ await fresh('bulk');
+ const portaria=page.getByRole('checkbox',{name:'Selecionar Portaria'});
+ await portaria.focus();await page.keyboard.press('Space');
+ await expect(portaria).toBeChecked();await expect(dialog()).toHaveCount(0);
+ const search=page.getByRole('textbox',{name:'Buscar em Câmeras'});
+ await search.fill('Bloco');
+ await expect(actions().getByText('1 fora dos filtros')).toBeVisible();
+ await page.getByRole('checkbox',{name:'Selecionar linhas desta página'}).check();
+ await expect(actions().getByText('11 câmeras selecionadas')).toBeVisible();
+ await page.getByRole('button',{name:'Próxima página'}).click();
+ await expect(page.getByRole('checkbox',{name:'Selecionar Bloco 12'})).not.toBeChecked();
+ await page.getByRole('button',{name:'Selecionar as 11 câmeras deste filtro'}).click();
+ await expect(actions().getByText('12 câmeras selecionadas')).toBeVisible();
+ await actions().getByRole('button',{name:'Ver seleção'}).click();
+ await expect(dialog().getByText('Portaria')).toBeVisible();
+ await page.keyboard.press('Escape');
+ await expect(actions().getByRole('button',{name:'Ver seleção'})).toBeFocused();
+ await actions().getByRole('button',{name:'Configurações'}).click();
+ await expect(dialog().getByRole('button',{name:'Aplicar alterações'})).toBeDisabled();
+ await dialog().getByRole('combobox',{name:'Site de destino'}).selectOption('destination');
+ await expect(dialog().getByText(/passam a seguir o horário local/)).toBeVisible();
+ await expect(dialog().getByText(/site de destino está desativado/)).toBeVisible();
+ await dialog().getByRole('combobox',{name:'Modo de exibição'}).selectOption('4:3');
+ await dialog().getByRole('combobox',{name:'Habilitação da gravação'}).selectOption('enabled');
+ await dialog().getByRole('checkbox',{name:'Alterar agenda de gravação'}).check();
+ await dialog().getByRole('checkbox',{name:'Gravar todos os dias, 24 horas'}).uncheck();
+ await expect(dialog().getByText(/Sem faixas/)).toBeVisible();
+ await dialog().getByRole('button',{name:'Aplicar alterações'}).click();
+ await expect(dialog().getByRole('alert')).toContainText('Bloco 12');
+ await expect(dialog().getByRole('combobox',{name:'Modo de exibição'})).toHaveValue('4:3');
+ await dialog().getByRole('button',{name:'Remover Bloco 12 da seleção'}).click();
+ await dialog().getByRole('button',{name:'Aplicar alterações'}).click();
+ await expect(actions()).toHaveCount(0);
+ await expect(page.getByText('11 câmeras atualizadas.')).toBeVisible();
+ expect(await batchRequest()).toEqual({cameraIds:['1','2','3','4','5','6','7','8','9','10','11'],action:'configure',siteId:'destination',displayMode:'4:3',recordingEnabled:true,agenda:{always:false,windows:[]}});
+ checks.push('seleção entre páginas e filtros, edição em lote e agenda vazia, erro mantém rascunho');
+
+ await fresh('bulk');
+ await page.getByRole('checkbox',{name:'Selecionar Portaria'}).check();
+ await page.getByRole('checkbox',{name:'Selecionar Bloco 02'}).check();
+ await actions().getByRole('button',{name:'Alterar status'}).focus();
+ await page.keyboard.press('ArrowDown');
+ await expect(page.getByRole('menuitem',{name:'Ativar câmeras',exact:true})).toBeFocused();
+ await page.keyboard.press('ArrowDown');
+ await expect(page.getByRole('menuitem',{name:'Desativar câmeras'})).toBeFocused();
+ await page.keyboard.press('Enter');
+ let confirmation=page.getByRole('alertdialog',{name:'Desativar câmeras'});
+ await expect(confirmation).toContainText('2 câmeras selecionadas');
+ await expect(confirmation.getByRole('button',{name:'Cancelar'})).toBeFocused();
+ expect(await batchRequest()).toBeUndefined();
+ await confirmation.getByRole('button',{name:'Desativar câmeras'}).click();
+ await expect(page.getByText('2 câmeras desativadas.')).toBeVisible();
+ await page.getByRole('checkbox',{name:'Selecionar Portaria'}).check();
+ await actions().getByRole('button',{name:'Alterar status'}).click();
+ await page.getByRole('menuitem',{name:'Ativar câmeras',exact:true}).click();
+ await expect(page.getByText('1 câmera ativada.')).toBeVisible();
+ await page.getByRole('checkbox',{name:'Selecionar Portaria'}).check();
+ await actions().getByRole('button',{name:'Excluir',exact:true}).click();
+ confirmation=page.getByRole('alertdialog',{name:'Excluir câmeras'});
+ await expect(confirmation).toContainText('gravações serão removidas em segundo plano');
+ await confirmation.getByRole('button',{name:'Excluir câmeras'}).click();
+ await expect(page.getByRole('row',{name:'Editar câmera Portaria'})).toHaveCount(0);
+ await expect(actions()).toHaveCount(0);
+ checks.push('ativação direta e confirmação de desativação e exclusão em lote');
+
+ for(const dark of [true,false])for(const width of [390,768,1280,1600]){
+  await page.setViewportSize({width,height:900});await fresh('bulk');
+  await page.locator('html').evaluate((element,theme)=>element.classList.toggle('dark',theme),dark);
+  await page.getByRole('checkbox',{name:'Selecionar Portaria'}).check();
+  const bar=await actions().boundingBox();
+  expect(bar.x).toBeGreaterThanOrEqual(0);expect(bar.x+bar.width).toBeLessThanOrEqual(width);expect(bar.y+bar.height).toBeCloseTo(884,0);
+  if(dark&&width===390)await page.screenshot({path:new URL('camera-bulk-mobile.png',output).pathname.slice(1),animations:'disabled'});
+  await actions().getByRole('button',{name:'Configurações'}).click();
+  const box=await dialog().boundingBox();expect(box.x).toBeGreaterThanOrEqual(0);expect(box.x+box.width).toBeLessThanOrEqual(width);
+  if(!dark&&width===1280)await page.screenshot({path:new URL('camera-bulk-settings.png',output).pathname.slice(1),animations:'disabled'});
+ }
+ await page.setViewportSize({width:640,height:450});await fresh('bulk');
+ await page.getByRole('checkbox',{name:'Selecionar Portaria'}).check();
+ await actions().getByRole('button',{name:'Configurações'}).click();
+ await dialog().getByRole('checkbox',{name:'Alterar agenda de gravação'}).check();
+ await dialog().getByRole('checkbox',{name:'Gravar todos os dias, 24 horas'}).uncheck();
+ await dialog().getByRole('button',{name:'+ Adicionar faixa'}).click();
+ await expect(dialog().getByRole('button',{name:'Aplicar alterações'})).toBeInViewport();
+ expect(await dialog().locator('.dialog-form-body').evaluate(element=>element.scrollHeight>element.clientHeight)).toBe(true);
+ checks.push('ações e configurações em lote nos temas claro e escuro, em quatro larguras');
+
  for(const dark of [true,false])for(const width of [1440,390,320]){
   await fresh();await page.setViewportSize({width,height:900});await page.evaluate(dark=>document.documentElement.classList.toggle('dark',dark),dark);await edit();await tab('Gravação');
   const fits=await dialog().evaluate(element=>{const box=element.getBoundingClientRect();return box.left>=0&&box.right<=innerWidth+1&&box.top>=0&&box.bottom<=innerHeight+1&&element.scrollWidth<=element.clientWidth+1;});

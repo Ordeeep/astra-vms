@@ -31,7 +31,7 @@ await new Promise((resolve,reject)=>{
 });
 const postcss=require("postcss");
 const tailwind=require("@tailwindcss/postcss");
-const source='@import "../../src/app/globals.css";\n@import "../../src/components/data-table.css";\n\n';
+const source='@import "../../src/app/globals.css";\n@import "../../src/components/data-table.css";\n@import "../../src/components/camera-bulk-actions.css";\n';
 const result=await postcss([tailwind()]).process(source,{from:path.join(directory,"fixture.css"),to:path.join(output,"fixture.css")});
 await writeFile(path.join(output,"fixture.css"),result.css);
 console.log("Camera form fixture generated. Run: node tests/camera-recording/serve.mjs");

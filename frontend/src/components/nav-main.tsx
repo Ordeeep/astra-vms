@@ -7,7 +7,7 @@ import {
   SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem, useSidebar,
 } from "@/components/ui/sidebar";
 import {
-  Building2, HardDrive, ChevronRight, CircleUserRound, ClipboardList,
+  Building2, HardDrive, ChevronRight, CircleUserRound, ClipboardList, ListTree,
   LayoutDashboard, MapPin, MonitorPlay, Settings2, ShieldCheck, UserRound, UsersRound, Video,
   type LucideIcon,
 } from "lucide-react";
@@ -26,6 +26,7 @@ const navigationGroups: NavigationSection[] = [
     items: [
       { id: "overview", label: "Visão geral", icon: LayoutDashboard },
       { id: "live", label: "Ao vivo", icon: MonitorPlay },
+      { id: "events", label: "Eventos", icon: ListTree },
     ],
   },
   {
@@ -117,12 +118,12 @@ function NavigationGroup({ group, activePage, onNavigate }: NavigationProps & {
   );
 }
 
-export function NavMain({ activePage, onNavigate, globalAdmin }: NavigationProps & { globalAdmin: boolean }) {
+export function NavMain({ activePage, onNavigate, globalAdmin, canViewEvents }: NavigationProps & { globalAdmin: boolean; canViewEvents: boolean }) {
   return (
     <SidebarGroup>
       <nav aria-label="Navegação principal">
         <SidebarMenu>
-          {navigationGroups.map(group => <NavigationGroup key={group.id} group={{...group,items:group.items.filter(item=>item.id!=="tenants"||globalAdmin)}} activePage={activePage} onNavigate={onNavigate} />)}
+          {navigationGroups.map(group => <NavigationGroup key={group.id} group={{...group,items:group.items.filter(item=>(item.id!=="tenants"||globalAdmin)&&(item.id!=="events"||canViewEvents))}} activePage={activePage} onNavigate={onNavigate} />)}
         </SidebarMenu>
       </nav>
     </SidebarGroup>

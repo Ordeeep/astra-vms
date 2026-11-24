@@ -25,7 +25,7 @@ else
   for path in /etc/astra /var/lib/astra /opt/astra /srv/astra/archive; do [[ ! -e $path && ! -L $path ]] || { echo "Existing unowned path: $path" >&2; exit 1; }; done
   [[ $(runuser -u postgres -- psql -Atqc "SELECT count(*) FROM pg_roles WHERE rolname='astra_core'") == 0 ]] || exit 1
   [[ $(runuser -u postgres -- psql -Atqc "SELECT count(*) FROM pg_database WHERE datname='astra_vms'") == 0 ]] || exit 1
-  for service in astra-core astra-media astra-web; do
+  for service in astra-core astra-media astra-web astra-events; do
     [[ ! -e /etc/systemd/system/$service.service ]] || { echo 'Service name already in use.' >&2; exit 1; }
     ! getent passwd "$service" >/dev/null || { echo 'Service account already in use.' >&2; exit 1; }
   done
@@ -58,17 +58,24 @@ else
   # Versioned metadata snapshot precedes migrations. It is local staging only.
   "$bundle/backup.sh" "/var/backups/astra/pre-upgrade-$version"
 fi
+if ! getent passwd astra-events >/dev/null; then
+  useradd --system --user-group --no-create-home --shell /usr/sbin/nologin astra-events
+elif [[ ! -f /etc/systemd/system/astra-events.service ]]; then
+  echo 'Existing event collector account is not managed by this installation.' >&2; exit 1
+fi
+install -d -m 0700 -o astra-events -g astra-events /var/lib/astra/events
 cp -a "$bundle" "$release"
 chown -R root:root "$release"
 chmod -R a+rX "$release"
 chmod 0755 "$release/bin/"* "$release/"*.sh
 systemctl stop astra-core.service astra-media.service astra-web.service 2>/dev/null || true
+if systemctl is-active --quiet astra-events.service; then systemctl stop astra-events.service; fi
 ln -s "$release" /opt/astra/current.next
 mv -Tf /opt/astra/current.next /opt/astra/current
 install -m 0644 "$release/systemd/"* /etc/systemd/system/
 systemctl daemon-reload
-systemctl enable astra-web.service astra-media.service astra-core.service
-systemctl start astra-web.service astra-media.service astra-core.service
+systemctl enable astra-web.service astra-media.service astra-events.service astra-core.service
+systemctl start astra-web.service astra-media.service astra-events.service astra-core.service
 health_authority=$(sed -n 's/^ASTRA_LISTEN=//p' /etc/astra/core.env)
 case "$health_authority" in 0.0.0.0:*) health_authority="127.0.0.1:${health_authority##*:}";; esac
 [[ $health_authority =~ ^[0-9.]+:[0-9]+$ ]] || { echo 'Unsupported health listener; inspect the configured address.' >&2; exit 1; }

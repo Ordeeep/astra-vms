@@ -61,12 +61,21 @@ func (a *App) deleteCamera(w http.ResponseWriter, r *http.Request, id identity) 
 		problem(w, 412, "revision_conflict")
 		return
 	}
+	if deleteCameraInTx(r.Context(), tx, current, tenant, cid, name, site) != nil || tx.Commit(r.Context()) != nil {
+		dbFailure(w)
+		return
+	}
+	a.invalidateAvailability(tenant, cid, "")
+	response(w, 202, map[string]string{"code": "camera_deleted", "message": "Câmera excluída. As gravações serão removidas em segundo plano."})
+}
+
+func deleteCameraInTx(ctx context.Context, tx pgx.Tx, actor identity, tenant, cid, name, site string) error {
 	statements := []struct {
 		sql  string
 		args []any
 	}{
 		{"UPDATE cameras SET active=false,deleted_at=now(),revision=revision+1 WHERE tenant_id=$1 AND id=$2", []any{tenant, cid}},
-		{"INSERT INTO camera_deletions(tenant_id,camera_id,actor_id) VALUES($1,$2,$3)", []any{tenant, cid, current.User.ID}},
+		{"INSERT INTO camera_deletions(tenant_id,camera_id,actor_id) VALUES($1,$2,$3)", []any{tenant, cid, actor.User.ID}},
 		{"UPDATE camera_sources SET secrets=''::bytea,connection='null',profiles='[]' WHERE tenant_id=$1 AND camera_id=$2", []any{tenant, cid}},
 		{"DELETE FROM recording_configs WHERE tenant_id=$1 AND camera_id=$2", []any{tenant, cid}},
 		{"DELETE FROM playback_sessions WHERE tenant_id=$1 AND camera_id=$2", []any{tenant, cid}},
@@ -77,17 +86,11 @@ func (a *App) deleteCamera(w http.ResponseWriter, r *http.Request, id identity) 
 		{`UPDATE mosaics SET positions=(SELECT jsonb_agg(CASE WHEN p->>'cameraId'=$2 THEN '{"cameraId":"","profile":""}'::jsonb ELSE p END ORDER BY n) FROM jsonb_array_elements(positions) WITH ORDINALITY AS x(p,n)),revision=revision+1 WHERE tenant_id=$1 AND EXISTS(SELECT 1 FROM jsonb_array_elements(positions) p WHERE p->>'cameraId'=$2)`, []any{tenant, cid}},
 	}
 	for _, statement := range statements {
-		if _, err = tx.Exec(r.Context(), statement.sql, statement.args...); err != nil {
-			dbFailure(w)
-			return
+		if _, err := tx.Exec(ctx, statement.sql, statement.args...); err != nil {
+			return err
 		}
 	}
-	if audit(r.Context(), tx, current, tenant, "camera.deleted", cid, map[string]any{"name": name, "siteId": site, "recordings": "pending"}) != nil || tx.Commit(r.Context()) != nil {
-		dbFailure(w)
-		return
-	}
-	a.invalidateAvailability(tenant, cid, "")
-	response(w, 202, map[string]string{"code": "camera_deleted", "message": "Câmera excluída. As gravações serão removidas em segundo plano."})
+	return audit(ctx, tx, actor, tenant, "camera.deleted", cid, map[string]any{"name": name, "siteId": site, "recordings": "pending"})
 }
 
 func (a *App) cameraDeletionLoop() {

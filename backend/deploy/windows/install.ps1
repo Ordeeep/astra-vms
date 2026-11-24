@@ -62,9 +62,9 @@ if($existing){
  if($state.installRoot -ne $InstallRoot){throw 'Installation root differs from saved installation'}
  $updating=$state.status -eq 'installed'
  $PublicHost=$state.publicHost;$Listen=$state.listen;$DatabasePort=$state.databasePort;$WebPort=$state.webPort
- foreach($name in @('VMS-Core','VMS-Media','VMS-Web','VMS-Database')){
+ foreach($name in @('VMS-Core','VMS-Media','VMS-Events','VMS-Web','VMS-Database')){
   $service=Get-CimInstance Win32_Service -Filter "Name='$name'"
-  if(!$service){if($updating){throw "Installed service is missing: $name"};continue}
+  if(!$service){if($updating -and $name -ne 'VMS-Events'){throw "Installed service is missing: $name"};continue}
   $releases=if($state.managedReleases){@($state.managedReleases)}else{@($state.release)}
   $expected=if($name -eq 'VMS-Database'){@(Join-Path $InstallRoot 'postgres/bin/pg_ctl.exe')}else{@($releases|ForEach-Object{Join-Path $_ 'backend/vms-service.exe'})}
   $owned=$false
@@ -72,11 +72,11 @@ if($existing){
   if(!$owned){throw "Service does not belong to this installation: $name"}
  }
 }else{
- foreach($name in @('VMS-Core','VMS-Media','VMS-Web','VMS-Database')){
+ foreach($name in @('VMS-Core','VMS-Media','VMS-Events','VMS-Web','VMS-Database')){
   if(Get-Service -Name $name -ErrorAction SilentlyContinue){throw "Service name belongs to an existing installation: $name"}
  }
  if((Test-Path -LiteralPath $DataRoot) -and (Get-ChildItem -LiteralPath $DataRoot -Force|Select-Object -First 1)){throw 'New installation requires an empty data directory'}
- foreach($port in @($DatabasePort,$WebPort,19091,19997,18889,18554)){
+ foreach($port in @($DatabasePort,$WebPort,19091,19092,19997,18889,18554)){
   if(Get-NetTCPConnection -State Listen -LocalPort $port -ErrorAction SilentlyContinue){throw "Port already in use: $port"}
  }
  $state=[pscustomobject]@{format=1;status='preparing';installRoot=$InstallRoot;publicHost=$PublicHost;listen=$Listen;databasePort=$DatabasePort;webPort=$WebPort;databasePassword=(New-Secret);bootstrapPassword=(New-Secret);workerSecret=(New-Secret)}
@@ -85,7 +85,7 @@ New-Item -ItemType Directory -Path $InstallRoot,$DataRoot -Force|Out-Null
 # Private installation state is readable only by Administrators, SYSTEM and
 # this installation's virtual service identities (added after registration).
 Invoke-Checked icacls.exe @($DataRoot,'/inheritance:r','/grant:r','*S-1-5-18:(OI)(CI)F','*S-1-5-32-544:(OI)(CI)F')
-foreach($dir in @('config','logs','app','worker','postgres','backups','archive')){
+foreach($dir in @('config','logs','app','worker','events','postgres','backups','archive')){
  New-Item -ItemType Directory -Path (Join-Path $DataRoot $dir) -Force|Out-Null
 }
 $release=Join-Path $InstallRoot ('releases/'+(Get-Date -Format 'yyyyMMdd-HHmmss'))
@@ -105,7 +105,8 @@ $pgData=Join-Path $DataRoot 'postgres'
 $pgCtl=Join-Path $postgres 'bin/pg_ctl.exe'
 if($updating){
  & (Join-Path $release 'backup.ps1') -DataRoot $DataRoot
- foreach($name in @('VMS-Core','VMS-Media','VMS-Web')){
+ foreach($name in @('VMS-Core','VMS-Media','VMS-Events','VMS-Web')){
+  if($name -eq 'VMS-Events' -and !(Get-Service $name -ErrorAction SilentlyContinue)){continue}
   Stop-Service -Name $name
   (Get-Service $name).WaitForStatus('Stopped',[TimeSpan]::FromSeconds(20))
  }
@@ -134,6 +135,7 @@ $bin=Join-Path $release 'backend'
 $runtime=Join-Path $release 'runtime'
 $commonPath=(Join-Path $runtime 'media')+';'+(Join-Path $runtime 'node')+';'+$env:Path
 $components=@{
+ 'VMS-Events'=@{executable=(Join-Path $bin 'vms-event-worker.exe');directory=$bin;arguments=@('--data',(Join-Path $DataRoot 'events'));environment=@{VMS_WORKER_SECRET=$state.workerSecret};log=(Join-Path $DataRoot 'logs/events.log')};
  'VMS-Core'=@{executable=(Join-Path $bin 'vms.exe');directory=$bin;arguments=@('--data',(Join-Path $DataRoot 'app'),'--listen',$Listen,'--frontend',"http://127.0.0.1:$WebPort",'--tls-host',$PublicHost);environment=@{PATH=$commonPath;VMS_DATABASE_URL="postgres://vms_owner:$($state.databasePassword)@127.0.0.1:$DatabasePort/postgres?sslmode=disable";VMS_WORKER_SECRET=$state.workerSecret};log=(Join-Path $DataRoot 'logs/core.log')};
  'VMS-Media'=@{executable=(Join-Path $bin 'vms-worker.exe');directory=$bin;arguments=@('--mediamtx',(Join-Path $runtime 'media/mediamtx.exe'),'--data',(Join-Path $DataRoot 'worker'),'--host',$PublicHost);environment=@{PATH=$commonPath;VMS_WORKER_SECRET=$state.workerSecret};log=(Join-Path $DataRoot 'logs/media.log')};
  'VMS-Web'=@{executable=(Join-Path $runtime 'node/node.exe');directory=(Join-Path $release 'frontend');arguments=@('server.js');environment=@{PATH=$commonPath;HOSTNAME='127.0.0.1';PORT="$WebPort";NODE_ENV='production';NEXT_TELEMETRY_DISABLED='1'};log=(Join-Path $DataRoot 'logs/web.log')}
@@ -146,7 +148,7 @@ function Move-ReleaseReference([string]$Value){
  }
  return $Value
 }
-foreach($name in @('VMS-Web','VMS-Media','VMS-Core')){
+foreach($name in @('VMS-Web','VMS-Media','VMS-Events','VMS-Core')){
  $config=Join-Path $DataRoot "config/$name.json"
  if(Test-Path -LiteralPath $config){
   $saved=Get-Content -LiteralPath $config -Raw|ConvertFrom-Json
@@ -163,7 +165,9 @@ foreach($name in @('VMS-Web','VMS-Media','VMS-Core')){
   if((Get-Service $name).Status -ne 'Stopped'){Stop-Service $name;(Get-Service $name).WaitForStatus('Stopped',[TimeSpan]::FromSeconds(20))}
   Invoke-Checked sc.exe @('config',$name,'binPath=',$command,'start=','auto')
  }else{
-  New-Service -Name $name -BinaryPathName $command -DisplayName $name -StartupType Automatic -DependsOn @('VMS-Database')|Out-Null
+  if($name -eq 'VMS-Events'){
+   New-Service -Name $name -BinaryPathName $command -DisplayName $name -StartupType Automatic|Out-Null
+  }else{New-Service -Name $name -BinaryPathName $command -DisplayName $name -StartupType Automatic -DependsOn @('VMS-Database')|Out-Null}
  }
  Invoke-Checked sc.exe @('config',$name,'obj=',"NT SERVICE\$name")
  Invoke-Checked sc.exe @('failure',$name,'reset=','86400','actions=','restart/5000/restart/10000/restart/30000')
@@ -172,6 +176,7 @@ foreach($name in @('VMS-Web','VMS-Media','VMS-Core')){
  Invoke-Checked icacls.exe @($config,'/grant',("NT SERVICE\{0}:(R)" -f $name))
  Invoke-Checked icacls.exe @((Join-Path $DataRoot 'logs'),'/grant',("NT SERVICE\{0}:(OI)(CI)M" -f $name))
  if($name -eq 'VMS-Core'){Invoke-Checked icacls.exe @((Join-Path $DataRoot 'app'),'/grant',("NT SERVICE\{0}:(OI)(CI)M" -f $name))}
+ if($name -eq 'VMS-Events'){Invoke-Checked icacls.exe @((Join-Path $DataRoot 'events'),'/grant',("NT SERVICE\{0}:(OI)(CI)M" -f $name))}
  if($name -eq 'VMS-Media'){Invoke-Checked icacls.exe @((Join-Path $DataRoot 'worker'),'/grant',("NT SERVICE\{0}:(OI)(CI)M" -f $name))}
  if($name -eq 'VMS-Media'){Invoke-Checked icacls.exe @((Join-Path $DataRoot 'archive'),'/grant',("NT SERVICE\{0}:(OI)(CI)M" -f $name))}
 }
@@ -185,6 +190,6 @@ if($AllowNetworkAccess){
  if(!(Get-NetFirewallRule -Name 'VMS-HTTPS' -ErrorAction SilentlyContinue)){New-NetFirewallRule -Name 'VMS-HTTPS' -DisplayName 'VMS HTTPS' -Direction Inbound -Protocol TCP -LocalPort $publicPort -Action Allow -Profile Domain,Private|Out-Null}
  if(!(Get-NetFirewallRule -Name 'VMS-WebRTC' -ErrorAction SilentlyContinue)){New-NetFirewallRule -Name 'VMS-WebRTC' -DisplayName 'VMS WebRTC' -Direction Inbound -Protocol UDP -LocalPort 18189 -Action Allow -Profile Domain,Private|Out-Null}
 }
-foreach($name in @('VMS-Web','VMS-Media','VMS-Core')){Start-Service $name}
+foreach($name in @('VMS-Web','VMS-Media','VMS-Events','VMS-Core')){Start-Service $name}
 Write-Output "VMS services started. URL: https://${PublicHost}:$($Listen.Split(':')[-1])"
 Write-Output 'Trust the installation certificate in the client browser, then sign in and choose the recording folder.'

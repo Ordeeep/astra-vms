@@ -28,7 +28,7 @@ type Group struct {
 	Revision int64   `json:"revision"`
 }
 
-var actions = []string{"live", "ptz.control", "playback", "export", "inventory.manage", "camera.delete", "permissions.manage", "mosaics.manage", "recording.manage", "audit.view"}
+var actions = []string{"live", "ptz.control", "playback", "export", analyticEventsAction, "inventory.manage", "camera.delete", "permissions.manage", "mosaics.manage", "recording.manage", "audit.view"}
 
 type permissionReader interface {
 	Query(context.Context, string, ...any) (pgx.Rows, error)
@@ -82,6 +82,10 @@ func allowedWith(ctx context.Context, db permissionReader, id identity, tenant, 
 	if err != nil {
 		return false
 	}
+	return permitsAction(grants, tenant, action, site, camera)
+}
+
+func permitsAction(grants []Grant, tenant, action, site, camera string) bool {
 	if action == "ptz.control" && !permits(grants, tenant, "live", site, camera) {
 		return false
 	}
@@ -95,9 +99,23 @@ func (a *App) capabilities(w http.ResponseWriter, r *http.Request, id identity) 
 	if !ok {
 		return
 	}
+	grants, err := a.grants(r.Context(), id.User.ID, tenant)
+	if err != nil {
+		dbFailure(w)
+		return
+	}
 	caps := map[string]bool{}
 	for _, action := range actions {
-		caps[action] = a.allowed(r.Context(), id, tenant, action, "", "")
+		if action == analyticEventsAction {
+			allowed, err := analyticScopeFor(grants, tenant).allowed(r.Context(), a.db, tenant)
+			if err != nil {
+				dbFailure(w)
+				return
+			}
+			caps[action] = allowed
+			continue
+		}
+		caps[action] = permitsAction(grants, tenant, action, "", "")
 	}
 	response(w, 200, caps)
 }

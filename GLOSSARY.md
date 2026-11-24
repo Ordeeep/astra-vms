@@ -26,9 +26,16 @@ _Evitar_: endereço RTSP, equipamento físico
 **ID da câmera**:
 Número permanente que identifica o cadastro de uma câmera dentro de seu tenant. Câmeras de tenants diferentes podem ter o mesmo número.
 
+**Habilitação do cadastro da câmera**:
+Estado administrativo que permite ou suspende a visualização ao vivo e novas gravações de uma câmera. A operação também depende da habilitação do site e do tenant.
+_Evitar_: disponibilidade de câmera, estado da gravação
+
 **Exclusão de câmera**:
 Retirada definitiva de uma câmera e de suas gravações do VMS, com encerramento de suas transmissões e captura. Exportações já geradas conservam sua própria expiração.
 _Evitar_: desativação de câmera, substituição da fonte
+
+**Edição em lote de câmeras**:
+Aplicação dos mesmos ajustes escolhidos às câmeras selecionadas de um tenant. Cada câmera conserva os valores próprios dos demais ajustes.
 
 **Fonte de vídeo**:
 Origem das imagens de uma câmera, cuja substituição distingue o vídeo anterior do produzido pela nova origem. A manutenção dos dados de conexão da mesma origem não constitui sua substituição.
@@ -37,6 +44,37 @@ _Evitar_: câmera cadastrada, perfil de vídeo
 **Integração de câmera**:
 Forma de comunicação com a fonte de vídeo, por protocolo genérico ou por recursos específicos de um fabricante, para obter suas informações, acessar seus perfis de vídeo e operar os recursos que disponibiliza.
 _Evitar_: câmera cadastrada, perfil de vídeo
+
+**Evento analítico**:
+Registro individual de um alerta de analítico de vídeo associado a uma câmera.
+_Evitar_: ocorrência, notificação do sistema, evento de auditoria
+
+**Recepção de eventos**:
+Capacidade do Astra de receber os alertas emitidos pela fonte de uma câmera. Uma câmera pode fornecer vídeo durante uma interrupção da recepção de eventos.
+
+**Período de cobertura incerta**:
+Intervalo em que o Astra não consegue confirmar a recepção de todos os alertas de uma câmera. Alguns alertas desse período podem constar no histórico.
+
+**Regra analítica esperada**:
+Regra de detecção que o operador identifica como proteção esperada para uma câmera. Os horários confirmados indicam quando essa proteção é prevista.
+
+**Supervisão de regras por canal**:
+Verificação da habilitação de um tipo de analítico para uma entrada de vídeo do equipamento. Quando a câmera só fornece esse estado, a habilitação de cada linha ou região permanece indeterminada.
+
+**Recepção de eventos em validação**:
+Condição de operação de uma combinação de modelo e firmware enquanto se verificam os tipos de alerta recebidos, os recursos de supervisão das regras e a recuperação após uma desconexão.
+
+**Horário do evento**:
+Horário em que o Astra recebeu o alerta de analítico. O horário informado pela câmera é um dado do alerta.
+
+**Ocorrência**:
+Caso operacional identificado a partir de um ou mais eventos analíticos.
+
+**Intrusão**:
+Tipo de evento analítico ligado ao monitoramento de presença em uma área da imagem.
+
+**Cruzamento de linha**:
+Tipo de evento analítico que indica a passagem de um lado para o outro de uma linha virtual na imagem.
 
 **Controle PTZ**:
 Operação dos movimentos horizontal e vertical e do zoom óptico oferecidos pela fonte de uma câmera. Cada fonte pode disponibilizar apenas parte desses recursos.
@@ -81,12 +119,16 @@ _Evitar_: acesso irrestrito, permissão global de vídeo
 Versão do vídeo disponibilizada por uma câmera, identificada como stream principal ou substream, com suas características de imagem.
 _Evitar_: mosaico, gravação
 
+**Modo de exibição da câmera**:
+Ajuste de como a imagem da câmera ocupa a célula na visualização ao vivo, preenchendo a célula, forçando a proporção 4:3 ou mantendo a proporção original.
+_Evitar_: resolução do perfil de vídeo
+
 **Transmissão de vídeo**:
 Fluxo de imagens entregue durante uma visualização, distinto do perfil que fornece suas características e do registro preservado no acervo.
 _Evitar_: perfil de vídeo, gravação
 
 **Agenda de gravação**:
-Conjunto de períodos em que uma câmera deve ser gravada continuamente.
+Definição da captura contínua 24 horas por dia ou das faixas semanais de gravação no horário local do site da câmera. Uma agenda semanal vazia deixa a câmera fora do horário de gravação em todos os dias.
 _Evitar_: retenção, gravação por movimento
 
 **Configuração de gravação**:
@@ -140,7 +182,7 @@ Intervalo do acervo apresentado na linha do tempo de gravações, que pode atrav
 _Evitar_: dia selecionado, duração do vídeo
 
 **Posição de reprodução**:
-Instante do acervo selecionado para consultar as imagens de uma câmera, indicado por um marcador na linha do tempo de gravações.
+Instante do acervo selecionado para consultar as imagens gravadas. Na consulta conjunta do mosaico, todas as câmeras compartilham essa posição, e cada linha do tempo indica a disponibilidade da respectiva câmera.
 _Evitar_: horário ao vivo, posição do mouse
 
 **Trecho contínuo de gravação**:

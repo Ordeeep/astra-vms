@@ -1,0 +1,90 @@
+.content.events-content {
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - var(--topbar-height));
+  min-height: 26rem;
+}
+
+.analytic-events {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.analytic-events > :not(.analytic-events-history) {
+  flex-shrink: 0;
+}
+
+.analytic-events-filters,
+.analytic-events-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.analytic-events-filters { margin-bottom: 12px; }
+
+.analytic-events-history {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.analytic-events-history [data-slot="scroll-area-viewport"] {
+  overscroll-behavior: contain;
+  padding-right: 10px;
+}
+
+.analytic-event-card {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 8px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.analytic-event-card:hover { background: var(--accent); }
+.analytic-event-card:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
+
+.analytic-event-source,
+.analytic-event-end {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+
+.analytic-event-source {
+  color: var(--muted-foreground);
+  overflow-wrap: anywhere;
+}
+
+.analytic-event-end { flex-shrink: 0; }
+.analytic-events-footer { padding-top: 12px; font-size: 12px; gap: 8px 16px; }
+.analytic-events-footer > [role="status"] { flex: 1; }
+
+.camera-dialog.event-details-dialog {
+  width: min(680px, calc(100% - 32px));
+}
+
+.event-details-dialog > .dialog-body {
+  padding: 0;
+  overflow: hidden;
+}
+
+.event-details-dialog [data-slot="scroll-area-viewport"] {
+  height: auto;
+  max-height: calc(100dvh - 112px);
+  overscroll-behavior: contain;
+}
+
+@media (max-width: 640px) {
+  .analytic-event-card { flex-direction: column; align-items: stretch; gap: 8px; }
+  .analytic-event-end { justify-content: space-between; }
+  .analytic-events-footer > [role="status"] { flex-basis: 100%; }
+}

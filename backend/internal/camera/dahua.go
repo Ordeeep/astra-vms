@@ -242,6 +242,19 @@ func digestGet(ctx context.Context, client *http.Client, c Connection, path stri
 }
 
 func digestRequest(ctx context.Context, client *http.Client, c Connection, method, path string, payload []byte) ([]byte, error) {
+	res, err := digestResponse(ctx, client, c, method, path, payload)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	raw, err := io.ReadAll(io.LimitReader(res.Body, (1<<20)+1))
+	if err != nil || len(raw) > 1<<20 {
+		return nil, errors.New("camera_api_response_invalid")
+	}
+	return raw, nil
+}
+
+func digestResponse(ctx context.Context, client *http.Client, c Connection, method, path string, payload []byte) (*http.Response, error) {
 	target := url.URL{Scheme: c.Protocol, Host: net.JoinHostPort(c.Host, strconv.Itoa(c.HTTPPort))}
 	rel, _ := url.Parse(path)
 	target.Path = rel.Path
@@ -289,12 +302,7 @@ func digestRequest(ctx context.Context, client *http.Client, c Connection, metho
 			res.Body.Close()
 			return nil, errors.New("camera_api_unsupported")
 		}
-		raw, e := io.ReadAll(io.LimitReader(res.Body, (1<<20)+1))
-		res.Body.Close()
-		if e != nil || len(raw) > 1<<20 {
-			return nil, errors.New("camera_api_response_invalid")
-		}
-		return raw, nil
+		return res, nil
 	}
 	return nil, errors.New("camera_auth_failed")
 }

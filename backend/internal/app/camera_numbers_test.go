@@ -20,7 +20,17 @@ func cameraTestKey(t *testing.T, db *pgx.Conn, tenant, number string) string {
 
 func rewindCameraNumbers(t *testing.T, db *pgx.Conn) {
 	t.Helper()
-	if _, err := db.Exec(context.Background(), `DROP FUNCTION public_camera_grants(text,jsonb);
+	// Restore the pre-v12 shape of this test's disposable namespace, including
+	// later event tables and triggers that reference the newer inventory.
+	if _, err := db.Exec(context.Background(), `DROP VIEW event_collection_current;
+ DROP TRIGGER close_deleted_event_faults ON cameras;
+ DROP FUNCTION close_deleted_event_faults();
+ DROP TRIGGER event_camera_name ON cameras;
+ DROP FUNCTION event_remember_camera_name();
+ DROP INDEX event_location_at;
+ DROP TABLE event_collector_affected,event_collector_outages,event_collector_health,event_collection_consumed,
+ event_camera_names,event_collection_faults,event_collection_settings,analytic_events;
+ DROP FUNCTION public_camera_grants(text,jsonb);
  DROP TRIGGER assign_camera_number ON cameras;
  DROP FUNCTION assign_camera_number();
  ALTER TABLE cameras DROP COLUMN camera_number;

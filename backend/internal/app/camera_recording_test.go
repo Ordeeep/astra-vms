@@ -11,6 +11,52 @@ func recordingDraft(enabled bool, profile string, revision int) map[string]any {
 	return map[string]any{"enabled": enabled, "profile": profile, "always": true, "schedule": []any{}, "retentionDays": nil, "revision": revision}
 }
 
+func TestLiveCatalogShowsFreshRecordingStatusWithinCameraScope(t *testing.T) {
+	b := newTestAPI(t)
+	tenant, site, camera, _ := deletionFixture(t, b)
+	base := "/tenants/" + tenant
+	path := base + "/cameras"
+	b.call("PUT", path+"/"+camera+"/recording", recordingDraft(true, "main", 0), 200)
+	group := b.call("POST", base+"/groups", map[string]any{
+		"name": "Live status",
+		"grants": []app.Grant{
+			{Action: "live", Scope: "camera", ResourceID: camera},
+			{Action: "inventory.manage", Scope: "tenant", ResourceID: tenant},
+		},
+	}, 201)["id"].(string)
+	operator := b.call("POST", "/admin/operators", map[string]string{"username": "live-status", "password": "fixture-password"}, 201)["id"].(string)
+	b.call("PUT", base+"/operators/"+operator, map[string]any{"groups": []string{group}, "revision": 0}, 200)
+	other := b.call("POST", path, map[string]any{"name": "Inventory camera", "siteId": site, "profiles": []map[string]string{{"id": "main", "name": "Main", "url": "rtsp://camera/main"}}}, 201)
+	scoped := independentBrowser(t, b, "live-status", "fixture-password", tenant)
+	db := cameraDeletionDB(t, b)
+	key := cameraTestKey(t, db, tenant, camera)
+	exec := func(sql string) {
+		t.Helper()
+		if _, err := db.Exec(context.Background(), sql, tenant, key); err != nil {
+			t.Fatal(err)
+		}
+	}
+	check := func(want bool) {
+		t.Helper()
+		items := scoped.call("GET", path, nil, 200)["items"].([]any)
+		if len(items) != 2 {
+			t.Fatalf("expected both inventory cameras, got %v", items)
+		}
+		current, restricted := items[0].(map[string]any), items[1].(map[string]any)
+		if current["id"] != camera || current["recordingActive"] != want || restricted["id"] != other["id"] || restricted["recordingActive"] != nil {
+			t.Fatalf("unexpected live recording status: %v", items)
+		}
+	}
+	check(false)
+	exec(`INSERT INTO recording_status(tenant_id,camera_id,code,last_frame,last_write) VALUES($1,$2,'recording',now(),now())`)
+	check(true)
+	exec(`UPDATE recording_status SET updated_at=now()-interval '10 seconds' WHERE tenant_id=$1 AND camera_id=$2`)
+	check(false)
+	if items := scoped.call("GET", base+"/recording-status", nil, 200)["items"].([]any); len(items) != 0 {
+		t.Fatal("live permission must not grant detailed recording status")
+	}
+}
+
 func TestCameraRecordingAtomicCreateAndEdit(t *testing.T) {
 	b := newTestAPI(t)
 	b.login("admin", "admin")

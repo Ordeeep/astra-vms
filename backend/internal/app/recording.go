@@ -75,6 +75,11 @@ func scanRecording(row pgx.Row) (RecordingConfig, error) {
 	}
 	return c, err
 }
+
+func defaultCameraRecording() RecordingConfig {
+	return RecordingConfig{Profile: "main", Always: true, Schedule: []ScheduleWindow{}}
+}
+
 func (a *App) recordingConfig(w http.ResponseWriter, r *http.Request, id identity) {
 	tenant, ok := a.tenantContext(w, r, id)
 	if !ok {
@@ -93,7 +98,7 @@ func (a *App) recordingConfig(w http.ResponseWriter, r *http.Request, id identit
 	if r.Method == "GET" {
 		c, err := scanRecording(a.db.QueryRow(r.Context(), "SELECT enabled,profile,schedule,always_on,retention_days,revision FROM recording_configs WHERE tenant_id=$1 AND camera_id=$2", tenant, camera))
 		if err == pgx.ErrNoRows {
-			c = RecordingConfig{Profile: "main", Always: true, Schedule: []ScheduleWindow{}}
+			c = defaultCameraRecording()
 		} else if err != nil {
 			dbFailure(w)
 			return

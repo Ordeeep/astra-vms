@@ -36,6 +36,7 @@ type Options struct {
 	SecureCookies bool
 	DataDir       string
 	WorkerURL     string
+	EventWorkerURL string
 	WorkerSecret  string
 	WHEPURL       string
 }
@@ -90,7 +91,7 @@ type identity struct {
 }
 
 func New(ctx context.Context, opts Options) (*App, error) {
-	for _, endpoint := range []string{opts.WorkerURL, opts.WHEPURL} {
+	for _, endpoint := range []string{opts.WorkerURL, opts.WHEPURL, opts.EventWorkerURL} {
 		if endpoint == "" {
 			continue
 		}
@@ -175,6 +176,10 @@ func New(ctx context.Context, opts Options) (*App, error) {
 	app.startBackground(app.cleanTransientSessions)
 	app.startBackground(app.monitorOwnership)
 	app.startBackground(app.dispatchEvents)
+	app.startBackground(app.analyticEventMaintenance)
+	if opts.EventWorkerURL != "" {
+		app.startBackground(app.eventCollectorLoop)
+	}
 	if opts.WorkerURL != "" {
 		app.startBackground(app.availabilityLoop)
 		app.startBackground(app.recordingLoop)
@@ -355,6 +360,8 @@ func (a *App) Handler() http.Handler {
 	a.registerExports(mux)
 	a.registerQuota(mux)
 	a.registerOperations(mux)
+	a.registerAnalyticEvents(mux)
+	a.registerEventCollection(mux)
 	mux.HandleFunc("GET /api/v1/tenants/{tenant}/events", a.protected(a.eventStream))
 	mux.HandleFunc("GET /api/v1/health", func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), time.Second)

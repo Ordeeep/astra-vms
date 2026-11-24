@@ -14,6 +14,7 @@ type AppSidebarProps = ComponentProps<typeof Sidebar> & {
   identity: Identity;
   tenant: Tenant | null;
   activePage: WorkspacePage;
+  canViewEvents: boolean;
   onNavigate: (page: WorkspacePage) => void;
   onTenantSelect: (tenant: Tenant) => void;
   onLogout: () => void;
@@ -21,7 +22,7 @@ type AppSidebarProps = ComponentProps<typeof Sidebar> & {
 
 // Adapted from the official sidebar-07 block to the Astra identity and context.
 export function AppSidebar({
-  identity, tenant, activePage, onNavigate, onTenantSelect, onLogout, ...props
+  identity, tenant, activePage, canViewEvents, onNavigate, onTenantSelect, onLogout, ...props
 }: AppSidebarProps) {
   const { setOpenMobile } = useSidebar();
   function navigate(page: WorkspacePage) {
@@ -40,7 +41,7 @@ export function AppSidebar({
         />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain activePage={activePage} onNavigate={navigate} globalAdmin={identity.user.globalAdmin} />
+        <NavMain activePage={activePage} onNavigate={navigate} globalAdmin={identity.user.globalAdmin} canViewEvents={canViewEvents} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={identity.user} onAccount={() => navigate("account")} onLogout={onLogout} />

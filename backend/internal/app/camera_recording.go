@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
@@ -23,8 +24,16 @@ func (a *App) saveCameraRecording(w http.ResponseWriter, r *http.Request, tx pgx
 		problem(w, 422, "invalid_recording_config")
 		return false
 	}
-	if in.Enabled && !a.recordingProfileValid(w, r, tx, tenant, cid, in.Profile) {
-		return false
+	if in.Enabled {
+		valid, err := recordingProfileValid(r.Context(), tx, tenant, cid, in.Profile)
+		if err != nil {
+			dbFailure(w)
+			return false
+		}
+		if !valid {
+			problem(w, 422, "recording_profile_unavailable")
+			return false
+		}
 	}
 	previous, err := scanRecording(tx.QueryRow(r.Context(), "SELECT enabled,profile,schedule,always_on,retention_days,revision FROM recording_configs WHERE tenant_id=$1 AND camera_id=$2 FOR UPDATE", tenant, cid))
 	if err != nil && err != pgx.ErrNoRows {
@@ -62,33 +71,30 @@ func (a *App) saveCameraRecording(w http.ResponseWriter, r *http.Request, tx pgx
 			return false
 		}
 	}
-	raw, _ := json.Marshal(in.Schedule)
-	if in.Schedule == nil {
-		raw = []byte("[]")
-	}
-	_, err = tx.Exec(r.Context(), `INSERT INTO recording_configs(tenant_id,camera_id,enabled,profile,schedule,always_on,retention_days) VALUES($1,$2,$3,$4,$5,$6,$7)
-	ON CONFLICT(tenant_id,camera_id) DO UPDATE SET enabled=$3,profile=$4,schedule=$5,always_on=$6,retention_days=$7,revision=recording_configs.revision+1`, tenant, cid, in.Enabled, in.Profile, raw, in.Always, in.Retention)
-	if err == nil {
-		_, err = tx.Exec(r.Context(), "INSERT INTO audit_events(actor_id,tenant_id,action,resource_id,revision) SELECT $1,$2,'recording.configured',$3,revision FROM recording_configs WHERE tenant_id=$2 AND camera_id=$3", id.User.ID, tenant, cid)
-	}
-	if err != nil {
+	if storeCameraRecording(r.Context(), tx, id, tenant, cid, in.RecordingConfig) != nil {
 		dbFailure(w)
 		return false
 	}
 	return true
 }
 
-func (a *App) recordingProfileValid(w http.ResponseWriter, r *http.Request, tx pgx.Tx, tenant, cid, profile string) bool {
+func storeCameraRecording(ctx context.Context, tx pgx.Tx, id identity, tenant, cid string, in RecordingConfig) error {
+	raw, _ := json.Marshal(in.Schedule)
+	if in.Schedule == nil {
+		raw = []byte("[]")
+	}
+	_, err := tx.Exec(ctx, `INSERT INTO recording_configs(tenant_id,camera_id,enabled,profile,schedule,always_on,retention_days) VALUES($1,$2,$3,$4,$5,$6,$7)
+	ON CONFLICT(tenant_id,camera_id) DO UPDATE SET enabled=$3,profile=$4,schedule=$5,always_on=$6,retention_days=$7,revision=recording_configs.revision+1`, tenant, cid, in.Enabled, in.Profile, raw, in.Always, in.Retention)
+	if err == nil {
+		_, err = tx.Exec(ctx, "INSERT INTO audit_events(actor_id,tenant_id,action,resource_id,revision) SELECT $1,$2,'recording.configured',$3,revision FROM recording_configs WHERE tenant_id=$2 AND camera_id=$3", id.User.ID, tenant, cid)
+	}
+	return err
+}
+
+func recordingProfileValid(ctx context.Context, tx pgx.Tx, tenant, cid, profile string) (bool, error) {
 	var valid bool
-	err := tx.QueryRow(r.Context(), `SELECT EXISTS(SELECT 1 FROM cameras c JOIN camera_sources s ON s.tenant_id=c.tenant_id AND s.camera_id=c.id AND s.id=c.source_version, jsonb_array_elements(s.profiles) p WHERE c.tenant_id=$1 AND c.id=$2 AND c.deleted_at IS NULL AND p->>'id'=$3 AND coalesce(p->>'enabled','true')<>'false')`, tenant, cid, profile).Scan(&valid)
-	if err != nil {
-		dbFailure(w)
-		return false
-	}
-	if !valid {
-		problem(w, 422, "recording_profile_unavailable")
-	}
-	return valid
+	err := tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM cameras c JOIN camera_sources s ON s.tenant_id=c.tenant_id AND s.camera_id=c.id AND s.id=c.source_version, jsonb_array_elements(s.profiles) p WHERE c.tenant_id=$1 AND c.id=$2 AND c.deleted_at IS NULL AND p->>'id'=$3 AND coalesce(p->>'enabled','true')<>'false')`, tenant, cid, profile).Scan(&valid)
+	return valid, err
 }
 
 // Also protect source edits made through legacy API endpoints or by operators

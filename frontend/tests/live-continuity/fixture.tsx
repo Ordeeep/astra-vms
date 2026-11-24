@@ -4,6 +4,7 @@ import {LiveWorkspace} from "../../src/components/live";
 import {LiveHeaderActions, LiveHeaderControls} from "../../src/components/live-header-controls";
 import {TooltipProvider} from "../../src/components/ui/tooltip";
 import {LiveViewProvider, useLiveView} from "../../src/components/live-view-context";
+import type {LiveMosaic} from "../../src/lib/live-mosaic";
 import "../../src/app/workspace.css";
 
 // Real React reconciliation and HTML video decoding with a simulated API.
@@ -11,7 +12,8 @@ import "../../src/app/workspace.css";
 const debugCameraId=new URLSearchParams(location.search).get("debugCameraId");
 const cameras=Array.from({length:5},(_,i)=>({id:i===0&&debugCameraId?debugCameraId:`cam${i+1}`,name:`Câmera ${i+1}`,siteId:"site",active:true,effectiveActive:true,revision:1,sourceVersion:"1",connectionRevision:1,capabilities:{live:true},profiles:[{id:"main",name:"Principal"},{id:"sub2",name:"Substream 2"}]}));
 const sessions=new Map<string,{id:string;cameraId:string;profile:string;signaling:string}>();
-const mosaics=new Map<string,unknown[]>();
+const mosaics=new Map<string,LiveMosaic[]>();
+let mosaicSerial=0;
 const events:{type:string;id?:string;cameraId?:string;profile?:string}[]=[];
 const held=new Set<string>(),failures=new Set<string>(),signalFailures=new Set<string>(),unavailableProfiles=new Set<string>();
 const requests:{profile:string;cameraId:string}[]=[];
@@ -21,18 +23,34 @@ const BrowserPeer=window.RTCPeerConnection;
 const nativeMode=location.hash==="#native";
 const nativeServers=new Map<string,NativeSender>();
 let serial=0;
-const qa={events,sessions,held,failures,signalFailures,unavailableProfiles,requests,delayed,cameras,maxSessions:0,release:()=>{held.clear();for(const peer of peers)peer.deliver();},flushPosts:()=>{delayed.clear();postResolvers.splice(0).forEach(resolve=>resolve());},deny:false};
+const qa={events,sessions,held,failures,signalFailures,unavailableProfiles,requests,delayed,cameras,maxSessions:0,release:()=>{held.clear();for(const peer of peers)peer.deliver();},flushPosts:()=>{delayed.clear();postResolvers.splice(0).forEach(resolve=>resolve());},deny:false,catalogUnavailable:false};
 Object.assign(window,{qa});
 const response=(data:unknown,status=200)=>new Response(status===204?null:JSON.stringify(data),{status,headers:{"Content-Type":"application/json","X-VMS-Contract":"1"}});
 window.fetch=async(input,init)=>{
  const path=String(input),method=init?.method??"GET";
- if(path.endsWith("/mosaics")){
-  const items=mosaics.get(path)??[];
-  if(method==="GET")return response({items});
-  const saved={...JSON.parse(String(init?.body)),id:`view-${items.length+1}`,ownerId:"test",revision:1,editable:true};
-  mosaics.set(path,[...items,saved]);return response(saved,201);
+ const mosaicRoute=path.match(/^(\/api\/v1\/tenants\/[^/]+\/mosaics)(?:\/([^/]+))?$/);
+ if(mosaicRoute){
+  const [,base,id]=mosaicRoute;
+  const items=mosaics.get(base)??[];
+  if(method==="GET"&&!id)return response({items});
+  if(method==="POST"&&!id){
+   const saved={...JSON.parse(String(init?.body)),id:`view-${++mosaicSerial}`,ownerId:"test",revision:1,editable:true};
+   mosaics.set(base,[...items,saved]);return response(saved,201);
+  }
+  const view=items.find(item=>item.id===id);
+  if(!view)return response({code:"mosaic_not_found"},404);
+  if(method==="GET")return response(view);
+  const body=JSON.parse(String(init?.body));
+  if(body.revision!==view.revision)return response({code:"revision_conflict"},412);
+  if(method==="PUT"){
+   const saved={...view,name:body.name,visibility:body.visibility,layout:body.layout,positions:body.positions,revision:view.revision+1};
+   mosaics.set(base,items.map(item=>item.id===id?saved:item));return response(saved);
+  }
+  if(method==="DELETE"){
+   mosaics.set(base,items.filter(item=>item.id!==id));return response(null,204);
+  }
  }
- if(path.endsWith("/cameras"))return response({items:cameras});
+ if(path.endsWith("/cameras"))return qa.catalogUnavailable?response({code:"database_unavailable"},503):response({items:cameras});
  if(path.endsWith("/sites"))return response({items:[{id:"site",name:"Local",active:true}]});
  if(path.endsWith("/live-policy"))return response({revision:1,inherited:true,rules:[{min:1,max:2,profile:"main",fallback:[]},{min:3,max:4,profile:"sub2",fallback:["main"]},{min:5,max:16,profile:"sub3",fallback:["sub2","main"]}]});
  if(path.endsWith("/live-sessions")&&method==="POST"){
@@ -109,6 +127,7 @@ function Controls(){
  const view=useLiveView();
  return <nav aria-label="Controles de teste">
   <button onClick={()=>{view.changeLayout("3x3");view.setPositions(tiles=>tiles.map((tile,index)=>({...tile,cameraId:cameras[index]?.id??"",profile:""})));}}>Cinco câmeras</button>
+  {[0,1,3].map(index=><button key={index} onClick={()=>view.setPositions(tiles=>tiles.map((tile,i)=>i===index?{...tile,cameraId:"",profile:"",fallback:[]}:tile))}>Esvaziar posição {index+1}</button>)}
   <button onClick={()=>view.setPositions(cameras.slice(0,4).map((c,tileId)=>({tileId,cameraId:c.id,profile:""})))}>Quatro câmeras</button>
   <button onClick={()=>view.setPositions(cameras.slice(0,2).map((c,tileId)=>({tileId,cameraId:c.id,profile:""})))}>Duas câmeras</button>
   <button onClick={()=>view.setPositions(cameras.slice(0,3).map((c,tileId)=>({tileId,cameraId:c.id,profile:""})))}>Três câmeras</button>

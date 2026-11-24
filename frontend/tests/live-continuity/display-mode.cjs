@@ -40,7 +40,8 @@ async page => {
  await page.setViewportSize({width:1280,height:900});
  const fixed=await measure();
  const area=first.locator('.video-area');
- await first.getByRole('button',{name:/Zoom digital/}).click();
+ await first.hover();
+ await first.getByRole('button',{name:/^Lupa de /}).click();
  await area.press('+');
  const zoomed=await measure();
  assert(close(zoomed.width,fixed.width*1.25)&&close(zoomed.width,zoomed.height*4/3),'O zoom não manteve a imagem em 4:3');

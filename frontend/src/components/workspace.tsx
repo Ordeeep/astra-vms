@@ -28,13 +28,15 @@ import {LiveViewProvider} from "@/components/live-view-context";
 import {StorageWorkspace} from "@/components/storage";
 import {RecordingExportProvider} from "@/components/exports";
 import {OperationsWorkspace} from "@/components/operations";
-import {type Notification} from "@/lib/events";
+import {AnalyticEventsWorkspace} from "@/components/analytic-events";
+import {onEnvironmentChange,type Notification} from "@/lib/events";
 import { workspacePageAt, workspacePaths, type WorkspacePage } from "@/lib/workspace-routes";
 
 export default function Workspace() {
   const [identity, setIdentity] = useState<Identity | null>(null);
   const [tenant, setTenant] = useState<Tenant | null>(null);
   const [contextID, setContextID] = useState("");
+  const [eventAccess, setEventAccess] = useState({contextID: "", allowed: false});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const pathname = usePathname();
@@ -126,6 +128,20 @@ export default function Workspace() {
     };
     return()=>{active=false;source.close();};
   },[contextID,tenant?.id]);
+  useEffect(() => {
+    if (!tenant || !contextID) return;
+    let request: AbortController | undefined;
+    const refresh = () => {
+      request?.abort();
+      const controller = request = new AbortController();
+      void api<Record<string, boolean>>(`/tenants/${tenant.id}/capabilities`, "GET", undefined, true, controller.signal)
+        .then(caps => { if (!controller.signal.aborted) setEventAccess({contextID, allowed: caps["events.view"] === true}); })
+        .catch(() => { if (!controller.signal.aborted) setEventAccess({contextID, allowed: false}); });
+    };
+    refresh();
+    const unsubscribe = onEnvironmentChange([], refresh);
+    return () => { request?.abort(); unsubscribe(); };
+  }, [contextID, tenant?.id]);
   async function logout() {
     if(navigationGuard.current&&!navigationGuard.current())return;
     try {
@@ -141,13 +157,13 @@ export default function Workspace() {
   return <SidebarProvider className="workspace">
     <LiveViewProvider key={contextID||"no-context"} tenantId={tenant?.id} enabled={page==="live"&&!!contextID}>
     <RecordingExportProvider tenantId={tenant?.id}>
-    <AppSidebar collapsible="icon" identity={identity} tenant={tenant} activePage={page}
+    <AppSidebar collapsible="icon" identity={identity} tenant={tenant} activePage={page} canViewEvents={eventAccess.contextID===contextID&&eventAccess.allowed}
       onNavigate={navigate} onTenantSelect={next=>void selectTenant(next)} onLogout={()=>void logout()} />
     <SidebarInset className="min-w-0">
       <header className="workspace-header" data-live={showLiveControls || undefined}>
         <div className="workspace-path">
           <SidebarTrigger />
-          <Separator orientation="vertical" className="data-vertical:h-4 data-vertical:self-auto" />
+          <Separator orientation="vertical" className="data-vertical:h-4 data-vertical:self-auto md:hidden" />
           <Breadcrumb><BreadcrumbList>
             <BreadcrumbItem className="hidden md:block">Astra</BreadcrumbItem>
             <BreadcrumbSeparator className="hidden md:block" />
@@ -159,10 +175,10 @@ export default function Workspace() {
           {showLiveControls ? <LiveHeaderActions/> : <ThemeToggle/>}
         </div>
       </header>
-      <div className={`content${page==="live"&&tenant?" live-content":""}`} key={contextID||"no-context"}>
+      <div className={`content${page==="live"&&tenant?" live-content":""}${page==="events"&&tenant?" events-content":""}`} key={contextID||"no-context"}>
         {error && <Alert role="alert" className="alert" variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
         {!contextID&&<Button onClick={()=>void refreshIdentity().catch(e=>{if(e instanceof ApiError&&e.status===401)setIdentity(null);else setError((e as Error).message);})} variant="outline">Atualizar meus acessos</Button>}
-        {page==="operations"&&tenant?<OperationsWorkspace tenant={tenant} identity={identity}/>:page==="account" ? <Account user={identity.user} onUpdate={user=>setIdentity(current=>current ? {...current,user} : current)}/> :page==="storage"?<StorageWorkspace tenant={tenant} identity={identity}/>:page==="live"&&tenant?<LiveWorkspace tenant={tenant} globalAdmin={identity.user.globalAdmin}/>: page==="sites"&&tenant?<SitesWorkspace tenant={tenant}/>:page==="cameras"&&tenant?<CamerasWorkspace tenant={tenant} registerCloseGuard={guard=>{navigationGuard.current=guard;}} onStorage={()=>{navigationGuard.current=null;navigate("storage");}}/>:(page==="operators"||page==="groups"||page==="tenants")?<Administration key={page} section={page} identity={identity} tenant={tenant} onRefresh={refreshIdentity}/>:<>
+        {page==="events"&&tenant?<AnalyticEventsWorkspace tenantId={tenant.id}/>:page==="operations"&&tenant?<OperationsWorkspace tenant={tenant} identity={identity}/>:page==="account" ? <Account user={identity.user} onUpdate={user=>setIdentity(current=>current ? {...current,user} : current)}/> :page==="storage"?<StorageWorkspace tenant={tenant} identity={identity}/>:page==="live"&&tenant?<LiveWorkspace tenant={tenant} globalAdmin={identity.user.globalAdmin}/>: page==="sites"&&tenant?<SitesWorkspace tenant={tenant}/>:page==="cameras"&&tenant?<CamerasWorkspace tenant={tenant} registerCloseGuard={guard=>{navigationGuard.current=guard;}} onStorage={()=>{navigationGuard.current=null;navigate("storage");}}/>:(page==="operators"||page==="groups"||page==="tenants")?<Administration key={page} section={page} identity={identity} tenant={tenant} onRefresh={refreshIdentity}/>:<>
           <div className="page-heading"><div><h1>Visão geral</h1><p>Seu ambiente de monitoramento, em um só lugar.</p></div><Badge variant="outline"><span className="status-dot" aria-hidden="true"/>Conectado</Badge></div>
           <Card asChild className="panel welcome gap-0 p-6"><section><div className="welcome-icon"><Grid2X2 className="size-5" aria-hidden="true"/></div><h2>{tenant ? `Bem-vindo a ${tenant.name}` : "Acesso à instalação"}</h2><p>{tenant ? "Este ambiente mantém seus sites, câmeras e gravações separados dos demais." : "Sua conta ainda não possui um ambiente ativo disponível."}</p></section></Card>
         </>}

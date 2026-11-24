@@ -4,8 +4,8 @@ import type { ReactNode } from "react";
 import { ContextMenu } from "radix-ui";
 import { Check, ChevronRight, Circle, Maximize, Minimize, Video, X } from "lucide-react";
 
-export function LiveCameraMenu({children,occupied,maximized,onOpen,onMaximize,onClose,onCloseAll,onRecording,profiles,profile,onProfileChange}:{
-  children:ReactNode;occupied:boolean;maximized:boolean;onOpen:()=>void;onMaximize:()=>void;onClose:()=>void;
+export function LiveCameraMenu({children,occupied,maximized,onOpen,onMaximize,onCloseAll,onRecording,profiles,profile,onProfileChange}:{
+  children:ReactNode;occupied:boolean;maximized:boolean;onOpen:()=>void;onMaximize:()=>void;
   onRecording:()=>void;profiles:{id:string;name:string}[];profile:string;onProfileChange:(value:string)=>void;
   onCloseAll:()=>void;
 }) {
@@ -28,7 +28,6 @@ export function LiveCameraMenu({children,occupied,maximized,onOpen,onMaximize,on
               </ContextMenu.SubContent>
             </ContextMenu.Portal>
           </ContextMenu.Sub>
-          <ContextMenu.Item onSelect={onClose}><X aria-hidden="true"/>Fechar câmera</ContextMenu.Item>
         </>:null}
         <ContextMenu.Item onSelect={onCloseAll}><X aria-hidden="true"/>Fechar câmeras</ContextMenu.Item>
       </ContextMenu.Content>

@@ -17,6 +17,7 @@ export const permissionActions = [
   {id: "ptz.control", label: "Controlar PTZ", description: "Movimentar a câmera e controlar seu zoom óptico. Requer acesso ao vivo às mesmas câmeras.", section: "operation"},
   {id: "playback", label: "Consultar gravações", description: "Buscar e reproduzir gravações das câmeras.", section: "operation"},
   {id: "export", label: "Exportar gravações", description: "Exportar trechos de vídeo. Requer consulta às gravações das mesmas câmeras.", section: "operation"},
+  {id: "events.view", label: "Visualizar eventos", description: "Consultar o histórico de alertas analíticos das câmeras.", section: "operation"},
   {id: "inventory.manage", label: "Gerenciar sites e câmeras", description: "Editar os cadastros e as conexões das câmeras.", section: "administration"},
   {id: "camera.delete", label: "Excluir câmeras", description: "Excluir câmeras e todas as suas gravações no tenant.", section: "administration"},
   {id: "permissions.manage", label: "Administrar permissões", description: "Gerenciar grupos e acessos dos operadores.", section: "administration", tenantOnly: true},

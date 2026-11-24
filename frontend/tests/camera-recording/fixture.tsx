@@ -8,11 +8,12 @@ import {setContext,type Identity,type Tenant} from "@/lib/api";
 
 const tenant:Tenant={id:"fixture",name:"Laboratório",active:true,revision:1};
 const mode=new URL(location.href).searchParams.get("mode");
+const bulk=mode==="bulk";
 const globalAdmin=!["recording-only","inventory-only","viewer"].includes(mode??"");
-const capabilities={"inventory.manage":mode!=="recording-only"&&mode!=="viewer","recording.manage":mode!=="inventory-only"&&mode!=="viewer",playback:mode==="viewer"};
+const capabilities={"inventory.manage":mode!=="recording-only"&&mode!=="viewer","recording.manage":mode!=="inventory-only"&&mode!=="viewer","camera.delete":bulk,playback:mode==="viewer"};
 const identity:Identity={user:{id:"admin",username:"fixture",name:"Fixture",email:"",active:true,globalAdmin,revision:1},tenants:[tenant],csrfToken:"fixture"};
 const camera:Camera={id:"camera",name:"Portaria",siteId:"site",active:true,effectiveActive:true,revision:4,sourceVersion:"source",connectionType:"rtsp",profiles:[{id:"main",name:"Principal"},{id:"sub1",name:"Substream"}],capabilities};
-let cameras=[camera];
+let cameras=bulk?Array.from({length:12},(_,index)=>({...camera,id:String(index+1),name:index===0?camera.name:`Bloco ${String(index+1).padStart(2,"0")}`})):[camera];
 let recording:RecordingConfig={...newRecordingConfig(),enabled:true,profile:"sub1",revision:3};
 let policy={quotaBytes:1073741824,exportBytes:536870912,retentionDays:10,exportHours:24,revision:2};
 let storageConfigured=mode!=="pending",quotaConfigured=mode!=="pending",failRecording=false,conflict=false,retentionImpact=false;
@@ -24,7 +25,7 @@ window.fetch=async(input,options)=>{
  const path=new URL(typeof input==="string"?input:input instanceof URL?input.href:input.url,location.origin).pathname;
  const method=options?.method??"GET",body=options?.body?JSON.parse(String(options.body)):null;
  requests.push({method,path,body});
- if(method==="GET"&&path.endsWith("/sites"))return json({items:[{id:"site",name:"Matriz",timezone:"America/Sao_Paulo",active:true,capabilities}]});
+ if(method==="GET"&&path.endsWith("/sites"))return json({items:[{id:"site",name:"Matriz",timezone:"America/Sao_Paulo",active:true,capabilities},...(bulk?[{id:"destination",name:"Filial",timezone:"UTC",active:false,capabilities}]:[])]});
  if(method==="GET"&&path.endsWith("/cameras"))return json({items:cameras});
  if(method==="GET"&&path.endsWith("/cameras/camera"))return json(cameras[0]);
  if(method==="GET"&&path.endsWith("/capabilities"))return json(capabilities);
@@ -38,6 +39,11 @@ window.fetch=async(input,options)=>{
   return json(cameras[0]);
  }
  if(method==="POST"&&path.endsWith("/cameras"))return json({id:"created"},201);
+ if(bulk&&method==="POST"&&path.endsWith("/cameras/bulk")){
+  if(body.action==="configure"&&body.cameraIds.includes("12"))return json({code:"camera_bulk_rejected",issues:[{cameraId:"12",code:"recording_profile_unavailable"}]},422);
+  if(body.action==="delete")cameras=cameras.filter(camera=>!body.cameraIds.includes(camera.id));
+  return json({changed:body.cameraIds.length,unchanged:0},body.action==="delete"?202:200);
+ }
  if(path.endsWith("/admin/storage")){if(method==="POST")storageConfigured=true;return json({configured:storageConfigured,config:{path:"D:\\Astra\\Acervo",volumeLimit:10737418240,margin:268435456}});}
  if(path.endsWith("/recording-policy")){if(method==="PUT"){policy={...body,revision:policy.revision+1};quotaConfigured=policy.quotaBytes>0;}return json({policy,usage:{recording:1048576}});}
  if(path.endsWith("/quota-jobs"))return json({items:[]});
